@@ -1,0 +1,60 @@
+{
+  "nodes": [
+    {
+      "name": "CDX-NCHC",
+      "location": "Tainan",
+      "provider": "Yuan",
+      "provider-link": "https://yuan-tw.net",
+      "tags": "u-tw-yuan:cdx-nchc"
+    },
+    {
+      "name": "DaDa-Chief",
+      "location": "New Taipei City",
+      "provider": "CH",
+      "provider-link": "./",
+      "tags": "u-tw-yuan:dada-chief"
+    },
+    {
+      "name": "CoCoDigit",
+      "location": "Taipei",
+      "provider": "CoCoDigit",
+      "provider-link": "https://www.cocodigit.com/",
+      "tags": "u-tw-yuan:CoCoDigit"
+    },
+    {
+      "name": "FET",
+      "location": "New Taipei City",
+      "provider": "Zhuyuan",
+      "provider-link": "https://zhuyuan.tw",
+      "tags": "u-tw-yuan:FET-NewTaipei"
+    },
+    {
+      "name": "HINET",
+      "location": "Taichung",
+      "provider": "Zhuyuan",
+      "provider-link": "https://zhuyuan.tw",
+      "tags": "u-tw-yuan:HINET-TXG"
+    },
+    {
+      "name": "Kbro-TFN",
+      "location": "Pingtung",
+      "provider": "Zhuyuan",
+      "provider-link": "https://zhuyuan.tw",
+      "tags": "u-tw-yuan:Kbro-TFN-PIF"
+    },
+    {
+      "name": "NCSE",
+      "location": "Taipei",
+      "provider": "NCSE Network",
+      "provider-link": "https://ncse.tw",
+      "tags": "u-NCSE-NETWORK:tpe-1"
+    },
+    {
+      "name": "TANET-NIU",
+      "location": "Yilan",
+      "provider": "Yuan",
+      "provider-link": "https://yuan-tw.net",
+      "tags": "u-tw-yuan:tanet"
+    }
+  ]
+} 
