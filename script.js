@@ -32,6 +32,7 @@ function createNodeCard(node) {
             <div class="fw-semibold fs-5 text-dark mb-2">${node.name}</div>
             <div class="text-muted mb-2">${node.location}</div>
             <div class="text-muted small mb-3">
+            <span>Provider: </span>
                 <a href="${node['provider-link']}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
                     ${node.provider}
                 </a>
