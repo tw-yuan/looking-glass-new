@@ -1,0 +1,18 @@
+.node-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-color: #007bff;
+}
+
+.node-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+    display: block;
+} 
