@@ -1,27 +1,16 @@
 // 節點數據
-const nodesData = {
-    nodes: [
-        {
-            name: "台北節點",
-            location: "台北市",
-            provider: "中華電信",
-            "provider-link": "https://www.cht.com.tw",
-            tags: "taiwan,taipei"
-        },
-        {
-            name: "香港節點",
-            location: "香港",
-            provider: "HKBN",
-            "provider-link": "https://www.hkbn.net",
-            tags: "hongkong"
-        }
-    ]
-};
+let nodesData = { nodes: [] };
 
 // 初始化頁面
-document.addEventListener('DOMContentLoaded', () => {
-    renderNodes();
-    setupModal();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('nodes.json');
+        nodesData = await response.json();
+        renderNodes();
+        setupModal();
+    } catch (error) {
+        console.error('無法載入節點數據:', error);
+    }
 });
 
 // 渲染節點卡片
