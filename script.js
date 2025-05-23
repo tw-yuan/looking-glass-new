@@ -49,12 +49,22 @@ function createNodeCard(node) {
 
 // 設置模態框
 function setupModal() {
-    const modal = new bootstrap.Modal(document.getElementById('nodeModal'));
+    const modal = document.getElementById('nodeModal');
+    const modalInstance = new bootstrap.Modal(modal);
     
     // ESC 鍵關閉模態框
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && document.getElementById('nodeModal').classList.contains('show')) {
-            modal.hide();
+        if (event.key === 'Escape' && modal.classList.contains('show')) {
+            modalInstance.hide();
+        }
+    });
+
+    // 監聽模態框關閉事件
+    modal.addEventListener('hidden.bs.modal', () => {
+        // 清除測試結果
+        const resultContainer = modal.querySelector('.mt-4');
+        if (resultContainer) {
+            resultContainer.remove();
         }
     });
 }
