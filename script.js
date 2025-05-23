@@ -66,6 +66,11 @@ function setupModal() {
         if (resultContainer) {
             resultContainer.remove();
         }
+        // 清除目標主機欄位
+        const targetInput = modal.querySelector('input[type="text"]');
+        if (targetInput) {
+            targetInput.value = '';
+        }
     });
 }
 
