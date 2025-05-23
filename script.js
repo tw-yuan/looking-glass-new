@@ -8,10 +8,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         nodesData = await response.json();
         renderNodes();
         setupModal();
+        updateCopyrightYear();
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
 });
+
+// 更新版權年份
+function updateCopyrightYear() {
+    const yearElement = document.querySelector('.copyright-year');
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+}
 
 // 渲染節點卡片
 function renderNodes() {
