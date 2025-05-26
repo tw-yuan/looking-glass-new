@@ -55,6 +55,13 @@
       "provider": "Yuan",
       "provider-link": "https://yuan-tw.net",
       "tags": "u-tw-yuan:tanet"
+    },
+    {
+      "name": "TINP",
+      "location": "Taichung",
+      "provider": "cute_panda",
+      "provider-link": "https://github.com/asdf3601a",
+      "tags": "u-asdf3601a+AS18049"
     }
   ]
 } 
