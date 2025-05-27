@@ -17,3 +17,211 @@
 .modal.show {
     display: block;
 } 
+/*既有的 styles.css 內容 */
+.node-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-color: #e9ecef; /* */
+}
+
+.node-card:hover {
+    transform: translateY(-5px); /* */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* */
+    border-color: #0d6efd; /* */
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5); /* */
+}
+
+.modal.show {
+    display: block; /* */
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-mode .bg-white { /* 針對 node-card 內的 bg-white */
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .text-dark { /* 針對 node-card 內的 text-dark */
+    color: #f5f5f5 !important;
+}
+
+body.dark-mode .modal-content {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+}
+
+body.dark-mode .modal-header {
+    border-bottom: 1px solid #333;
+}
+
+body.dark-mode .modal-footer {
+    border-top: 1px solid #333;
+}
+
+body.dark-mode .bg-light { /* 包含 Modal 內的節點資訊背景、Footer */
+    background-color: #2c2c2c !important;
+}
+
+body.dark-mode .text-muted {
+    color: #a0a0a0 !important;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #2a2a2e;
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #888;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    background-color: #2a2a2e;
+    color: #e0e0e0;
+    border-color: #0d6efd; /* 維持 Bootstrap 的焦點藍色 */
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+body.dark-mode .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+body.dark-mode .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+body.dark-mode .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+body.dark-mode a {
+    color: #8ab4f8; /* 淺藍色連結 */
+}
+
+body.dark-mode a:hover {
+    color: #a7c5f9;
+}
+
+body.dark-mode .node-card {
+    background-color: #1e1e1e !important; /* 確保覆蓋 .bg-white */
+    border: 1px solid #3a3a3a; /* */
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+}
+
+body.dark-mode .node-card:hover {
+    border-color: #8ab4f8; /* */
+    box-shadow: 0 4px 12px rgba(138, 180, 248, 0.15); /* */
+}
+
+body.dark-mode .node-card .fw-semibold.fs-5 { /* 節點名稱 */
+    color: #f5f5f5 !important;
+}
+
+body.dark-mode hr {
+    border-top: 1px solid #333;
+}
+
+body.dark-mode h1, 
+body.dark-mode h2, 
+body.dark-mode h3, 
+body.dark-mode h4, 
+body.dark-mode h5, 
+body.dark-mode h6 {
+    color: #f5f5f5;
+}
+
+/* 測試結果區域的 pre 標籤 */
+body.dark-mode .modal-body pre {
+    background-color: #2c2c2c; /* 深色背景 */
+    color: #f0f0f0; /* 亮色文字 */
+    border: 1px solid #444; /* 邊框 */
+    padding: 10px;
+    border-radius: 4px;
+}
+
+
+/* Dark Mode Toggle Button Styles */
+.dark-mode-toggle-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #fff;
+    color: #212529; 
+    border: 1px solid #dee2e6;
+    border-radius: 30px; 
+    width: 60px; 
+    height: 34px; 
+    font-size: 16px; 
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 將單個圖示居中 */
+    padding: 0; /* 移除 padding，讓圖示透過 flex 居中 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1055; 
+}
+
+.dark-mode-toggle-button .icon-moon,
+.dark-mode-toggle-button .icon-sun {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.dark-mode-toggle-button:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dark-mode-toggle-button:focus,
+.dark-mode-toggle-button:active {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25), 0 4px 8px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+}
+
+body.dark-mode .dark-mode-toggle-button {
+    background-color: #262628; 
+    color: #e0e0e0; 
+    border: 1px solid #424242; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+}
+
+body.dark-mode .dark-mode-toggle-button:hover {
+    background-color: #313133;
+    border-color: #555555;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.25);
+}
+
+/* Mobile Optimizations for the button */
+@media (max-width: 768px) {
+    .dark-mode-toggle-button {
+        top: 15px;
+        right: 15px;
+        width: 56px; 
+        height: 32px;
+        font-size: 14px; 
+    }
+}
+
+@media (max-width: 576px) {
+    .dark-mode-toggle-button {
+        top: 10px;
+        right: 10px;
+        width: 50px;
+        height: 30px;
+    }
+}

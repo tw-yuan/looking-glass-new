@@ -9,7 +9,6 @@
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://lg.yuan-tw.net">
     
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZJEGGWYWC2"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -19,7 +18,6 @@
         gtag('config', 'G-ZJEGGWYWC2');
     </script>
     
-    <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Looking Glass - 網路監控工具">
     <meta property="og:description" content="由一群 BGP Player 維護的開源網路監控專案，提供全球網路節點的連接測試服務。">
     <meta property="og:type" content="website">
@@ -32,14 +30,12 @@
     <meta property="og:image:alt" content="Looking Glass - 網路監控工具">
     <meta property="og:updated_time" content="2025-05-23T00:00:00+08:00">
     
-    <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Looking Glass - 網路監控工具">
     <meta name="twitter:description" content="由一群 BGP Player 維護的開源網路監控專案，提供全球網路節點的連接測試服務。">
     <meta name="twitter:image" content="https://lg.yuan-tw.net/og-image.png">
     <meta name="twitter:image:alt" content="Looking Glass - 網路監控工具">
     
-    <!-- Schema.org Markup -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -91,14 +87,17 @@
 </head>
 <body>
     <main class="container py-5">
+        <button id="darkModeToggle" class="dark-mode-toggle-button" title="切換深色模式" aria-label="切換深色模式" aria-live="polite">
+            <i class="bi bi-moon-stars-fill icon-moon"></i>
+            <i class="bi bi-sun-fill icon-sun" style="display:none;"></i>
+        </button>
+
         <h1 class="text-center mb-2">Looking Glass</h1>
         <p class="text-center text-muted mb-4">由一群 BGP Player 維護的開源網路監控專案</p>
         
         <section class="row justify-content-center g-4" id="nodesContainer" aria-label="網路節點列表">
-            <!-- 節點卡片將由 JavaScript 動態生成 -->
-        </section>
+            </section>
 
-        <!-- 模態框 -->
         <div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" aria-labelledby="nodeModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -149,7 +148,7 @@
                                 </div>
                             </div>
                         </section>
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -200,7 +199,6 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="data/nodes.js"></script>
     <script src="script.js"></script>
 </body>
-</html> 
+</html>
