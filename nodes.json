@@ -15,6 +15,13 @@
       "tags": "u-tw-yuan:dada-chief"
     },
     {
+      "name": "DaDa-FET",
+      "location": "New Taipei City",
+      "provider": "CH",
+      "provider-link": "https://thisisch.net",
+      "tags": "u-HaeImCH:probe-tw-taipei-01-dada-fet"
+    },
+    {
       "name": "CoCoDigit",
       "location": "Taipei",
       "provider": "CoCoDigit",
