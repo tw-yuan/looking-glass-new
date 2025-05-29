@@ -19,17 +19,17 @@
 [data-theme="dark"] {
     --bg-color: #121212;
     --text-color: #e0e0e0;
-    --text-muted: #9e9e9e;
+    --text-muted: #b0b0b0;
     --card-bg: #1e1e1e;
-    --card-border: #333333;
+    --card-border: #444444;
     --card-hover-border: #4dabf7;
     --modal-bg: #1e1e1e;
     --modal-content-bg: #1e1e1e;
     --input-bg: #2a2a2a;
-    --input-border: #444444;
+    --input-border: #555555;
     --light-bg: #2a2a2a;
     --footer-bg: #1a1a1a;
-    --link-color: #4dabf7;
+    --link-color: #64b5f6;
     --pre-bg: #2a2a2a;
 }
 
@@ -129,6 +129,23 @@ body {
     color: var(--text-color);
 }
 
+/* Placeholder 文字顏色 */
+.form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #999999;
+    opacity: 1;
+}
+
+/* Select 選項深色模式 */
+[data-theme="dark"] .form-select option {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
 /* 背景顏色調整 */
 .bg-light {
     background-color: var(--light-bg) !important;
@@ -195,4 +212,23 @@ a:hover {
 [data-theme="dark"] .btn-outline-secondary:hover {
     background-color: var(--light-bg);
     color: var(--text-color);
+}
+
+/* 節點卡片內文字強化 */
+.node-card .text-dark {
+    color: var(--text-color) !important;
+}
+
+.node-card .small {
+    color: var(--text-muted) !important;
+}
+
+/* 表單標籤文字 */
+.form-label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+[data-theme="dark"] .form-label {
+    color: #d0d0d0;
 } 
