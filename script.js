@@ -223,7 +223,7 @@ function showNodeModal(node) {
                 </div>
                 <div class="bg-light p-3 rounded">
                     <h6 class="mb-2">測試輸出(ID: ${measurementData.id})</h6>
-                    <pre class="mb-0" style="white-space: pre;">${resultInfo.rawOutput}</pre>
+                    <pre class="mb-0 test-output">${resultInfo.rawOutput}</pre>
                 </div>
             `;
 
