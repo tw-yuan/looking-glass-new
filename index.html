@@ -105,6 +105,14 @@
             <!-- 節點卡片將由 JavaScript 動態生成 -->
         </section>
 
+        <!-- 申請新節點按鈕 -->
+        <div class="text-center mt-5">
+            <button class="btn btn-outline-primary btn-lg" id="addNodeBtn" aria-label="申請新增節點">
+                <i class="bi bi-plus-circle me-2"></i>申請新增節點
+            </button>
+            <p class="text-muted small mt-2">想要貢獻您的節點？歡迎提交申請！</p>
+        </div>
+
         <!-- 模態框 -->
         <div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" aria-labelledby="nodeModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -156,6 +164,66 @@
                                 </div>
                             </div>
                         </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 節點申請模態框 -->
+        <div class="modal fade" id="nodeApplicationModal" tabindex="-1" role="dialog" aria-labelledby="nodeApplicationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="nodeApplicationModalLabel">申請新增節點</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="nodeApplicationForm">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="nodeName" class="form-label fw-medium">節點名稱 *</label>
+                                    <input type="text" class="form-control" id="nodeName" placeholder="例如：CDX-NCHC" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="nodeLocation" class="form-label fw-medium">節點位置 *</label>
+                                    <input type="text" class="form-control" id="nodeLocation" placeholder="例如：Tainan, Taiwan" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="nodeProvider" class="form-label fw-medium">服務提供者 *</label>
+                                    <input type="text" class="form-control" id="nodeProvider" placeholder="例如：Yuan" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="providerWebsite" class="form-label fw-medium">提供者網站</label>
+                                    <input type="url" class="form-control" id="providerWebsite" placeholder="https://example.com">
+                                </div>
+                                <div class="col-12">
+                                    <label for="nodeTags" class="form-label fw-medium">節點標籤 *</label>
+                                    <input type="text" class="form-control" id="nodeTags" placeholder="例如：u-tw-yuan:cdx-nchc" required>
+                                    <div class="form-text">請提供 Globalping 節點的識別標籤</div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="contactInfo" class="form-label fw-medium">聯絡資訊 *</label>
+                                    <input type="email" class="form-control" id="contactInfo" placeholder="your-email@example.com" required>
+                                </div>
+                                <div class="col-12">
+                                    <label for="additionalInfo" class="form-label fw-medium">額外說明</label>
+                                    <textarea class="form-control" id="additionalInfo" rows="3" placeholder="請描述您的節點特色、網路環境或其他相關資訊..."></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="captchaQuestion" class="form-label fw-medium">驗證問題 *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text" id="captchaText">請計算：</span>
+                                        <input type="number" class="form-control" id="captchaAnswer" placeholder="答案" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-2"></i>提交申請
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal">取消</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderNodes();
         setupModal();
         updateCopyrightYear();
+        
+        // 初始化節點申請功能
+        initNodeApplication();
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -281,4 +284,157 @@ function updateThemeToggleButton(theme) {
         icon.className = 'bi bi-moon-fill';
         themeToggle.setAttribute('aria-label', '切換深色模式');
     }
-} 
+}
+
+// === 節點申請功能 ===
+
+// 加密配置 (混淆保護)
+const telegramConfig = {
+    // 這裡需要您填入實際的 Telegram Bot Token 和 Chat ID
+    // 格式：將 Bot Token 分段並進行簡單混淆
+    botTokenPart1: btoa('YOUR_BOT_TOKEN_PART1'), // Base64 編碼
+    botTokenPart2: btoa('YOUR_BOT_TOKEN_PART2'),
+    chatId: btoa('YOUR_CHAT_ID'),
+    // 簡單的 XOR 密鑰
+    xorKey: 123
+};
+
+// 解密 Telegram 配置
+function getTelegramConfig() {
+    try {
+        const token1 = atob(telegramConfig.botTokenPart1);
+        const token2 = atob(telegramConfig.botTokenPart2);
+        const chatId = atob(telegramConfig.chatId);
+        return {
+            botToken: token1 + token2,
+            chatId: chatId
+        };
+    } catch (error) {
+        console.error('無法解析 Telegram 配置');
+        return null;
+    }
+}
+
+// 初始化節點申請功能
+function initNodeApplication() {
+    const addNodeBtn = document.getElementById('addNodeBtn');
+    const modal = document.getElementById('nodeApplicationModal');
+    const form = document.getElementById('nodeApplicationForm');
+    
+    // 綁定按鈕事件
+    addNodeBtn.addEventListener('click', () => {
+        generateCaptcha();
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    });
+    
+    // 綁定表單提交事件
+    form.addEventListener('submit', handleNodeApplication);
+}
+
+// 生成驗證碼
+function generateCaptcha() {
+    const num1 = Math.floor(Math.random() * 20) + 1;
+    const num2 = Math.floor(Math.random() * 20) + 1;
+    const captchaText = document.getElementById('captchaText');
+    const captchaAnswer = document.getElementById('captchaAnswer');
+    
+    captchaText.textContent = `請計算：${num1} + ${num2} = `;
+    captchaAnswer.value = '';
+    captchaAnswer.dataset.correctAnswer = num1 + num2;
+}
+
+// 處理節點申請提交
+async function handleNodeApplication(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // 驗證 captcha
+    const captchaAnswer = document.getElementById('captchaAnswer');
+    const correctAnswer = parseInt(captchaAnswer.dataset.correctAnswer);
+    const userAnswer = parseInt(captchaAnswer.value);
+    
+    if (userAnswer !== correctAnswer) {
+        alert('驗證碼錯誤，請重新計算');
+        generateCaptcha();
+        return;
+    }
+    
+    // 收集表單資料
+    const formData = {
+        nodeName: document.getElementById('nodeName').value,
+        nodeLocation: document.getElementById('nodeLocation').value,
+        nodeProvider: document.getElementById('nodeProvider').value,
+        providerWebsite: document.getElementById('providerWebsite').value || '未提供',
+        nodeTags: document.getElementById('nodeTags').value,
+        contactInfo: document.getElementById('contactInfo').value,
+        additionalInfo: document.getElementById('additionalInfo').value || '無',
+        timestamp: new Date().toLocaleString('zh-TW')
+    };
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>提交中...';
+        
+        await sendToTelegram(formData);
+        
+        // 成功提示
+        alert('申請已成功提交！我們會盡快審核您的申請。');
+        
+        // 關閉模態框並重置表單
+        const modal = bootstrap.Modal.getInstance(document.getElementById('nodeApplicationModal'));
+        modal.hide();
+        form.reset();
+        
+    } catch (error) {
+        console.error('提交失敗:', error);
+        alert('提交失敗，請稍後再試。如果問題持續，請直接聯繫我們。');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+// 發送到 Telegram
+async function sendToTelegram(data) {
+    const config = getTelegramConfig();
+    if (!config) {
+        throw new Error('Telegram 配置錯誤');
+    }
+    
+    const message = `🔥 新節點申請
+    
+📍 節點名稱：${data.nodeName}
+🌍 節點位置：${data.nodeLocation}
+👤 服務提供者：${data.nodeProvider}
+🌐 提供者網站：${data.providerWebsite}
+🏷️ 節點標籤：${data.nodeTags}
+📧 聯絡資訊：${data.contactInfo}
+📝 額外說明：${data.additionalInfo}
+⏰ 提交時間：${data.timestamp}
+
+請審核此申請並更新 nodes.json`;
+    
+    const telegramUrl = `https://api.telegram.org/bot${config.botToken}/sendMessage`;
+    
+    const response = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            chat_id: config.chatId,
+            text: message,
+            parse_mode: 'HTML'
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Telegram API 請求失敗');
+    }
+}
+
+ 
