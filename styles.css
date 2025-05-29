@@ -30,11 +30,13 @@
         max-width: fit-content;
         width: auto;
         margin: 1.75rem auto;
+        min-width: 800px; /* 初始最小寬度 */
     }
     
     .modal-content {
         width: max-content;
         max-width: 95vw;
+        min-width: 800px; /* 確保初始畫面不會太窄 */
     }
 }
 
