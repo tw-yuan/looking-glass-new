@@ -1,13 +1,61 @@
+/* CSS 變數定義 */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --text-muted: #6c757d;
+    --card-bg: #ffffff;
+    --card-border: #e9ecef;
+    --card-hover-border: #0d6efd;
+    --modal-bg: #ffffff;
+    --modal-content-bg: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --light-bg: #f8f9fa;
+    --footer-bg: #f8f9fa;
+    --link-color: #0d6efd;
+    --pre-bg: #f8f9fa;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --text-muted: #9e9e9e;
+    --card-bg: #1e1e1e;
+    --card-border: #333333;
+    --card-hover-border: #4dabf7;
+    --modal-bg: #1e1e1e;
+    --modal-content-bg: #1e1e1e;
+    --input-bg: #2a2a2a;
+    --input-border: #444444;
+    --light-bg: #2a2a2a;
+    --footer-bg: #1a1a1a;
+    --link-color: #4dabf7;
+    --pre-bg: #2a2a2a;
+}
+
+/* 基礎樣式 */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
 .node-card {
     cursor: pointer;
     transition: all 0.3s ease;
-    border-color: #e9ecef;
+    border-color: var(--card-border) !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
 }
 
 .node-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #0d6efd;
+    border-color: var(--card-hover-border) !important;
 }
 
 .modal-backdrop {
@@ -46,4 +94,105 @@
         overflow-x: auto;
         white-space: pre;
     }
+}
+
+/* Modal 深色模式樣式 */
+.modal-content {
+    background-color: var(--modal-content-bg);
+    color: var(--text-color);
+}
+
+.modal-header {
+    border-bottom-color: var(--card-border);
+}
+
+.modal-header .btn-close {
+    filter: var(--btn-close-filter, none);
+}
+
+[data-theme="dark"] .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* 表單元素深色模式 */
+.form-control,
+.form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--input-bg);
+    border-color: var(--link-color);
+    color: var(--text-color);
+}
+
+/* 背景顏色調整 */
+.bg-light {
+    background-color: var(--light-bg) !important;
+}
+
+/* 頁尾深色模式 */
+footer {
+    background-color: var(--footer-bg) !important;
+}
+
+/* 連結顏色 */
+a {
+    color: var(--link-color);
+}
+
+a:hover {
+    color: var(--link-color);
+    opacity: 0.8;
+}
+
+/* 測試輸出區域 */
+.test-output {
+    background-color: var(--pre-bg);
+    color: var(--text-color);
+}
+
+/* 主題切換按鈕 */
+#themeToggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] #themeToggle {
+    background-color: var(--light-bg);
+    border-color: var(--card-border);
+    color: var(--text-color);
+}
+
+/* 按鈕深色模式 */
+[data-theme="dark"] .btn-primary {
+    background-color: #4dabf7;
+    border-color: #4dabf7;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background-color: #339af0;
+    border-color: #339af0;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-color);
+    border-color: var(--card-border);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--light-bg);
+    color: var(--text-color);
 } 

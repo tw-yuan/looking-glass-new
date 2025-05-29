@@ -4,6 +4,9 @@ let nodesData = { nodes: [] };
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // 初始化主題
+        initTheme();
+        
         const response = await fetch('nodes.json');
         nodesData = await response.json();
         renderNodes();
@@ -238,4 +241,44 @@ function showNodeModal(node) {
 
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     modalInstance.show();
+}
+
+// 初始化主題
+function initTheme() {
+    // 檢查本地存儲的主題設定或系統偏好
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    
+    // 設定主題
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeToggleButton(theme);
+    
+    // 設定主題切換按鈕事件
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', toggleTheme);
+}
+
+// 切換主題
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeToggleButton(newTheme);
+}
+
+// 更新主題切換按鈕圖示
+function updateThemeToggleButton(theme) {
+    const themeToggle = document.getElementById('themeToggle');
+    const icon = themeToggle.querySelector('i');
+    
+    if (theme === 'dark') {
+        icon.className = 'bi bi-sun-fill';
+        themeToggle.setAttribute('aria-label', '切換淺色模式');
+    } else {
+        icon.className = 'bi bi-moon-fill';
+        themeToggle.setAttribute('aria-label', '切換深色模式');
+    }
 } 
