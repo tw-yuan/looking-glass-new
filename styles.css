@@ -146,6 +146,11 @@ body {
     color: var(--text-color);
 }
 
+/* 修復深色模式下的下拉箭頭 */
+[data-theme="dark"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23e0e0e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
 /* 背景顏色調整 */
 .bg-light {
     background-color: var(--light-bg) !important;
