@@ -196,6 +196,16 @@ a:hover {
     transition: all 0.3s ease;
 }
 
+/* 手機版主題切換按鈕調整 */
+@media (max-width: 768px) {
+    #themeToggle {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-left: auto;
+    }
+}
+
 [data-theme="dark"] #themeToggle {
     background-color: var(--light-bg);
     border-color: var(--card-border);
@@ -311,6 +321,25 @@ a:hover {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+}
+
+/* 手機版顏色選擇器調整 */
+@media (max-width: 768px) {
+    .color-picker {
+        position: fixed;
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        gap: 6px;
+        padding: 6px 10px;
+    }
+    
+    .color-option {
+        width: 20px;
+        height: 20px;
+    }
 }
 
 .color-option {

@@ -11,7 +11,7 @@
     },
     {
       "name": "DaDa-Chief",
-      "name_zh": "大大寬頻x是方",
+      "name_zh": "大大寬頻(是方)",
       "location": "New Taipei City",
       "location_zh": "新北",
       "provider": "CH",
@@ -20,7 +20,7 @@
     },
     {
       "name": "DaDa-FET",
-      "name_zh": "大大寬頻x遠傳",
+      "name_zh": "大大寬頻(遠傳)",
       "location": "New Taipei City",
       "location_zh": "新北",
       "provider": "CH",
@@ -92,7 +92,7 @@
     },
     {
       "name": "Liberally Network",
-      "name_zh": "簡單資訊x台北",
+      "name_zh": "簡單資訊",
       "location": "Taipei",
       "location_zh": "台北",
       "provider": "Ricky",
@@ -101,7 +101,7 @@
     },
     {
       "name": "Liberally Network",
-      "name_zh": "簡單資訊x香港",
+      "name_zh": "簡單資訊",
       "location": "Hong Kong",
       "location_zh": "香港",
       "provider": "Ricky",
