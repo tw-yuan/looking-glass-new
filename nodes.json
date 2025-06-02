@@ -107,6 +107,15 @@
       "provider": "Ricky",
       "provider-link": "https://www.simple.taipei",
       "tags": "u-simple-taipei:hongkong-standard"
+    },
+    {
+      "name": "Liberally Network",
+      "name_zh": "簡單資訊",
+      "location": "United States",
+      "location_zh": "美國",
+      "provider": "Ricky",
+      "provider-link": "https://www.simple.taipei",
+      "tags": "u-simple-taipei:unitedstates-lowend"
     }
   ]
 } 
