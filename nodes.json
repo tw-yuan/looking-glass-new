@@ -11,7 +11,7 @@
     },
     {
       "name": "DaDa-Chief",
-      "name_zh": "是方電訊",
+      "name_zh": "大大寬頻x是方",
       "location": "New Taipei City",
       "location_zh": "新北",
       "provider": "CH",
@@ -20,7 +20,7 @@
     },
     {
       "name": "DaDa-FET",
-      "name_zh": "遠傳電信",
+      "name_zh": "大大寬頻x遠傳",
       "location": "New Taipei City",
       "location_zh": "新北",
       "provider": "CH",
@@ -64,8 +64,8 @@
       "tags": "u-tw-yuan:Kbro-TFN-PIF"
     },
     {
-      "name": "NCSE",
-      "name_zh": "NCSE 網路",
+      "name": "NCSE Network",
+      "name_zh": "國雲網路",
       "location": "Taipei",
       "location_zh": "台北",
       "provider": "NCSE Network",
@@ -74,7 +74,7 @@
     },
     {
       "name": "TANET",
-      "name_zh": "學術網路",
+      "name_zh": "臺灣學術網路",
       "location": "Yilan",
       "location_zh": "宜蘭",
       "provider": "Yuan",
@@ -83,7 +83,7 @@
     },
     {
       "name": "TINP",
-      "name_zh": "TINP",
+      "name_zh": "台灣基礎網路",
       "location": "Taichung",
       "location_zh": "台中",
       "provider": "cute_panda",
