@@ -44,8 +44,9 @@ function createNodeCard(node) {
     
     col.innerHTML = `
         <div class="bg-white border border-2 rounded-3 p-4 text-center shadow-sm h-100 node-card">
-            <div class="fw-semibold fs-5 text-dark mb-2">${node.name}</div>
-            <div class="text-muted mb-2">${node.location}</div>
+            <div class="fw-semibold fs-5 text-dark mb-1">${node.name}</div>
+            ${node.name_zh ? `<div class="text-muted small mb-2">${node.name_zh}</div>` : '<div class="mb-2"></div>'}
+            <div class="text-muted mb-2">${node.location_zh ? `${node.location_zh} • ${node.location}` : node.location}</div>
             <div class="text-muted small mb-3">
             <span>Provider: </span>
                 <a href="${node['provider-link']}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
@@ -99,8 +100,8 @@ function showNodeModal(node) {
     const targetInput = modal.querySelector('input[type="text"]');
     const testTypeSelect = modal.querySelector('select');
 
-    modalTitle.textContent = node.name;
-    nodeLocation.textContent = node.location;
+    modalTitle.innerHTML = node.name_zh ? `${node.name}<small class="text-muted ms-2">${node.name_zh}</small>` : node.name;
+    nodeLocation.textContent = node.location_zh ? `${node.location_zh} • ${node.location}` : node.location;
     providerLink.textContent = node.provider;
     providerLink.href = node['provider-link'];
 

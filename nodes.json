@@ -2,70 +2,90 @@
   "nodes": [
     {
       "name": "CDX-NCHC",
+      "name_zh": "國網中心",
       "location": "Tainan",
+      "location_zh": "台南",
       "provider": "Yuan",
       "provider-link": "https://yuan-tw.net",
       "tags": "u-tw-yuan:cdx-nchc"
     },
     {
       "name": "DaDa-Chief",
+      "name_zh": "是方電訊",
       "location": "New Taipei City",
+      "location_zh": "新北市",
       "provider": "CH",
       "provider-link": "./",
       "tags": "u-tw-yuan:dada-chief"
     },
     {
       "name": "DaDa-FET",
+      "name_zh": "遠傳電信",
       "location": "New Taipei City",
+      "location_zh": "新北市",
       "provider": "CH",
       "provider-link": "https://thisisch.net",
       "tags": "u-HaeImCH:probe-tw-taipei-01-dada-fet"
     },
     {
       "name": "CoCoDigit",
+      "name_zh": "可可數位",
       "location": "Taipei",
+      "location_zh": "台北",
       "provider": "CoCoDigit",
       "provider-link": "https://www.cocodigit.com/",
       "tags": "u-tw-yuan:CoCoDigit"
     },
     {
       "name": "FET",
+      "name_zh": "遠傳電信",
       "location": "New Taipei City",
+      "location_zh": "新北市",
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:FET-NewTaipei"
     },
     {
       "name": "HINET",
+      "name_zh": "中華電信",
       "location": "Taichung",
+      "location_zh": "台中",
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:HINET-TXG"
     },
     {
       "name": "Kbro-TFN",
+      "name_zh": "凱擘寬頻",
       "location": "Pingtung",
+      "location_zh": "屏東",
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:Kbro-TFN-PIF"
     },
     {
       "name": "NCSE",
+      "name_zh": "NCSE 網路",
       "location": "Taipei",
+      "location_zh": "台北",
       "provider": "NCSE Network",
       "provider-link": "https://ncse.tw",
       "tags": "u-NCSE-NETWORK:tpe-1"
     },
     {
       "name": "TANET",
+      "name_zh": "學術網路",
       "location": "Yilan",
+      "location_zh": "宜蘭",
       "provider": "Yuan",
       "provider-link": "https://yuan-tw.net",
       "tags": "u-tw-yuan:tanet"
     },
     {
       "name": "TINP",
+      "name_zh": "TINP",
       "location": "Taichung",
+      "location_zh": "台中",
       "provider": "cute_panda",
       "provider-link": "https://github.com/asdf3601a",
       "tags": "u-asdf3601a+AS18049"

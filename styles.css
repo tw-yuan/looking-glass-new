@@ -228,6 +228,24 @@ a:hover {
     color: var(--text-muted) !important;
 }
 
+/* 中英文混合顯示優化 */
+.node-card .text-muted.small {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Modal 標題中的中文副標題 */
+.modal-title small {
+    font-size: 0.85em;
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+/* 位置顯示的分隔符號 */
+.node-card .text-muted:has(•) {
+    font-size: 0.95rem;
+}
+
 /* 表單標籤文字 */
 .form-label {
     color: var(--text-color);
