@@ -89,6 +89,24 @@
       "provider": "cute_panda",
       "provider-link": "https://github.com/asdf3601a",
       "tags": "u-asdf3601a+AS18049"
+    },
+    {
+      "name": "Simple x Taipei",
+      "name_zh": "簡單資訊",
+      "location": "Taipei",
+      "location_zh": "台北",
+      "provider": "Ricky",
+      "provider-link": "https://www.simple.taipei",
+      "tags": "u-simple-taipei:taipei-standard"
+    },
+    {
+      "name": "Simple x Hong Kong",
+      "name_zh": "簡單資訊",
+      "location": "Hong Kong",
+      "location_zh": "香港",
+      "provider": "Ricky",
+      "provider-link": "https://www.simple.taipei",
+      "tags": "u-simple-taipei:hongkong-standard"
     }
   ]
 } 
