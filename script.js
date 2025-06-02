@@ -344,17 +344,16 @@ function updateFaviconColor(color) {
         // 創建新的 SVG 與更新的顏色
         const newFaviconUrl = `data:image/svg+xml,${encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-                <circle cx="64" cy="64" r="60" fill="${colorMap[color]}" stroke="#ffffff" stroke-width="4"/>
                 <g transform="translate(64, 64)">
-                    <circle cx="-8" cy="-8" r="28" fill="none" stroke="#ffffff" stroke-width="6"/>
-                    <line x1="-8" y1="-28" x2="-8" y2="12" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
-                    <line x1="-28" y1="-8" x2="12" y2="-8" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
-                    <circle cx="-8" cy="-8" r="3" fill="#ffffff"/>
-                    <circle cx="-8" cy="-18" r="2" fill="#ffffff" opacity="0.8"/>
-                    <circle cx="2" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
-                    <circle cx="-18" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
-                    <circle cx="-8" cy="2" r="2" fill="#ffffff" opacity="0.8"/>
-                    <line x1="12" y1="12" x2="28" y2="28" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+                    <circle cx="-8" cy="-8" r="32" fill="rgba(255,255,255,0.1)" stroke="${colorMap[color]}" stroke-width="8"/>
+                    <line x1="-8" y1="-32" x2="-8" y2="16" stroke="${colorMap[color]}" stroke-width="3" opacity="0.3"/>
+                    <line x1="-32" y1="-8" x2="16" y2="-8" stroke="${colorMap[color]}" stroke-width="3" opacity="0.3"/>
+                    <circle cx="-8" cy="-8" r="5" fill="${colorMap[color]}"/>
+                    <circle cx="-8" cy="-20" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="4" cy="-8" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="-20" cy="-8" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="-8" cy="4" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <line x1="16" y1="16" x2="36" y2="36" stroke="${colorMap[color]}" stroke-width="10" stroke-linecap="round"/>
                 </g>
             </svg>
         `)}`;
