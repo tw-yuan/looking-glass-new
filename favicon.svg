@@ -2,27 +2,23 @@
   <!-- 背景圓形 -->
   <circle cx="64" cy="64" r="60" fill="#0d6efd" stroke="#ffffff" stroke-width="4"/>
   
-  <!-- 網路節點和連線 -->
-  <!-- 中心節點 -->
-  <circle cx="64" cy="64" r="8" fill="#ffffff"/>
-  
-  <!-- 周圍節點 -->
-  <circle cx="64" cy="32" r="6" fill="#ffffff"/>
-  <circle cx="90" cy="48" r="6" fill="#ffffff"/>
-  <circle cx="90" cy="80" r="6" fill="#ffffff"/>
-  <circle cx="64" cy="96" r="6" fill="#ffffff"/>
-  <circle cx="38" cy="80" r="6" fill="#ffffff"/>
-  <circle cx="38" cy="48" r="6" fill="#ffffff"/>
-  
-  <!-- 連接線 -->
-  <line x1="64" y1="64" x2="64" y2="32" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  <line x1="64" y1="64" x2="90" y2="48" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  <line x1="64" y1="64" x2="90" y2="80" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  <line x1="64" y1="64" x2="64" y2="96" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  <line x1="64" y1="64" x2="38" y2="80" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  <line x1="64" y1="64" x2="38" y2="48" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
-  
-  <!-- 放大鏡效果 -->
-  <circle cx="64" cy="64" r="20" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.5"/>
-  <line x1="78" y1="78" x2="92" y2="92" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  <!-- 放大鏡主體 -->
+  <g transform="translate(64, 64)">
+    <!-- 放大鏡圓圈 -->
+    <circle cx="-8" cy="-8" r="28" fill="none" stroke="#ffffff" stroke-width="6"/>
+    
+    <!-- 放大鏡內部的網格線（代表網路） -->
+    <line x1="-8" y1="-28" x2="-8" y2="12" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+    <line x1="-28" y1="-8" x2="12" y2="-8" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+    
+    <!-- 放大鏡內的節點 -->
+    <circle cx="-8" cy="-8" r="3" fill="#ffffff"/>
+    <circle cx="-8" cy="-18" r="2" fill="#ffffff" opacity="0.8"/>
+    <circle cx="2" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
+    <circle cx="-18" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
+    <circle cx="-8" cy="2" r="2" fill="#ffffff" opacity="0.8"/>
+    
+    <!-- 放大鏡把手 -->
+    <line x1="12" y1="12" x2="28" y2="28" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  </g>
 </svg>

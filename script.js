@@ -251,13 +251,20 @@ function initTheme() {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
     
-    // 設定主題
+    // 檢查本地存儲的顏色設定
+    const savedColor = localStorage.getItem('themeColor') || 'blue';
+    
+    // 設定主題和顏色
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-color', savedColor);
     updateThemeToggleButton(theme);
     
     // 設定主題切換按鈕事件
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', toggleTheme);
+    
+    // 初始化顏色選擇器
+    initColorPicker(savedColor);
 }
 
 // 切換主題
@@ -281,6 +288,77 @@ function updateThemeToggleButton(theme) {
     } else {
         icon.className = 'bi bi-moon-fill';
         themeToggle.setAttribute('aria-label', '切換深色模式');
+    }
+}
+
+// 初始化顏色選擇器
+function initColorPicker(currentColor) {
+    const colorOptions = document.querySelectorAll('.color-option');
+    
+    // 標記當前顏色
+    colorOptions.forEach(option => {
+        if (option.dataset.color === currentColor) {
+            option.classList.add('active');
+        }
+        
+        // 添加點擊事件
+        option.addEventListener('click', function() {
+            const newColor = this.dataset.color;
+            changeThemeColor(newColor);
+        });
+    });
+}
+
+// 改變主題顏色
+function changeThemeColor(color) {
+    // 更新 HTML 屬性
+    document.documentElement.setAttribute('data-color', color);
+    
+    // 保存到 localStorage
+    localStorage.setItem('themeColor', color);
+    
+    // 更新選中狀態
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    document.querySelector(`.color-option[data-color="${color}"]`).classList.add('active');
+    
+    // 更新 favicon 顏色
+    updateFaviconColor(color);
+}
+
+// 更新 favicon 顏色
+function updateFaviconColor(color) {
+    const colorMap = {
+        blue: '#0d6efd',
+        green: '#28a745',
+        purple: '#6f42c1',
+        orange: '#fd7e14',
+        red: '#dc3545',
+        teal: '#20c997'
+    };
+    
+    // 獲取 favicon SVG
+    const favicon = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
+    if (favicon) {
+        // 創建新的 SVG 與更新的顏色
+        const newFaviconUrl = `data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+                <circle cx="64" cy="64" r="60" fill="${colorMap[color]}" stroke="#ffffff" stroke-width="4"/>
+                <g transform="translate(64, 64)">
+                    <circle cx="-8" cy="-8" r="28" fill="none" stroke="#ffffff" stroke-width="6"/>
+                    <line x1="-8" y1="-28" x2="-8" y2="12" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+                    <line x1="-28" y1="-8" x2="12" y2="-8" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+                    <circle cx="-8" cy="-8" r="3" fill="#ffffff"/>
+                    <circle cx="-8" cy="-18" r="2" fill="#ffffff" opacity="0.8"/>
+                    <circle cx="2" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
+                    <circle cx="-18" cy="-8" r="2" fill="#ffffff" opacity="0.8"/>
+                    <circle cx="-8" cy="2" r="2" fill="#ffffff" opacity="0.8"/>
+                    <line x1="12" y1="12" x2="28" y2="28" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+                </g>
+            </svg>
+        `)}`;
+        favicon.href = newFaviconUrl;
     }
 }
 
