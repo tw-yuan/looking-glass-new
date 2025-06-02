@@ -41,8 +41,9 @@ function createNodeCard(node) {
     
     col.innerHTML = `
         <div class="bg-white border border-2 rounded-3 p-4 text-center shadow-sm h-100 node-card">
-            <div class="fw-semibold fs-5 text-dark mb-2">${node.name}</div>
-            <div class="text-muted mb-2">${node.location}</div>
+            <div class="fw-semibold fs-5 text-dark mb-1">${node.name}</div>
+            ${node.name_zh ? `<div class="text-muted small mb-2">${node.name_zh}</div>` : '<div class="mb-2"></div>'}
+            <div class="text-muted mb-2">${node.location_zh ? `${node.location_zh} • ${node.location}` : node.location}</div>
             <div class="text-muted small mb-3">
             <span>Provider: </span>
                 <a href="${node['provider-link']}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
@@ -96,8 +97,8 @@ function showNodeModal(node) {
     const targetInput = modal.querySelector('input[type="text"]');
     const testTypeSelect = modal.querySelector('select');
 
-    modalTitle.textContent = node.name;
-    nodeLocation.textContent = node.location;
+    modalTitle.innerHTML = node.name_zh ? `${node.name}<small class="text-muted ms-2">${node.name_zh}</small>` : node.name;
+    nodeLocation.textContent = node.location_zh ? `${node.location_zh} • ${node.location}` : node.location;
     providerLink.textContent = node.provider;
     providerLink.href = node['provider-link'];
 
@@ -250,13 +251,20 @@ function initTheme() {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
     
-    // 設定主題
+    // 檢查本地存儲的顏色設定
+    const savedColor = localStorage.getItem('themeColor') || 'blue';
+    
+    // 設定主題和顏色
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-color', savedColor);
     updateThemeToggleButton(theme);
     
     // 設定主題切換按鈕事件
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', toggleTheme);
+    
+    // 初始化顏色選擇器
+    initColorPicker(savedColor);
 }
 
 // 切換主題
@@ -281,4 +289,77 @@ function updateThemeToggleButton(theme) {
         icon.className = 'bi bi-moon-fill';
         themeToggle.setAttribute('aria-label', '切換深色模式');
     }
-} 
+}
+
+// 初始化顏色選擇器
+function initColorPicker(currentColor) {
+    const colorOptions = document.querySelectorAll('.color-option');
+    
+    // 標記當前顏色
+    colorOptions.forEach(option => {
+        if (option.dataset.color === currentColor) {
+            option.classList.add('active');
+        }
+        
+        // 添加點擊事件
+        option.addEventListener('click', function() {
+            const newColor = this.dataset.color;
+            changeThemeColor(newColor);
+        });
+    });
+}
+
+// 改變主題顏色
+function changeThemeColor(color) {
+    // 更新 HTML 屬性
+    document.documentElement.setAttribute('data-color', color);
+    
+    // 保存到 localStorage
+    localStorage.setItem('themeColor', color);
+    
+    // 更新選中狀態
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    document.querySelector(`.color-option[data-color="${color}"]`).classList.add('active');
+    
+    // 更新 favicon 顏色
+    updateFaviconColor(color);
+}
+
+// 更新 favicon 顏色
+function updateFaviconColor(color) {
+    const colorMap = {
+        blue: '#0d6efd',
+        green: '#28a745',
+        purple: '#6f42c1',
+        orange: '#fd7e14',
+        red: '#dc3545',
+        teal: '#20c997'
+    };
+    
+    // 獲取 favicon SVG
+    const favicon = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
+    if (favicon) {
+        // 創建新的 SVG 與更新的顏色
+        const newFaviconUrl = `data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+                <g transform="translate(64, 64)">
+                    <circle cx="-8" cy="-8" r="32" fill="rgba(255,255,255,0.1)" stroke="${colorMap[color]}" stroke-width="8"/>
+                    <line x1="-8" y1="-32" x2="-8" y2="16" stroke="${colorMap[color]}" stroke-width="3" opacity="0.3"/>
+                    <line x1="-32" y1="-8" x2="16" y2="-8" stroke="${colorMap[color]}" stroke-width="3" opacity="0.3"/>
+                    <circle cx="-8" cy="-8" r="5" fill="${colorMap[color]}"/>
+                    <circle cx="-8" cy="-20" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="4" cy="-8" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="-20" cy="-8" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <circle cx="-8" cy="4" r="3" fill="${colorMap[color]}" opacity="0.7"/>
+                    <line x1="16" y1="16" x2="36" y2="36" stroke="${colorMap[color]}" stroke-width="10" stroke-linecap="round"/>
+                </g>
+            </svg>
+        `)}`;
+        favicon.href = newFaviconUrl;
+    }
+}
+
+
+ 

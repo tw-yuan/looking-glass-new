@@ -9,6 +9,13 @@
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://lg.yuan-tw.net">
     
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZJEGGWYWC2"></script>
     <script>
@@ -26,7 +33,7 @@
     <meta property="og:url" content="https://lg.yuan-tw.net">
     <meta property="og:site_name" content="Looking Glass">
     <meta property="og:locale" content="zh_TW">
-    <meta property="og:image" content="https://lg.yuan-tw.net/og-image.png">
+    <meta property="og:image" content="https://lg.yuan-tw.net/og-image.svg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Looking Glass - 網路監控工具">
@@ -36,7 +43,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Looking Glass - 網路監控工具">
     <meta name="twitter:description" content="由一群 BGP Player 維護的開源網路監控專案，提供全球網路節點的連接測試服務。">
-    <meta name="twitter:image" content="https://lg.yuan-tw.net/og-image.png">
+    <meta name="twitter:image" content="https://lg.yuan-tw.net/og-image.svg">
     <meta name="twitter:image:alt" content="Looking Glass - 網路監控工具">
     
     <!-- Schema.org Markup -->
@@ -90,20 +97,28 @@
     <link href="styles.css" rel="stylesheet">
 </head>
 <body>
+    <!-- 顏色選擇器 -->
+    <div class="color-picker" id="colorPicker">
+        <div class="color-option" data-color="blue" title="藍色主題"></div>
+        <div class="color-option" data-color="green" title="綠色主題"></div>
+        <div class="color-option" data-color="purple" title="紫色主題"></div>
+        <div class="color-option" data-color="orange" title="橘色主題"></div>
+        <div class="color-option" data-color="red" title="紅色主題"></div>
+        <div class="color-option" data-color="teal" title="青色主題"></div>
+    </div>
     <main class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="flex-grow-1">
-                <h1 class="text-center mb-2">Looking Glass</h1>
-                <p class="text-center text-muted mb-0">由一群 BGP Player 維護的開源網路監控專案</p>
-            </div>
-            <button class="btn btn-outline-secondary btn-sm ms-3" id="themeToggle" aria-label="切換深色模式">
-                <i class="bi bi-moon-fill"></i>
-            </button>
+        <button class="btn btn-outline-secondary btn-sm" id="themeToggle" aria-label="切換深色模式">
+            <i class="bi bi-moon-fill"></i>
+        </button>
+        <div class="text-center mb-4">
+            <h1 class="mb-2">Looking Glass</h1>
+            <p class="text-muted mb-0">由一群 BGP Player 維護的開源網路監控專案</p>
         </div>
         
         <section class="row justify-content-center g-4" id="nodesContainer" aria-label="網路節點列表">
             <!-- 節點卡片將由 JavaScript 動態生成 -->
         </section>
+
 
         <!-- 模態框 -->
         <div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" aria-labelledby="nodeModalLabel" aria-hidden="true">
@@ -160,6 +175,7 @@
                 </div>
             </div>
         </div>
+
     </main>
 
     <footer class="bg-light py-5 mt-5">
@@ -168,7 +184,7 @@
                 <div class="col-md-6">
                     <h2 class="h5 mb-3">關於我們</h2>
                     <p class="text-muted mb-4">
-                        這是由 Zhuyuan、CH、Yuan 共同維護的開源專案<br>使用 Smokeping 以及 Globalping 監測網路品質。
+                        這是由 Zhuyuan、CH、Yuan 共同維護的開源專案，使用 Smokeping 以及 Globalping 監測網路品質。
                         <br>如想新增使用節點，請至Github提交 <a href="https://github.com/tw-yuan/looking-glass-new" class="text-decoration-none" target="_blank" rel="noopener">Pull Request</a>。<br>想了解網路品質？請至 <a href="https://smokeping.zhuyuan.tw" class="text-decoration-none" target="_blank" rel="noopener">Smokeping</a> 查看，新增監控對象請與我們聯繫。                    
                     </p>
                 </div>

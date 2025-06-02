@@ -1,18 +1,22 @@
 /* CSS 變數定義 */
 :root {
+    --primary-color: #0d6efd;
+    --primary-dark: #0056b3;
+    --primary-light: #4dabf7;
+    
     --bg-color: #ffffff;
     --text-color: #212529;
     --text-muted: #6c757d;
     --card-bg: #ffffff;
     --card-border: #e9ecef;
-    --card-hover-border: #0d6efd;
+    --card-hover-border: var(--primary-color);
     --modal-bg: #ffffff;
     --modal-content-bg: #ffffff;
     --input-bg: #ffffff;
     --input-border: #ced4da;
     --light-bg: #f8f9fa;
     --footer-bg: #f8f9fa;
-    --link-color: #0d6efd;
+    --link-color: var(--primary-color);
     --pre-bg: #f8f9fa;
 }
 
@@ -22,14 +26,14 @@
     --text-muted: #b0b0b0;
     --card-bg: #1e1e1e;
     --card-border: #444444;
-    --card-hover-border: #4dabf7;
+    --card-hover-border: var(--primary-light);
     --modal-bg: #1e1e1e;
     --modal-content-bg: #1e1e1e;
     --input-bg: #2a2a2a;
     --input-border: #555555;
     --light-bg: #2a2a2a;
     --footer-bg: #1a1a1a;
-    --link-color: #64b5f6;
+    --link-color: var(--primary-light);
     --pre-bg: #2a2a2a;
 }
 
@@ -192,21 +196,42 @@ a:hover {
     transition: all 0.3s ease;
 }
 
+/* 手機版主題切換按鈕調整 */
+@media (max-width: 768px) {
+    #themeToggle {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-left: auto;
+    }
+}
+
 [data-theme="dark"] #themeToggle {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
 }
 
+/* 按鈕樣式 */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
 /* 按鈕深色模式 */
 [data-theme="dark"] .btn-primary {
-    background-color: #4dabf7;
-    border-color: #4dabf7;
+    background-color: var(--primary-light);
+    border-color: var(--primary-light);
 }
 
 [data-theme="dark"] .btn-primary:hover {
-    background-color: #339af0;
-    border-color: #339af0;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 [data-theme="dark"] .btn-outline-secondary {
@@ -227,6 +252,120 @@ a:hover {
 .node-card .small {
     color: var(--text-muted) !important;
 }
+
+/* 中英文混合顯示優化 */
+.node-card .text-muted.small {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Modal 標題中的中文副標題 */
+.modal-title small {
+    font-size: 0.85em;
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+/* 位置顯示的分隔符號 */
+.node-card .text-muted:has(•) {
+    font-size: 0.95rem;
+}
+
+/* 主題色預設 */
+:root[data-color="blue"] {
+    --primary-color: #0d6efd;
+    --primary-dark: #0056b3;
+    --primary-light: #4dabf7;
+}
+
+:root[data-color="green"] {
+    --primary-color: #28a745;
+    --primary-dark: #1e7e34;
+    --primary-light: #48c766;
+}
+
+:root[data-color="purple"] {
+    --primary-color: #6f42c1;
+    --primary-dark: #59359a;
+    --primary-light: #8c68d3;
+}
+
+:root[data-color="orange"] {
+    --primary-color: #fd7e14;
+    --primary-dark: #dc6502;
+    --primary-light: #fd9843;
+}
+
+:root[data-color="red"] {
+    --primary-color: #dc3545;
+    --primary-dark: #c82333;
+    --primary-light: #e4606d;
+}
+
+:root[data-color="teal"] {
+    --primary-color: #20c997;
+    --primary-dark: #1ba47e;
+    --primary-light: #4dd0a7;
+}
+
+/* 主題色選擇器樣式 */
+.color-picker {
+    position: fixed;
+    top: 20px;
+    right: 70px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* 手機版顏色選擇器調整 */
+@media (max-width: 768px) {
+    .color-picker {
+        position: fixed;
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        gap: 6px;
+        padding: 6px 10px;
+    }
+    
+    .color-option {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+.color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.active {
+    border-color: var(--text-color);
+    box-shadow: 0 0 0 2px var(--card-bg);
+}
+
+.color-option[data-color="blue"] { background-color: #0d6efd; }
+.color-option[data-color="green"] { background-color: #28a745; }
+.color-option[data-color="purple"] { background-color: #6f42c1; }
+.color-option[data-color="orange"] { background-color: #fd7e14; }
+.color-option[data-color="red"] { background-color: #dc3545; }
+.color-option[data-color="teal"] { background-color: #20c997; }
 
 /* 表單標籤文字 */
 .form-label {
