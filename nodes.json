@@ -91,8 +91,8 @@
       "tags": "u-asdf3601a+AS18049"
     },
     {
-      "name": "Simple x Taipei",
-      "name_zh": "簡單資訊",
+      "name": "Liberally Network",
+      "name_zh": "簡單資訊x台北",
       "location": "Taipei",
       "location_zh": "台北",
       "provider": "Ricky",
@@ -100,8 +100,8 @@
       "tags": "u-simple-taipei:taipei-standard"
     },
     {
-      "name": "Simple x Hong Kong",
-      "name_zh": "簡單資訊",
+      "name": "Liberally Network",
+      "name_zh": "簡單資訊x香港",
       "location": "Hong Kong",
       "location_zh": "香港",
       "provider": "Ricky",
