@@ -260,7 +260,7 @@ function showNodeModal(node) {
                     </div>
                     <div class="text-muted small mt-2">
                         <i class="bi bi-info-circle"></i>
-                        雙棧環境下 ASN 可能不準確，請參考測試輸出
+                        IPv4/IPv6 混合環境下 ASN 資訊可能不準確
                     </div>
                 </div>
                 <div class="bg-light p-3 rounded">
