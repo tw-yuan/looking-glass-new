@@ -211,18 +211,57 @@ function showNodeModal(node) {
             console.log(resultInfo);
             console.log(resultInfo.rawOutput);
             
+            // 判斷目標是 IPv4 還是 IPv6
+            const isIPv6 = target.includes(':');
+            
+            // 嘗試從測試結果中提取實際使用的 IP 資訊
+            let actualNetwork = probeInfo.network;
+            let actualASN = probeInfo.asn;
+            let protocolInfo = isIPv6 ? 'IPv6' : 'IPv4';
+            
+            // 從原始輸出中嘗試解析更準確的資訊
+            const rawOutput = resultInfo.rawOutput || '';
+            
+            // 對於 traceroute 和 mtr，嘗試從輸出中提取實際的源 IP
+            let sourceIP = '';
+            if (testType === 'traceroute' || testType === 'mtr') {
+                // 嘗試匹配 "from" 後面的 IP 地址
+                const fromMatch = rawOutput.match(/from\s+([\d.]+|[a-fA-F0-9:]+)/);
+                if (fromMatch) {
+                    sourceIP = fromMatch[1];
+                    protocolInfo = sourceIP.includes(':') ? 'IPv6' : 'IPv4';
+                }
+            }
+            
+            // 對於 ping，檢查輸出中的協議資訊
+            if (testType === 'ping') {
+                if (rawOutput.includes('ping6') || rawOutput.includes('PING6')) {
+                    protocolInfo = 'IPv6';
+                } else if (rawOutput.includes('ping') || rawOutput.includes('PING')) {
+                    protocolInfo = 'IPv4';
+                }
+            }
+            
             resultContainer.innerHTML = `
                 <h5 class="mb-3">測試結果</h5>
                 <div class="bg-light p-3 rounded mb-3">
                     <h6 class="mb-2">探測點資訊</h6>
                     <div class="row">
                         <div class="col-md-6">
-                            <p class="mb-1"><strong>網路：</strong> ${probeInfo.network}</p>
-                            <p class="mb-1"><strong>ASN：</strong> ${probeInfo.asn}</p>
+                            <p class="mb-1"><strong>網路：</strong> ${actualNetwork}</p>
+                            <p class="mb-1"><strong>ASN：</strong> ${actualASN}</p>
+                            <p class="mb-1"><strong>使用協議：</strong> ${protocolInfo}</p>
+                            ${sourceIP ? `<p class="mb-1"><strong>源 IP：</strong> ${sourceIP}</p>` : ''}
                         </div>
                         <div class="col-md-6">
                             <p class="mb-1"><strong>DNS：</strong> ${probeInfo.resolvers.join(', ')}</p>
+                            <p class="mb-1"><strong>目標：</strong> ${target}</p>
                         </div>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-info-circle"></i> 
+                        注意：顯示的 ASN 資訊來自 Globalping API，可能不會區分 IPv4/IPv6。
+                        實際使用的協議請參考下方測試輸出。
                     </div>
                 </div>
                 <div class="bg-light p-3 rounded">
