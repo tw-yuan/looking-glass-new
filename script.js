@@ -258,11 +258,9 @@ function showNodeModal(node) {
                             <p class="mb-1"><strong>目標：</strong> ${target}</p>
                         </div>
                     </div>
-                    <div class="alert alert-info small mt-2 mb-0" role="alert">
-                        <i class="bi bi-info-circle me-1"></i>
-                        <strong>提示：</strong>顯示的網路和 ASN 資訊來自 Globalping API 的探測點基本資料，
-                        在雙棧環境下可能不會區分 IPv4/IPv6 的實際 ASN。
-                        請參考測試輸出中的實際路由資訊以獲得準確的網路路徑。
+                    <div class="text-muted small mt-2">
+                        <i class="bi bi-info-circle"></i>
+                        雙棧環境下 ASN 可能不準確，請參考測試輸出
                     </div>
                 </div>
                 <div class="bg-light p-3 rounded">
