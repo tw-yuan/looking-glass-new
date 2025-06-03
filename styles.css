@@ -375,4 +375,15 @@ a:hover {
 
 [data-theme="dark"] .form-label {
     color: #d0d0d0;
+}
+
+/* Alert 深色模式樣式 */
+[data-theme="dark"] .alert-info {
+    background-color: rgba(100, 181, 246, 0.1);
+    border-color: rgba(100, 181, 246, 0.3);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .alert-info strong {
+    color: #64b5f6;
 } 
