@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderNodes();
         setupModal();
         updateCopyrightYear();
+        
+        // 初始化批量測試功能
+        initBatchTest();
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -397,6 +400,305 @@ function updateFaviconColor(color) {
         `)}`;
         favicon.href = newFaviconUrl;
     }
+}
+
+// === 批量測試功能 ===
+
+let selectedNodes = new Set();
+let batchTestResults = new Map();
+
+// 初始化批量測試功能
+function initBatchTest() {
+    const batchTestBtn = document.getElementById('batchTestBtn');
+    const selectAllNodesBtn = document.getElementById('selectAllNodes');
+    const startBatchTestBtn = document.getElementById('startBatchTest');
+    
+    // 綁定按鈕事件
+    batchTestBtn.addEventListener('click', showBatchTestModal);
+    selectAllNodesBtn.addEventListener('change', toggleSelectAll);
+    startBatchTestBtn.addEventListener('click', startBatchTest);
+}
+
+// 顯示批量測試模態框
+function showBatchTestModal() {
+    const modal = document.getElementById('batchTestModal');
+    generateNodeSelectionList();
+    
+    const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+    modalInstance.show();
+}
+
+// 生成節點選擇列表
+function generateNodeSelectionList() {
+    const container = document.getElementById('nodeSelectionList');
+    container.innerHTML = '';
+    
+    nodesData.nodes.forEach((node, index) => {
+        const nodeItem = document.createElement('div');
+        nodeItem.className = 'node-selection-item';
+        
+        nodeItem.innerHTML = `
+            <div class="form-check">
+                <input class="form-check-input node-checkbox" type="checkbox" 
+                       id="node_${index}" data-node-index="${index}">
+                <label class="form-check-label" for="node_${index}">
+                    <div class="fw-medium">${node.name}</div>
+                    <div class="small text-muted">
+                        ${node.name_zh ? node.name_zh + ' • ' : ''}${node.location_zh || node.location}
+                    </div>
+                </label>
+            </div>
+        `;
+        
+        const checkbox = nodeItem.querySelector('.node-checkbox');
+        checkbox.addEventListener('change', updateSelectedNodes);
+        
+        container.appendChild(nodeItem);
+    });
+}
+
+// 更新選中的節點
+function updateSelectedNodes() {
+    selectedNodes.clear();
+    const checkboxes = document.querySelectorAll('.node-checkbox:checked');
+    checkboxes.forEach(checkbox => {
+        selectedNodes.add(parseInt(checkbox.dataset.nodeIndex));
+    });
+    
+    // 更新全選按鈕狀態
+    const selectAllBtn = document.getElementById('selectAllNodes');
+    const totalNodes = nodesData.nodes.length;
+    selectAllBtn.indeterminate = selectedNodes.size > 0 && selectedNodes.size < totalNodes;
+    selectAllBtn.checked = selectedNodes.size === totalNodes;
+    
+    // 更新開始測試按鈕狀態
+    const startBtn = document.getElementById('startBatchTest');
+    startBtn.disabled = selectedNodes.size === 0;
+    startBtn.innerHTML = selectedNodes.size === 0 
+        ? '<i class="bi bi-play-fill me-1"></i>請選擇節點'
+        : `<i class="bi bi-play-fill me-1"></i>開始測試 (${selectedNodes.size} 個節點)`;
+}
+
+// 全選/取消全選
+function toggleSelectAll() {
+    const selectAllBtn = document.getElementById('selectAllNodes');
+    const checkboxes = document.querySelectorAll('.node-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllBtn.checked;
+    });
+    
+    updateSelectedNodes();
+}
+
+// 開始批量測試
+async function startBatchTest() {
+    const target = document.getElementById('batchTarget').value.trim();
+    const testType = document.getElementById('batchTestType').value;
+    
+    if (!target) {
+        alert('請輸入目標主機');
+        return;
+    }
+    
+    if (selectedNodes.size === 0) {
+        alert('請選擇至少一個節點');
+        return;
+    }
+    
+    // 重置結果容器
+    batchTestResults.clear();
+    const resultsContainer = document.getElementById('batchResults');
+    resultsContainer.innerHTML = '';
+    
+    // 更新進度顯示
+    const progressElement = document.getElementById('batchProgress');
+    progressElement.textContent = `測試進行中... (0/${selectedNodes.size})`;
+    
+    // 禁用開始按鈕
+    const startBtn = document.getElementById('startBatchTest');
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>測試中...';
+    
+    let completedCount = 0;
+    
+    // 為每個選中的節點創建測試項目
+    const testPromises = Array.from(selectedNodes).map(async (nodeIndex) => {
+        const node = nodesData.nodes[nodeIndex];
+        const resultId = `batch_result_${nodeIndex}`;
+        
+        // 創建結果項目
+        createBatchResultItem(node, resultId, target, testType);
+        
+        try {
+            // 執行測試
+            const result = await performSingleTest(node, target, testType, resultId);
+            updateBatchResultItem(resultId, 'completed', result);
+        } catch (error) {
+            console.error(`節點 ${node.name} 測試失敗:`, error);
+            updateBatchResultItem(resultId, 'failed', { error: error.message });
+        } finally {
+            completedCount++;
+            progressElement.textContent = `測試進行中... (${completedCount}/${selectedNodes.size})`;
+            
+            if (completedCount === selectedNodes.size) {
+                progressElement.textContent = `測試完成！(${completedCount}/${selectedNodes.size})`;
+                startBtn.disabled = false;
+                startBtn.innerHTML = `<i class="bi bi-play-fill me-1"></i>重新測試 (${selectedNodes.size} 個節點)`;
+            }
+        }
+    });
+    
+    // 等待所有測試完成
+    await Promise.allSettled(testPromises);
+}
+
+// 創建批量測試結果項目
+function createBatchResultItem(node, resultId, target, testType) {
+    const resultsContainer = document.getElementById('batchResults');
+    
+    const resultItem = document.createElement('div');
+    resultItem.className = 'batch-result-item';
+    resultItem.id = resultId;
+    
+    resultItem.innerHTML = `
+        <div class="batch-result-header">
+            <div>
+                <strong>${node.name}</strong>
+                ${node.name_zh ? `<span class="text-muted ms-1">${node.name_zh}</span>` : ''}
+                <div class="small text-muted">${node.location_zh || node.location}</div>
+            </div>
+            <span class="batch-result-status status-pending">等待中</span>
+        </div>
+        <div class="batch-result-content">
+            <div class="text-muted">正在等待測試開始...</div>
+        </div>
+    `;
+    
+    resultsContainer.appendChild(resultItem);
+}
+
+// 更新批量測試結果項目
+function updateBatchResultItem(resultId, status, data) {
+    const resultItem = document.getElementById(resultId);
+    if (!resultItem) return;
+    
+    const statusElement = resultItem.querySelector('.batch-result-status');
+    const contentElement = resultItem.querySelector('.batch-result-content');
+    
+    // 更新狀態
+    statusElement.className = `batch-result-status status-${status}`;
+    
+    switch (status) {
+        case 'running':
+            statusElement.textContent = '測試中';
+            contentElement.innerHTML = '<div class="text-muted">正在執行測試...</div>';
+            break;
+        case 'completed':
+            statusElement.textContent = '完成';
+            contentElement.innerHTML = generateBatchResultContent(data);
+            break;
+        case 'failed':
+            statusElement.textContent = '失敗';
+            contentElement.innerHTML = `<div class="text-danger">測試失敗: ${data.error}</div>`;
+            break;
+    }
+}
+
+// 生成批量測試結果內容
+function generateBatchResultContent(data) {
+    const isIPv6 = data.target.includes(':');
+    
+    return `
+        <div class="row small">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>網路：</strong> ${data.probe.network}</p>
+                <p class="mb-1"><strong>ASN：</strong> ${data.probe.asn}</p>
+                <p class="mb-1"><strong>使用協議：</strong> ${isIPv6 ? 'IPv6' : 'IPv4'}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>目標：</strong> ${data.target}</p>
+                <p class="mb-1"><strong>測試 ID：</strong> ${data.measurementId}</p>
+            </div>
+        </div>
+        <div class="text-muted small mt-1">
+            <i class="bi bi-info-circle"></i>
+            IPv4/IPv6 混合環境下 ASN 資訊可能不準確
+        </div>
+        <div class="mt-3">
+            <h6 class="small mb-2">測試輸出</h6>
+            <pre class="small bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;">${data.rawOutput}</pre>
+        </div>
+    `;
+}
+
+// 執行單個測試
+async function performSingleTest(node, target, testType, resultId) {
+    // 更新狀態為測試中
+    updateBatchResultItem(resultId, 'running');
+    
+    // 發送測量請求
+    const measurementResponse = await fetch('https://api.globalping.io/v1/measurements', {
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            type: testType,
+            target: target,
+            inProgressUpdates: true,
+            locations: [{
+                magic: node.tags
+            }]
+        })
+    });
+    
+    const measurementData = await measurementResponse.json();
+    
+    if (!measurementData.id) {
+        throw new Error('無法獲取測量 ID');
+    }
+    
+    // 輪詢測量結果
+    let result = null;
+    let attempts = 0;
+    const maxAttempts = 30;
+    
+    while (attempts < maxAttempts) {
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        try {
+            const resultResponse = await fetch(`https://api.globalping.io/v1/measurements/${measurementData.id}`, {
+                method: 'GET',
+                headers: {
+                    'accept': 'application/json'
+                }
+            });
+            const resultData = await resultResponse.json();
+            
+            if (resultData.results && resultData.results.length > 0) {
+                result = resultData.results[0];
+                if (result.result.status === 'finished') {
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('輪詢失敗:', error);
+        }
+    }
+    
+    if (!result || result.result.status !== 'finished') {
+        throw new Error('測試超時或未完成');
+    }
+    
+    return {
+        probe: result.probe,
+        target: target,
+        measurementId: measurementData.id,
+        rawOutput: result.result.rawOutput
+    };
 }
 
 
