@@ -196,13 +196,47 @@ a:hover {
     transition: all 0.3s ease;
 }
 
-/* 手機版主題切換按鈕調整 */
+/* 手機版按鈕調整 */
 @media (max-width: 768px) {
     #themeToggle {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin-left: auto;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 36px;
+        height: 36px;
+    }
+    
+    #batchTestBtn {
+        position: fixed;
+        top: 20px;
+        right: 65px;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.5rem;
+        height: 36px;
+    }
+    
+    #batchTestBtn .d-none.d-md-inline {
+        display: none !important;
+    }
+    
+    .color-picker {
+        position: fixed;
+        top: 20px;
+        right: 110px;
+        left: auto;
+        bottom: auto;
+        transform: none;
+    }
+    
+    .color-toggle-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .color-options {
+        top: 45px;
+        right: -20px;
     }
 }
 
@@ -361,6 +395,13 @@ a:hover {
     }
 }
 
+/* 確保測試輸出不換行 */
+.test-output {
+    white-space: pre !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
 /* 手機版顏色選擇器調整 */
 @media (max-width: 768px) {
     .color-picker {
@@ -414,13 +455,23 @@ a:hover {
 .color-option[data-color="teal"] { background-color: #20c997; }
 
 /* 批量測試按鈕樣式優化 */
+/* 批量測試按鈕位置調整 */
 #batchTestBtn {
+    position: fixed;
+    top: 20px;
+    right: 160px;
+    z-index: 1000;
     font-weight: 500;
     border-radius: 0.5rem;
     transition: all 0.3s ease;
-    position: relative;
     overflow: hidden;
-    padding-right: 1.2rem !important;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    min-width: auto;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #batchTestBtn:hover {
@@ -496,6 +547,19 @@ a:hover {
 }
 
 /* 批量測試樣式 */
+/* 批量測試模態框置中 */
+#batchTestModal .modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0 auto;
+}
+
+#batchTestModal .modal-dialog.modal-xl {
+    max-width: 1140px;
+    width: 90%;
+}
+
 .node-selection-list {
     border: 1px solid var(--card-border);
     border-radius: 0.375rem;
@@ -540,6 +604,7 @@ a:hover {
 
 .batch-result-content {
     padding: 1rem;
+    overflow-x: auto;
 }
 
 .batch-result-status {
