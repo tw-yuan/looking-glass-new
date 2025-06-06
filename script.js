@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 初始化批量測試功能
         initBatchTest();
+        
+        // 檢查主畫面節點狀態
+        checkMainNodeStatus();
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -43,7 +46,12 @@ function createNodeCard(node) {
     col.className = 'col-md-6 col-lg-4 col-xl-3';
     
     col.innerHTML = `
-        <div class="bg-white border border-2 rounded-3 p-4 text-center shadow-sm h-100 node-card">
+        <div class="bg-white border border-2 rounded-3 p-4 text-center shadow-sm h-100 node-card position-relative">
+            <div class="node-card-status" id="main_status_${nodesData.nodes.indexOf(node)}">
+                <div class="spinner-border spinner-border-sm text-muted" role="status">
+                    <span class="visually-hidden">檢查中...</span>
+                </div>
+            </div>
             <div class="fw-semibold fs-5 text-dark mb-1">${node.name}</div>
             ${node.name_zh ? `<div class="text-muted small mb-2">${node.name_zh}</div>` : '<div class="mb-2"></div>'}
             <div class="text-muted mb-2">${node.location_zh ? `${node.location_zh} • ${node.location}` : node.location}</div>
@@ -444,8 +452,9 @@ function clearBatchTestData() {
     
     // 重置 UI
     const resultsContainer = document.getElementById('batchResults');
+    resultsContainer.className = 'batch-results flex-grow-1 d-flex align-items-center justify-content-center';
     resultsContainer.innerHTML = `
-        <div class="text-center text-muted py-5">
+        <div class="text-center text-muted">
             <i class="bi bi-speedometer2 fs-1 mb-3"></i>
             <p>選擇要測試的節點並點擊「開始批量測試」</p>
         </div>
@@ -562,6 +571,7 @@ async function startBatchTest() {
     // 重置結果容器
     batchTestResults.clear();
     const resultsContainer = document.getElementById('batchResults');
+    resultsContainer.className = 'batch-results';
     resultsContainer.innerHTML = '';
     updateUIAfterTestStart();
     
@@ -979,6 +989,49 @@ async function checkNodeStatus() {
     
     // 更新選擇狀態
     updateSelectedNodes();
+}
+
+// 檢查主畫面節點狀態
+async function checkMainNodeStatus() {
+    const statusChecks = nodesData.nodes.map(async (node, index) => {
+        const statusIndicator = document.getElementById(`main_status_${index}`);
+        
+        try {
+            // 發送快速測試請求檢查節點是否線上
+            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'ping',
+                    target: '8.8.8.8',
+                    limit: 1,
+                    locations: [{
+                        magic: node.tags
+                    }]
+                })
+            });
+            
+            const data = await testResponse.json();
+            
+            if (data.id) {
+                // 節點線上
+                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-success" title="線上"></i>';
+            } else {
+                // 節點可能離線
+                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
+            }
+        } catch (error) {
+            // 檢查失敗，顯示警告
+            statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-warning" title="狀態未知"></i>';
+            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+        }
+    });
+    
+    // 等待所有狀態檢查完成
+    await Promise.allSettled(statusChecks);
 }
 
 // 更新開始測試後的 UI 狀態
