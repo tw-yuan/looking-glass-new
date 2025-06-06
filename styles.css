@@ -720,6 +720,50 @@ a:hover {
     color: var(--text-color);
 }
 
+/* 比較模態框自適應佈局優化 */
+.modal-fullscreen .row {
+    margin: 0;
+    min-height: calc(100vh - 200px);
+    align-items: stretch;
+}
+
+/* 單個結果時的特殊樣式 */
+.modal-fullscreen .col-12 .card {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 兩個結果時確保充分利用空間 */
+.modal-fullscreen .col-md-6 .card {
+    height: 100%;
+}
+
+/* 測試輸出區域在比較模態框中的優化 */
+.modal-fullscreen .test-output {
+    max-height: 400px;
+    font-size: 0.875rem;
+}
+
+/* 比較模態框中的卡片內容優化 */
+.modal-fullscreen .card-body {
+    padding: 1.5rem;
+}
+
+.modal-fullscreen .card-header {
+    padding: 1rem 1.5rem;
+}
+
+/* 確保在大螢幕上有足夠的間距 */
+@media (min-width: 1200px) {
+    .modal-fullscreen .card-body {
+        padding: 2rem;
+    }
+    
+    .modal-fullscreen .test-output {
+        max-height: 500px;
+    }
+}
+
 /* 手機版優化 */
 @media (max-width: 768px) {
     .batch-result-status {

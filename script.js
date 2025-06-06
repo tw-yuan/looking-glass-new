@@ -873,6 +873,20 @@ function createCompareModal() {
     compareModal.tabIndex = -1;
     
     const selectedResultsArray = Array.from(selectedResults);
+    const resultCount = selectedResultsArray.length;
+    
+    // 根據結果數量決定 Bootstrap 欄位類別
+    let colClass;
+    if (resultCount === 1) {
+        colClass = 'col-12'; // 單個結果佔滿整個寬度
+    } else if (resultCount === 2) {
+        colClass = 'col-md-6'; // 兩個結果各佔50%
+    } else if (resultCount <= 4) {
+        colClass = 'col-lg-6 col-xl-6'; // 3-4個結果，大螢幕2欄，中螢幕1欄
+    } else {
+        colClass = 'col-lg-4 col-xl-4'; // 5個以上結果，大螢幕3欄
+    }
+    
     const compareContent = selectedResultsArray.map(resultId => {
         const resultData = batchTestResults.get(resultId);
         if (!resultData) return '';
@@ -881,7 +895,7 @@ function createCompareModal() {
         const node = nodesData.nodes[nodeIndex];
         
         return `
-            <div class="col-md-6 mb-4">
+            <div class="${colClass} mb-4">
                 <div class="card h-100">
                     <div class="card-header">
                         <h6 class="mb-0">${node.name}</h6>
@@ -895,15 +909,25 @@ function createCompareModal() {
         `;
     }).join('');
     
+    // 根據結果數量決定 row 的額外類別
+    let rowClass = 'row';
+    if (resultCount === 1) {
+        rowClass = 'row justify-content-center'; // 單個結果居中
+    } else if (resultCount === 2) {
+        rowClass = 'row align-items-stretch'; // 兩個結果等高
+    } else {
+        rowClass = 'row align-items-stretch'; // 多個結果等高
+    }
+    
     compareModal.innerHTML = `
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">測試結果比較</h5>
+                    <h5 class="modal-title">測試結果比較 (${resultCount} 個節點)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
+                    <div class="${rowClass}">
                         ${compareContent}
                     </div>
                 </div>
