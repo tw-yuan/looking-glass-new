@@ -1006,6 +1006,7 @@ async function checkNodeStatus() {
             });
             
             const data = await testResponse.json();
+            console.log(`節點 ${node.name} API 回應:`, data);
             
             if (data.id) {
                 // 節點線上
@@ -1016,11 +1017,13 @@ async function checkNodeStatus() {
                 statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
                 checkbox.disabled = true;
                 checkbox.checked = false;
+                console.warn(`節點 ${node.name} 離線 - API 回應:`, data);
             }
         } catch (error) {
             // 檢查失敗，顯示警告
             statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-warning" title="狀態未知"></i>';
             console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+            console.warn('詳細錯誤資訊:', error.message);
         }
     });
     
