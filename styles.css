@@ -420,7 +420,7 @@ a:hover {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    padding-right: 2rem !important;
+    padding-right: 1.2rem !important;
 }
 
 #batchTestBtn:hover {
@@ -434,7 +434,7 @@ a:hover {
 
 /* 節點狀態指示器 */
 .node-status-indicator {
-    margin-left: 1rem;
+    margin-left: 1.5rem;
     min-width: 20px;
     display: flex;
     align-items: center;
@@ -506,6 +506,10 @@ a:hover {
     padding: 0.5rem;
     border-radius: 0.25rem;
     transition: background-color 0.2s ease;
+}
+
+.node-selection-item .form-check {
+    gap: 0.75rem;
 }
 
 .node-selection-item:hover {
@@ -633,6 +637,23 @@ a:hover {
     width: 16px;
     height: 16px;
     margin: 0;
+}
+
+/* 比較模態框樣式 */
+.modal-fullscreen .card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.modal-fullscreen .card-header {
+    background-color: var(--light-bg);
+    border-bottom-color: var(--card-border);
+    color: var(--text-color);
+}
+
+.modal-fullscreen .card-body {
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 /* 手機版優化 */
