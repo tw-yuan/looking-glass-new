@@ -367,6 +367,42 @@ a:hover {
 .color-option[data-color="red"] { background-color: #dc3545; }
 .color-option[data-color="teal"] { background-color: #20c997; }
 
+/* 批量測試按鈕樣式優化 */
+#batchTestBtn {
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#batchTestBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+#batchTestBtn:active {
+    transform: translateY(0);
+}
+
+/* 節點狀態指示器 */
+.node-status-indicator {
+    margin-left: 0.5rem;
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.node-selection-item:has(.node-checkbox:disabled) {
+    opacity: 0.6;
+    background-color: var(--light-bg);
+}
+
+.node-selection-item:has(.node-checkbox:disabled) .form-check-label {
+    color: var(--text-muted);
+}
+
 /* 表單標籤文字 */
 .form-label {
     color: var(--text-color);

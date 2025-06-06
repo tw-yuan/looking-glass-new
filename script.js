@@ -420,19 +420,60 @@ function initBatchTest() {
     startBatchTestBtn.addEventListener('click', startBatchTest);
     compareSelectedBtn.addEventListener('click', showCompareModal);
     
-    // 綁定顯示模式切換
-    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
-        radio.addEventListener('change', changeViewMode);
-    });
+    // 綁定模態框關閉事件
+    const batchModal = document.getElementById('batchTestModal');
+    batchModal.addEventListener('hidden.bs.modal', clearBatchTestData);
 }
 
 // 顯示批量測試模態框
 function showBatchTestModal() {
     const modal = document.getElementById('batchTestModal');
     generateNodeSelectionList();
+    checkNodeStatus(); // 檢查節點狀態
     
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     modalInstance.show();
+}
+
+// 清除批量測試資料
+function clearBatchTestData() {
+    // 清除所有測試結果
+    batchTestResults.clear();
+    selectedResults.clear();
+    selectedNodes.clear();
+    
+    // 重置 UI
+    const resultsContainer = document.getElementById('batchResults');
+    resultsContainer.innerHTML = `
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-speedometer2 fs-1 mb-3"></i>
+            <p>選擇要測試的節點並點擊「開始批量測試」</p>
+        </div>
+    `;
+    
+    // 重置進度顯示
+    const progressElement = document.getElementById('batchProgress');
+    progressElement.textContent = '選擇節點並開始測試';
+    
+    // 隱藏比較按鈕
+    const compareBtn = document.getElementById('compareSelectedBtn');
+    compareBtn.style.display = 'none';
+    
+    // 重置表單
+    document.getElementById('batchTarget').value = '';
+    document.getElementById('batchTestType').value = 'mtr';
+    
+    // 取消所有選擇
+    document.querySelectorAll('.node-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAllNodes').checked = false;
+    document.getElementById('selectAllNodes').indeterminate = false;
+    
+    // 重置開始按鈕
+    const startBtn = document.getElementById('startBatchTest');
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>請選擇節點';
 }
 
 // 生成節點選擇列表
@@ -445,15 +486,20 @@ function generateNodeSelectionList() {
         nodeItem.className = 'node-selection-item';
         
         nodeItem.innerHTML = `
-            <div class="form-check">
+            <div class="form-check d-flex align-items-center">
                 <input class="form-check-input node-checkbox" type="checkbox" 
                        id="node_${index}" data-node-index="${index}">
-                <label class="form-check-label" for="node_${index}">
+                <label class="form-check-label flex-grow-1" for="node_${index}">
                     <div class="fw-medium">${node.name}</div>
                     <div class="small text-muted">
                         ${node.name_zh ? node.name_zh + ' • ' : ''}${node.location_zh || node.location}
                     </div>
                 </label>
+                <div class="node-status-indicator" id="status_${index}">
+                    <div class="spinner-border spinner-border-sm text-muted" role="status">
+                        <span class="visually-hidden">檢查中...</span>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -581,7 +627,7 @@ function createBatchResultItem(node, resultId, target, testType) {
             </div>
             <div class="batch-result-checkbox">
                 <input class="form-check-input result-checkbox" type="checkbox" 
-                       data-result-id="${resultId}" style="display: none;">
+                       data-result-id="${resultId}">
             </div>
         </div>
         <div class="batch-result-content">
@@ -593,8 +639,14 @@ function createBatchResultItem(node, resultId, target, testType) {
     resultItem.classList.add('selectable');
     resultItem.addEventListener('click', (e) => {
         if (e.target.type !== 'checkbox') {
-            toggleResultSelection(resultId);
+            handleResultClick(resultId);
         }
+    });
+    
+    // 綁定 checkbox 事件
+    const checkbox = resultItem.querySelector('.result-checkbox');
+    checkbox.addEventListener('change', () => {
+        updateResultSelection(resultId, checkbox.checked);
     });
     
     resultsContainer.appendChild(resultItem);
@@ -723,46 +775,30 @@ async function performSingleTest(node, target, testType, resultId) {
     };
 }
 
-// 切換顯示模式
-function changeViewMode() {
-    const selectedMode = document.querySelector('input[name="viewMode"]:checked').id;
-    const resultsContainer = document.getElementById('batchResults');
-    
-    // 移除所有視圖類別
-    resultsContainer.classList.remove('view-cards', 'view-compare');
-    
-    // 添加對應的視圖類別
-    if (selectedMode === 'viewCards') {
-        resultsContainer.classList.add('view-cards');
-    } else if (selectedMode === 'viewCompare') {
-        resultsContainer.classList.add('view-compare');
-    }
-    
-    // 顯示/隱藏選擇框
-    const showCheckboxes = selectedMode === 'viewCards';
-    document.querySelectorAll('.result-checkbox').forEach(checkbox => {
-        checkbox.style.display = showCheckboxes ? 'block' : 'none';
-    });
-    
-    // 更新比較按鈕顯示
-    updateCompareButton();
+// 結果項目點擊處理（簡化版）
+function handleResultClick(resultId) {
+    toggleResultSelection(resultId);
 }
 
 let selectedResults = new Set();
 
 // 切換結果選擇狀態
 function toggleResultSelection(resultId) {
+    const checkbox = document.querySelector(`input[data-result-id="${resultId}"]`);
+    checkbox.checked = !checkbox.checked;
+    updateResultSelection(resultId, checkbox.checked);
+}
+
+// 更新結果選擇狀態
+function updateResultSelection(resultId, isSelected) {
     const resultItem = document.getElementById(resultId);
-    const checkbox = resultItem.querySelector('.result-checkbox');
     
-    if (selectedResults.has(resultId)) {
-        selectedResults.delete(resultId);
-        resultItem.classList.remove('selected');
-        checkbox.checked = false;
-    } else {
+    if (isSelected) {
         selectedResults.add(resultId);
         resultItem.classList.add('selected');
-        checkbox.checked = true;
+    } else {
+        selectedResults.delete(resultId);
+        resultItem.classList.remove('selected');
     }
     
     updateCompareButton();
@@ -895,12 +931,58 @@ function exportComparison() {
     URL.revokeObjectURL(url);
 }
 
+// 檢查節點狀態
+async function checkNodeStatus() {
+    const statusChecks = nodesData.nodes.map(async (node, index) => {
+        const statusIndicator = document.getElementById(`status_${index}`);
+        const checkbox = document.getElementById(`node_${index}`);
+        
+        try {
+            // 發送快速測試請求檢查節點是否線上
+            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'ping',
+                    target: '8.8.8.8',
+                    limit: 1,
+                    locations: [{
+                        magic: node.tags
+                    }]
+                })
+            });
+            
+            const data = await testResponse.json();
+            
+            if (data.id) {
+                // 節點線上
+                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-success" title="線上"></i>';
+                checkbox.disabled = false;
+            } else {
+                // 節點可能離線
+                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
+                checkbox.disabled = true;
+                checkbox.checked = false;
+            }
+        } catch (error) {
+            // 檢查失敗，顯示警告
+            statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-warning" title="狀態未知"></i>';
+            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+        }
+    });
+    
+    // 等待所有狀態檢查完成
+    await Promise.allSettled(statusChecks);
+    
+    // 更新選擇狀態
+    updateSelectedNodes();
+}
+
 // 更新開始測試後的 UI 狀態
 function updateUIAfterTestStart() {
-    // 顯示結果視圖模式選擇
-    const viewModeGroup = document.getElementById('resultViewMode');
-    viewModeGroup.style.display = 'flex';
-    
     // 重置選擇狀態
     selectedResults.clear();
     updateCompareButton();
