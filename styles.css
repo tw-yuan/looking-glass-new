@@ -186,7 +186,7 @@ a:hover {
 }
 
 /* 主題切換按鈕 */
-.theme-toggle-btn {
+#themeToggle {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -194,33 +194,48 @@ a:hover {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 1px solid var(--card-border);
-    background: var(--card-bg);
-    color: var(--text-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 批量測試按鈕 */
+#batchTestBtn {
+    position: fixed;
+    top: 20px;
+    right: 120px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--primary-color);
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.theme-toggle-btn:hover {
+#batchTestBtn:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 手機版按鈕調整 */
 @media (max-width: 768px) {
-    .theme-toggle-btn {
-        position: fixed;
-        top: 20px;
-        right: 20px;
+    #themeToggle {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-left: auto;
         width: 36px;
         height: 36px;
     }
     
-    .batch-test-toggle-btn {
+    #batchTestBtn {
         position: fixed;
         top: 20px;
         right: 110px;
@@ -248,7 +263,7 @@ a:hover {
     }
 }
 
-[data-theme="dark"] .theme-toggle-btn {
+[data-theme="dark"] #themeToggle {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
@@ -739,44 +754,4 @@ a:hover {
     }
 }
 
-/* 批量測試按鈕樣式 - 與其他功能按鈕一致 */
-.batch-test-toggle-btn {
-    position: fixed;
-    top: 20px;
-    right: 120px;
-    z-index: 1000;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid var(--card-border);
-    background: var(--card-bg);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.batch-test-toggle-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    background-color: var(--primary-color);
-    color: white;
-}
-
-
-/* 批量測試模態框居中 */
-#batchTestModal .modal-dialog {
-    display: flex;
-    align-items: center;
-    min-height: calc(100vh - 3.5rem);
-    margin: 1.75rem auto;
-}
-
-#batchTestModal .modal-content {
-    width: 100%;
-    max-width: 1140px;
-    margin: 0 auto;
-} 
+ 
