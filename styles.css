@@ -576,12 +576,14 @@ a:hover {
     width: 100%;
     height: 90vh;
     max-height: 90vh;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 #compareModal .modal-body {
     overflow-y: auto;
-    height: calc(90vh - 120px);
+    flex: 1;
+    padding: 0;
 }
 
 .node-selection-list {
@@ -728,65 +730,67 @@ a:hover {
     margin: 0;
 }
 
-/* 比較模態框樣式 */
-.modal-fullscreen .card {
-    background-color: var(--card-bg);
-    border-color: var(--card-border);
-}
-
-.modal-fullscreen .card-header {
-    background-color: var(--light-bg);
-    border-bottom-color: var(--card-border);
-    color: var(--text-color);
-}
-
-.modal-fullscreen .card-body {
-    background-color: var(--card-bg);
-    color: var(--text-color);
-}
 
 /* 比較模態框自適應佈局優化 */
-.modal-fullscreen .row {
+#compareModal .modal-body .row {
     margin: 0;
     padding: 1rem;
-    min-height: calc(90vh - 200px);
+    min-height: 100%;
     align-items: stretch;
 }
 
 /* 單個結果時的特殊樣式 */
-.modal-fullscreen .col-12 .card {
+#compareModal .col-12 .card {
     max-width: 1200px;
     margin: 0 auto;
 }
 
 /* 兩個結果時確保充分利用空間 */
-.modal-fullscreen .col-md-6 .card {
+#compareModal .col-md-6 .card {
     height: 100%;
 }
 
 /* 測試輸出區域在比較模態框中的優化 */
-.modal-fullscreen .test-output {
-    max-height: 400px;
+#compareModal .test-output {
+    max-height: 300px;
     font-size: 0.875rem;
+    overflow-y: auto;
+    background-color: var(--pre-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--card-border);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
 }
 
 /* 比較模態框中的卡片內容優化 */
-.modal-fullscreen .card-body {
-    padding: 1.5rem;
+#compareModal .card {
+    border: 1px solid var(--card-border);
+    background-color: var(--card-bg);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.modal-fullscreen .card-header {
-    padding: 1rem 1.5rem;
+#compareModal .card-header {
+    padding: 0.75rem 1rem;
+    background-color: var(--light-bg);
+    border-bottom: 1px solid var(--card-border);
+}
+
+#compareModal .card-body {
+    flex: 1;
+    padding: 1rem;
+    overflow: visible;
 }
 
 /* 確保在大螢幕上有足夠的間距 */
 @media (min-width: 1200px) {
-    .modal-fullscreen .card-body {
-        padding: 2rem;
+    #compareModal .card-body {
+        padding: 1.25rem;
     }
     
-    .modal-fullscreen .test-output {
-        max-height: 500px;
+    #compareModal .test-output {
+        max-height: 400px;
     }
 }
 
