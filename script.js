@@ -412,11 +412,18 @@ function initBatchTest() {
     const batchTestBtn = document.getElementById('batchTestBtn');
     const selectAllNodesBtn = document.getElementById('selectAllNodes');
     const startBatchTestBtn = document.getElementById('startBatchTest');
+    const compareSelectedBtn = document.getElementById('compareSelectedBtn');
     
     // 綁定按鈕事件
     batchTestBtn.addEventListener('click', showBatchTestModal);
     selectAllNodesBtn.addEventListener('change', toggleSelectAll);
     startBatchTestBtn.addEventListener('click', startBatchTest);
+    compareSelectedBtn.addEventListener('click', showCompareModal);
+    
+    // 綁定顯示模式切換
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', changeViewMode);
+    });
 }
 
 // 顯示批量測試模態框
@@ -510,6 +517,7 @@ async function startBatchTest() {
     batchTestResults.clear();
     const resultsContainer = document.getElementById('batchResults');
     resultsContainer.innerHTML = '';
+    updateUIAfterTestStart();
     
     // 更新進度顯示
     const progressElement = document.getElementById('batchProgress');
@@ -533,6 +541,7 @@ async function startBatchTest() {
         try {
             // 執行測試
             const result = await performSingleTest(node, target, testType, resultId);
+            batchTestResults.set(resultId, result);
             updateBatchResultItem(resultId, 'completed', result);
         } catch (error) {
             console.error(`節點 ${node.name} 測試失敗:`, error);
@@ -545,6 +554,7 @@ async function startBatchTest() {
                 progressElement.textContent = `測試完成！(${completedCount}/${selectedNodes.size})`;
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="bi bi-play-fill me-1"></i>重新測試 (${selectedNodes.size} 個節點)`;
+                updateUIAfterTestStart();
             }
         }
     });
@@ -563,17 +573,29 @@ function createBatchResultItem(node, resultId, target, testType) {
     
     resultItem.innerHTML = `
         <div class="batch-result-header">
-            <div>
+            <span class="batch-result-status status-pending">等待中</span>
+            <div class="batch-result-info">
                 <strong>${node.name}</strong>
                 ${node.name_zh ? `<span class="text-muted ms-1">${node.name_zh}</span>` : ''}
                 <div class="small text-muted">${node.location_zh || node.location}</div>
             </div>
-            <span class="batch-result-status status-pending">等待中</span>
+            <div class="batch-result-checkbox">
+                <input class="form-check-input result-checkbox" type="checkbox" 
+                       data-result-id="${resultId}" style="display: none;">
+            </div>
         </div>
         <div class="batch-result-content">
             <div class="text-muted">正在等待測試開始...</div>
         </div>
     `;
+    
+    // 添加點擊選擇功能
+    resultItem.classList.add('selectable');
+    resultItem.addEventListener('click', (e) => {
+        if (e.target.type !== 'checkbox') {
+            toggleResultSelection(resultId);
+        }
+    });
     
     resultsContainer.appendChild(resultItem);
 }
@@ -699,6 +721,189 @@ async function performSingleTest(node, target, testType, resultId) {
         measurementId: measurementData.id,
         rawOutput: result.result.rawOutput
     };
+}
+
+// 切換顯示模式
+function changeViewMode() {
+    const selectedMode = document.querySelector('input[name="viewMode"]:checked').id;
+    const resultsContainer = document.getElementById('batchResults');
+    
+    // 移除所有視圖類別
+    resultsContainer.classList.remove('view-cards', 'view-compare');
+    
+    // 添加對應的視圖類別
+    if (selectedMode === 'viewCards') {
+        resultsContainer.classList.add('view-cards');
+    } else if (selectedMode === 'viewCompare') {
+        resultsContainer.classList.add('view-compare');
+    }
+    
+    // 顯示/隱藏選擇框
+    const showCheckboxes = selectedMode === 'viewCards';
+    document.querySelectorAll('.result-checkbox').forEach(checkbox => {
+        checkbox.style.display = showCheckboxes ? 'block' : 'none';
+    });
+    
+    // 更新比較按鈕顯示
+    updateCompareButton();
+}
+
+let selectedResults = new Set();
+
+// 切換結果選擇狀態
+function toggleResultSelection(resultId) {
+    const resultItem = document.getElementById(resultId);
+    const checkbox = resultItem.querySelector('.result-checkbox');
+    
+    if (selectedResults.has(resultId)) {
+        selectedResults.delete(resultId);
+        resultItem.classList.remove('selected');
+        checkbox.checked = false;
+    } else {
+        selectedResults.add(resultId);
+        resultItem.classList.add('selected');
+        checkbox.checked = true;
+    }
+    
+    updateCompareButton();
+}
+
+// 更新比較按鈕狀態
+function updateCompareButton() {
+    const compareBtn = document.getElementById('compareSelectedBtn');
+    const hasCompleted = batchTestResults.size > 0;
+    const hasSelected = selectedResults.size > 1;
+    
+    if (hasCompleted) {
+        compareBtn.style.display = 'block';
+        compareBtn.disabled = !hasSelected;
+        compareBtn.innerHTML = hasSelected 
+            ? `<i class="bi bi-layout-sidebar me-1"></i>比較選中 (${selectedResults.size})`
+            : '<i class="bi bi-layout-sidebar me-1"></i>選擇結果比較';
+    } else {
+        compareBtn.style.display = 'none';
+    }
+}
+
+// 顯示比較模態框
+function showCompareModal() {
+    if (selectedResults.size < 2) {
+        alert('請至少選擇兩個測試結果進行比較');
+        return;
+    }
+    
+    // 創建比較模態框
+    createCompareModal();
+}
+
+// 創建比較模態框
+function createCompareModal() {
+    // 檢查是否已存在比較模態框
+    let compareModal = document.getElementById('compareModal');
+    if (compareModal) {
+        compareModal.remove();
+    }
+    
+    // 創建新的比較模態框
+    compareModal = document.createElement('div');
+    compareModal.className = 'modal fade';
+    compareModal.id = 'compareModal';
+    compareModal.tabIndex = -1;
+    
+    const selectedResultsArray = Array.from(selectedResults);
+    const compareContent = selectedResultsArray.map(resultId => {
+        const resultData = batchTestResults.get(resultId);
+        if (!resultData) return '';
+        
+        const nodeIndex = parseInt(resultId.replace('batch_result_', ''));
+        const node = nodesData.nodes[nodeIndex];
+        
+        return `
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">${node.name}</h6>
+                        <small class="text-muted">${node.name_zh || ''} • ${node.location_zh || node.location}</small>
+                    </div>
+                    <div class="card-body">
+                        ${generateBatchResultContent(resultData)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    compareModal.innerHTML = `
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">測試結果比較</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        ${compareContent}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                    <button type="button" class="btn btn-primary" onclick="exportComparison()">
+                        <i class="bi bi-download me-1"></i>匯出比較
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(compareModal);
+    
+    // 顯示模態框
+    const modalInstance = new bootstrap.Modal(compareModal);
+    modalInstance.show();
+    
+    // 模態框關閉時移除
+    compareModal.addEventListener('hidden.bs.modal', () => {
+        compareModal.remove();
+    });
+}
+
+// 匯出比較結果
+function exportComparison() {
+    const selectedResultsArray = Array.from(selectedResults);
+    const exportData = selectedResultsArray.map(resultId => {
+        const resultData = batchTestResults.get(resultId);
+        const nodeIndex = parseInt(resultId.replace('batch_result_', ''));
+        const node = nodesData.nodes[nodeIndex];
+        
+        return {
+            node: node.name,
+            node_zh: node.name_zh,
+            location: node.location_zh || node.location,
+            target: resultData.target,
+            network: resultData.probe.network,
+            asn: resultData.probe.asn,
+            rawOutput: resultData.rawOutput
+        };
+    });
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `looking-glass-comparison-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// 更新開始測試後的 UI 狀態
+function updateUIAfterTestStart() {
+    // 顯示結果視圖模式選擇
+    const viewModeGroup = document.getElementById('resultViewMode');
+    viewModeGroup.style.display = 'flex';
+    
+    // 重置選擇狀態
+    selectedResults.clear();
+    updateCompareButton();
 }
 
 

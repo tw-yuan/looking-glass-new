@@ -422,8 +422,9 @@ a:hover {
     background: var(--light-bg);
     border-bottom: 1px solid var(--card-border);
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .batch-result-content {
@@ -432,8 +433,17 @@ a:hover {
 
 .batch-result-status {
     font-size: 0.875rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-weight: 500;
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.batch-result-header .batch-result-info {
+    margin-left: 6rem; /* 為狀態標籤留出空間 */
 }
 
 .status-pending {
@@ -454,4 +464,90 @@ a:hover {
 .status-failed {
     background-color: #dc3545;
     color: #fff;
+}
+
+/* 批量測試結果顯示模式 */
+.batch-results.view-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1rem;
+}
+
+.batch-results.view-cards .batch-result-item {
+    margin-bottom: 0;
+}
+
+.batch-results.view-compare {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.batch-results.view-compare .batch-result-item {
+    margin-bottom: 0;
+    border-radius: 0;
+    border-bottom: none;
+}
+
+.batch-results.view-compare .batch-result-item:first-child {
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+}
+
+.batch-results.view-compare .batch-result-item:last-child {
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* 個別結果選擇功能 */
+.batch-result-item.selectable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.batch-result-item.selectable:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.batch-result-item.selected {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.batch-result-checkbox {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 手機版優化 */
+@media (max-width: 768px) {
+    .batch-result-status {
+        position: static;
+        transform: none;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .batch-result-header .batch-result-info {
+        margin-left: 0;
+    }
+    
+    .batch-result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .batch-result-checkbox {
+        position: static;
+        transform: none;
+        margin-top: 0.5rem;
+    }
+    
+    .batch-results.view-cards {
+        grid-template-columns: 1fr;
+    }
 } 

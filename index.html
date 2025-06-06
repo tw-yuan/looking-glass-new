@@ -113,8 +113,8 @@
         <div class="text-center mb-4">
             <h1 class="mb-2">Looking Glass</h1>
             <p class="text-muted mb-0">由一群 BGP Player 維護的開源網路監控專案</p>
-            <div class="mt-3">
-                <button class="btn btn-primary btn-sm me-2" id="batchTestBtn">
+            <div class="mt-3 d-flex justify-content-center gap-2">
+                <button class="btn btn-primary btn-sm" id="batchTestBtn">
                     <i class="bi bi-speedometer2 me-1"></i>批量測試
                 </button>
             </div>
@@ -231,8 +231,32 @@
                             <div class="col-md-8">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0">測試結果</h6>
-                                    <div class="text-muted small" id="batchProgress">選擇節點並開始測試</div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" id="compareSelectedBtn" style="display: none;">
+                                            <i class="bi bi-layout-sidebar me-1"></i>比較選中
+                                        </button>
+                                        <div class="text-muted small align-self-center" id="batchProgress">選擇節點並開始測試</div>
+                                    </div>
                                 </div>
+                                
+                                <!-- 結果顯示模式選擇 -->
+                                <div class="btn-group btn-group-sm mb-3" role="group" id="resultViewMode" style="display: none;">
+                                    <input type="radio" class="btn-check" name="viewMode" id="viewList" autocomplete="off" checked>
+                                    <label class="btn btn-outline-secondary" for="viewList">
+                                        <i class="bi bi-list me-1"></i>列表
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="viewMode" id="viewCards" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="viewCards">
+                                        <i class="bi bi-grid-3x2 me-1"></i>卡片
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="viewMode" id="viewCompare" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="viewCompare">
+                                        <i class="bi bi-layout-sidebar me-1"></i>比較
+                                    </label>
+                                </div>
+                                
                                 <div id="batchResults" class="batch-results">
                                     <div class="text-center text-muted py-5">
                                         <i class="bi bi-speedometer2 fs-1 mb-3"></i>
