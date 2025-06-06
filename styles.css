@@ -542,25 +542,21 @@ a:hover {
 }
 
 /* 批量測試樣式 */
-/* 批量測試模態框置中 - 確保真正居中 */
-#batchTestModal.modal {
+/* 批量測試模態框置中 */
+#batchTestModal.modal.show {
     display: flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
 #batchTestModal .modal-dialog {
-    margin: auto;
-    display: flex;
-    align-items: center;
-    min-height: 100vh;
-}
-
-#batchTestModal .modal-dialog.modal-xl {
+    margin: 0;
     max-width: 1140px;
     width: 90%;
 }
 
 #batchTestModal .modal-content {
-    margin: 0 auto;
+    width: 100%;
 }
 
 .node-selection-list {
