@@ -342,10 +342,25 @@ function updateThemeToggleButton(theme) {
 
 // 初始化顏色選擇器
 function initColorPicker(currentColor) {
-    const colorOptions = document.querySelectorAll('.color-option');
+    const colorToggleBtn = document.getElementById('colorToggleBtn');
+    const colorOptions = document.getElementById('colorOptions');
+    const colorOptionItems = document.querySelectorAll('.color-option');
+    
+    // 添加切換按鈕事件
+    colorToggleBtn.addEventListener('click', function() {
+        const isVisible = colorOptions.style.display !== 'none';
+        colorOptions.style.display = isVisible ? 'none' : 'flex';
+    });
+    
+    // 點擊外部關閉調色盤
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.color-picker')) {
+            colorOptions.style.display = 'none';
+        }
+    });
     
     // 標記當前顏色
-    colorOptions.forEach(option => {
+    colorOptionItems.forEach(option => {
         if (option.dataset.color === currentColor) {
             option.classList.add('active');
         }
@@ -354,6 +369,7 @@ function initColorPicker(currentColor) {
         option.addEventListener('click', function() {
             const newColor = this.dataset.color;
             changeThemeColor(newColor);
+            colorOptions.style.display = 'none'; // 選擇後關閉
         });
     });
 }
@@ -711,7 +727,7 @@ function generateBatchResultContent(data) {
         </div>
         <div class="mt-3">
             <h6 class="small mb-2">測試輸出</h6>
-            <pre class="small bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;">${data.rawOutput}</pre>
+            <pre class="small p-2 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--pre-bg); color: var(--text-color); white-space: pre-wrap; word-break: break-all;">${data.rawOutput}</pre>
         </div>
     `;
 }

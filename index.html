@@ -99,12 +99,17 @@
 <body>
     <!-- 顏色選擇器 -->
     <div class="color-picker" id="colorPicker">
-        <div class="color-option" data-color="blue" title="藍色主題"></div>
-        <div class="color-option" data-color="green" title="綠色主題"></div>
-        <div class="color-option" data-color="purple" title="紫色主題"></div>
-        <div class="color-option" data-color="orange" title="橘色主題"></div>
-        <div class="color-option" data-color="red" title="紅色主題"></div>
-        <div class="color-option" data-color="teal" title="青色主題"></div>
+        <button class="color-toggle-btn" id="colorToggleBtn" title="調色盤">
+            <i class="bi bi-palette"></i>
+        </button>
+        <div class="color-options" id="colorOptions" style="display: none;">
+            <div class="color-option" data-color="blue" title="藍色主題"></div>
+            <div class="color-option" data-color="green" title="綠色主題"></div>
+            <div class="color-option" data-color="purple" title="紫色主題"></div>
+            <div class="color-option" data-color="orange" title="橘色主題"></div>
+            <div class="color-option" data-color="red" title="紅色主題"></div>
+            <div class="color-option" data-color="teal" title="青色主題"></div>
+        </div>
     </div>
     <main class="container py-5">
         <button class="btn btn-outline-secondary btn-sm" id="themeToggle" aria-label="切換深色模式">
@@ -116,7 +121,7 @@
             <div class="mt-3 d-flex justify-content-center">
                 <button class="btn btn-primary shadow-sm px-4 py-2" id="batchTestBtn">
                     <i class="bi bi-speedometer2 me-2"></i>批量測試
-                    <i class="bi bi-chevron-right ms-1 small"></i>
+                    <i class="bi bi-chevron-right ms-1 small opacity-75"></i>
                 </button>
             </div>
         </div>

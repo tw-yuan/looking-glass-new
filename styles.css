@@ -313,14 +313,52 @@ a:hover {
     position: fixed;
     top: 20px;
     right: 70px;
+    z-index: 1000;
+}
+
+.color-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-color);
     display: flex;
-    gap: 8px;
     align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.color-toggle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.color-options {
+    position: absolute;
+    top: 50px;
+    right: 0;
     background: var(--card-bg);
     padding: 8px 12px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    animation: colorPickerSlide 0.2s ease-out;
+}
+
+@keyframes colorPickerSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 手機版顏色選擇器調整 */
@@ -329,6 +367,14 @@ a:hover {
         position: fixed;
         bottom: 20px;
         top: auto;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+    
+    .color-options {
+        position: fixed;
+        bottom: 70px;
         left: 50%;
         right: auto;
         transform: translateX(-50%);
@@ -374,6 +420,7 @@ a:hover {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    padding-right: 2rem !important;
 }
 
 #batchTestBtn:hover {
@@ -387,7 +434,7 @@ a:hover {
 
 /* 節點狀態指示器 */
 .node-status-indicator {
-    margin-left: 0.5rem;
+    margin-left: 1rem;
     min-width: 20px;
     display: flex;
     align-items: center;
