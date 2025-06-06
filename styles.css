@@ -179,10 +179,14 @@ a:hover {
 .test-output {
     background-color: var(--pre-bg);
     color: var(--text-color);
+    white-space: pre !important;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-width: 100%;
 }
 
 /* 主題切換按鈕 */
-#themeToggle {
+.theme-toggle-btn {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -190,40 +194,44 @@ a:hover {
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-color);
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 手機版按鈕調整 */
 @media (max-width: 768px) {
-    #themeToggle {
+    .theme-toggle-btn {
         position: fixed;
         top: 20px;
         right: 20px;
-        z-index: 1000;
         width: 36px;
         height: 36px;
     }
     
-    #batchTestBtn {
+    .batch-test-toggle-btn {
         position: fixed;
         top: 20px;
-        right: 65px;
-        font-size: 0.875rem;
-        padding: 0.375rem 0.5rem;
+        right: 110px;
+        width: 36px;
         height: 36px;
-    }
-    
-    #batchTestBtn .d-none.d-md-inline {
-        display: none !important;
     }
     
     .color-picker {
         position: fixed;
         top: 20px;
-        right: 110px;
+        right: 65px;
         left: auto;
         bottom: auto;
         transform: none;
@@ -240,7 +248,7 @@ a:hover {
     }
 }
 
-[data-theme="dark"] #themeToggle {
+[data-theme="dark"] .theme-toggle-btn {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
@@ -454,34 +462,6 @@ a:hover {
 .color-option[data-color="red"] { background-color: #dc3545; }
 .color-option[data-color="teal"] { background-color: #20c997; }
 
-/* 批量測試按鈕樣式優化 */
-/* 批量測試按鈕位置調整 */
-#batchTestBtn {
-    position: fixed;
-    top: 20px;
-    right: 160px;
-    z-index: 1000;
-    font-weight: 500;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    min-width: auto;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#batchTestBtn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-}
-
-#batchTestBtn:active {
-    transform: translateY(0);
-}
 
 /* 節點狀態指示器 */
 .node-status-indicator {
@@ -547,17 +527,25 @@ a:hover {
 }
 
 /* 批量測試樣式 */
-/* 批量測試模態框置中 */
+/* 批量測試模態框置中 - 確保真正居中 */
+#batchTestModal.modal {
+    display: flex !important;
+}
+
 #batchTestModal .modal-dialog {
+    margin: auto;
     display: flex;
     align-items: center;
     min-height: 100vh;
-    margin: 0 auto;
 }
 
 #batchTestModal .modal-dialog.modal-xl {
     max-width: 1140px;
     width: 90%;
+}
+
+#batchTestModal .modal-content {
+    margin: 0 auto;
 }
 
 .node-selection-list {
@@ -749,4 +737,46 @@ a:hover {
     .batch-results.view-cards {
         grid-template-columns: 1fr;
     }
+}
+
+/* 批量測試按鈕樣式 - 與其他功能按鈕一致 */
+.batch-test-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 120px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.batch-test-toggle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background-color: var(--primary-color);
+    color: white;
+}
+
+
+/* 批量測試模態框居中 */
+#batchTestModal .modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: calc(100vh - 3.5rem);
+    margin: 1.75rem auto;
+}
+
+#batchTestModal .modal-content {
+    width: 100%;
+    max-width: 1140px;
+    margin: 0 auto;
 } 
