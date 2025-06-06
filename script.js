@@ -727,7 +727,7 @@ function generateBatchResultContent(data) {
         </div>
         <div class="mt-3">
             <h6 class="small mb-2">測試輸出</h6>
-            <pre class="small p-2 rounded test-output" style="max-height: 200px; overflow-y: auto; background-color: var(--pre-bg); color: var(--text-color);">${data.rawOutput}</pre>
+            <pre class="small p-2 rounded test-output" style="max-height: 500px; overflow-y: auto; background-color: var(--pre-bg); color: var(--text-color);">${data.rawOutput}</pre>
         </div>
     `;
 }
@@ -820,6 +820,14 @@ function updateResultSelection(resultId, isSelected) {
     const resultItem = document.getElementById(resultId);
     
     if (isSelected) {
+        // 限制最多只能選擇2個結果
+        if (selectedResults.size >= 2) {
+            // 如果已經選了2個，取消勾選這個checkbox
+            const checkbox = document.querySelector(`input[data-result-id="${resultId}"]`);
+            checkbox.checked = false;
+            alert('最多只能選擇2個結果進行比較');
+            return;
+        }
         selectedResults.add(resultId);
         resultItem.classList.add('selected');
     } else {
@@ -834,14 +842,19 @@ function updateResultSelection(resultId, isSelected) {
 function updateCompareButton() {
     const compareBtn = document.getElementById('compareSelectedBtn');
     const hasCompleted = batchTestResults.size > 0;
-    const hasSelected = selectedResults.size > 1;
+    const selectedCount = selectedResults.size;
     
     if (hasCompleted) {
         compareBtn.style.display = 'block';
-        compareBtn.disabled = !hasSelected;
-        compareBtn.innerHTML = hasSelected 
-            ? `<i class="bi bi-layout-sidebar me-1"></i>比較選中 (${selectedResults.size})`
-            : '<i class="bi bi-layout-sidebar me-1"></i>選擇結果比較';
+        compareBtn.disabled = selectedCount < 1;
+        
+        if (selectedCount === 0) {
+            compareBtn.innerHTML = '<i class="bi bi-layout-sidebar me-1"></i>選擇結果比較';
+        } else if (selectedCount === 1) {
+            compareBtn.innerHTML = `<i class="bi bi-eye me-1"></i>檢視結果 (${selectedCount})`;
+        } else {
+            compareBtn.innerHTML = `<i class="bi bi-layout-sidebar me-1"></i>比較結果 (${selectedCount})`;
+        }
     } else {
         compareBtn.style.display = 'none';
     }
@@ -849,8 +862,8 @@ function updateCompareButton() {
 
 // 顯示比較模態框
 function showCompareModal() {
-    if (selectedResults.size < 2) {
-        alert('請至少選擇兩個測試結果進行比較');
+    if (selectedResults.size < 1) {
+        alert('請選擇至少一個測試結果進行檢視');
         return;
     }
     
@@ -923,7 +936,7 @@ function createCompareModal() {
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">測試結果比較 (${resultCount} 個節點)</h5>
+                    <h5 class="modal-title">${resultCount === 1 ? '測試結果檢視' : '測試結果比較'} (${resultCount} 個節點)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
