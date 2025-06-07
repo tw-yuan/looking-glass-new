@@ -227,6 +227,7 @@ a:hover {
 
 /* 手機版按鈕調整 */
 @media (max-width: 768px) {
+    /* 主題切換按鈕 - 最右邊 */
     #themeToggle {
         position: fixed;
         top: 15px;
@@ -235,18 +236,20 @@ a:hover {
         height: 36px;
     }
     
+    /* 批量測試按鈕 - 中間 */
     #batchTestBtn {
         position: fixed;
         top: 15px;
-        right: 65px;  /* 增加間距 */
+        right: 60px;  /* 36px寬度 + 9px間距 + 15px = 60px */
         width: 36px;
         height: 36px;
     }
     
+    /* 調色盤按鈕 - 最左邊 */
     .color-picker {
         position: fixed;
         top: 15px;
-        right: 115px;  /* 增加間距 */
+        right: 105px;  /* 36px + 9px + 36px + 9px + 15px = 105px */
         left: auto;
         bottom: auto;
         transform: none;
@@ -258,8 +261,10 @@ a:hover {
     }
     
     .color-options {
+        position: absolute;
         top: 45px;
-        right: -40px;  /* 調整選項位置 */
+        right: 0;
+        left: auto;
     }
     
     /* 手機版主要內容區域調整 */
