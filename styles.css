@@ -234,30 +234,35 @@ a:hover {
         right: 15px;
         width: 36px;
         height: 36px;
+        z-index: 1000;
     }
     
     /* 批量測試按鈕 - 中間 */
     #batchTestBtn {
         position: fixed;
         top: 15px;
-        right: 60px;  /* 36px寬度 + 9px間距 + 15px = 60px */
+        right: 60px;  /* 15px + 36px + 9px = 60px */
         width: 36px;
         height: 36px;
+        z-index: 1000;
     }
     
-    /* 調色盤按鈕 - 最左邊 */
+    /* 調色盤 - 最左邊 */
     .color-picker {
-        position: fixed;
-        top: 15px;
-        right: 105px;  /* 36px + 9px + 36px + 9px + 15px = 105px */
-        left: auto;
-        bottom: auto;
-        transform: none;
+        position: fixed !important;
+        top: 15px !important;
+        right: 105px !important;  /* 15px + 36px + 9px + 36px + 9px = 105px */
+        left: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        z-index: 1000;
     }
     
     .color-toggle-btn {
-        width: 36px;
-        height: 36px;
+        position: relative !important;
+        width: 36px !important;
+        height: 36px !important;
+        margin: 0 !important;
     }
     
     .color-options {
@@ -265,6 +270,7 @@ a:hover {
         top: 45px;
         right: 0;
         left: auto;
+        z-index: 1001;
     }
     
     /* 手機版主要內容區域調整 */
