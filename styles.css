@@ -228,24 +228,24 @@ a:hover {
 @media (max-width: 768px) {
     #themeToggle {
         position: fixed;
-        top: 20px;
-        right: 20px;
+        top: 15px;
+        right: 15px;
         width: 36px;
         height: 36px;
     }
     
     #batchTestBtn {
         position: fixed;
-        top: 20px;
-        right: 65px;
+        top: 15px;
+        right: 60px;
         width: 36px;
         height: 36px;
     }
     
     .color-picker {
         position: fixed;
-        top: 20px;
-        right: 110px;
+        top: 15px;
+        right: 105px;
         left: auto;
         bottom: auto;
         transform: none;
@@ -537,6 +537,58 @@ a:hover {
     width: 100%;
 }
 
+/* 手機版批量測試模態框優化 */
+@media (max-width: 768px) {
+    #batchTestModal .modal-dialog {
+        margin: 0;
+        max-width: 100%;
+        width: 100%;
+        height: 100%;
+    }
+    
+    #batchTestModal .modal-content {
+        height: 100%;
+        border-radius: 0;
+    }
+    
+    #batchTestModal .modal-body {
+        padding: 0;
+    }
+    
+    #batchTestModal .modal-body > .row {
+        margin: 0;
+        height: 100%;
+    }
+    
+    #batchTestModal .col-md-4 {
+        padding: 1rem;
+        border-bottom: 1px solid var(--card-border);
+    }
+    
+    #batchTestModal .col-md-8 {
+        padding: 1rem;
+        height: auto;
+    }
+    
+    #batchTestModal .node-selection-list {
+        max-height: 200px;
+        font-size: 0.875rem;
+    }
+    
+    #batchTestModal .batch-results {
+        max-height: 300px;
+    }
+    
+    #batchTestModal .form-label {
+        font-size: 0.875rem;
+    }
+    
+    #batchTestModal .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
 /* 比較模態框置中 */
 #compareModal.modal.show {
     display: flex !important;
@@ -552,6 +604,39 @@ a:hover {
 
 #compareModal .modal-content {
     width: 100%;
+}
+
+/* 手機版比較模態框優化 */
+@media (max-width: 768px) {
+    #compareModal .modal-dialog {
+        margin: 0;
+        width: 100vw;
+        max-width: 100%;
+    }
+    
+    #compareModal .modal-content {
+        height: 100vh;
+        border-radius: 0;
+    }
+    
+    #compareModal .modal-body {
+        padding: 0.5rem;
+    }
+    
+    #compareModal .card-header {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+    
+    #compareModal .card-body {
+        font-size: 0.875rem;
+        padding: 0.75rem;
+    }
+    
+    #compareModal .test-output {
+        font-size: 0.75rem;
+        max-height: 200px;
+    }
 }
 
 .node-selection-list {
