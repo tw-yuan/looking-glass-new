@@ -237,21 +237,16 @@ a:hover {
         z-index: 1000;
     }
     
-    /* 批量測試按鈕 - 中間 */
+    /* 批量測試按鈕 - 手機版隱藏 */
     #batchTestBtn {
-        position: fixed;
-        top: 15px;
-        right: 60px;  /* 15px + 36px + 9px = 60px */
-        width: 36px;
-        height: 36px;
-        z-index: 1000;
+        display: none;
     }
     
-    /* 調色盤 - 最左邊 */
+    /* 調色盤 - 移到批量測試的位置 */
     .color-picker {
         position: fixed !important;
         top: 15px !important;
-        right: 105px !important;  /* 15px + 36px + 9px + 36px + 9px = 105px */
+        right: 60px !important;  /* 15px + 36px + 9px = 60px */
         left: auto !important;
         bottom: auto !important;
         transform: none !important;
