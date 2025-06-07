@@ -200,7 +200,7 @@ a:hover {
     transition: all 0.3s ease;
 }
 
-/* 批量測試按鈕 */
+/* 批量測試按鈕 - 與其他按鈕樣式一致 */
 #batchTestBtn {
     position: fixed;
     top: 20px;
@@ -209,14 +209,15 @@ a:hover {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 1px solid var(--primary-color);
-    background: var(--primary-color);
-    color: white;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-color);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
 }
 
 #batchTestBtn:hover {
@@ -237,7 +238,7 @@ a:hover {
     #batchTestBtn {
         position: fixed;
         top: 15px;
-        right: 60px;
+        right: 65px;  /* 增加間距 */
         width: 36px;
         height: 36px;
     }
@@ -245,7 +246,7 @@ a:hover {
     .color-picker {
         position: fixed;
         top: 15px;
-        right: 105px;
+        right: 115px;  /* 增加間距 */
         left: auto;
         bottom: auto;
         transform: none;
@@ -258,7 +259,7 @@ a:hover {
     
     .color-options {
         top: 45px;
-        right: -20px;
+        right: -40px;  /* 調整選項位置 */
     }
     
     /* 手機版主要內容區域調整 */
@@ -268,6 +269,12 @@ a:hover {
 }
 
 [data-theme="dark"] #themeToggle {
+    background-color: var(--light-bg);
+    border-color: var(--card-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] #batchTestBtn {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
