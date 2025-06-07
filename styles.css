@@ -227,10 +227,9 @@ a:hover {
 /* 手機版按鈕調整 */
 @media (max-width: 768px) {
     #themeToggle {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin-left: auto;
+        position: fixed;
+        top: 20px;
+        right: 20px;
         width: 36px;
         height: 36px;
     }
@@ -238,7 +237,7 @@ a:hover {
     #batchTestBtn {
         position: fixed;
         top: 20px;
-        right: 110px;
+        right: 65px;
         width: 36px;
         height: 36px;
     }
@@ -246,7 +245,7 @@ a:hover {
     .color-picker {
         position: fixed;
         top: 20px;
-        right: 65px;
+        right: 110px;
         left: auto;
         bottom: auto;
         transform: none;
@@ -260,6 +259,11 @@ a:hover {
     .color-options {
         top: 45px;
         right: -20px;
+    }
+    
+    /* 手機版主要內容區域調整 */
+    main.container {
+        padding-top: 4rem !important;
     }
 }
 
@@ -425,32 +429,6 @@ a:hover {
     overflow-wrap: normal !important;
 }
 
-/* 手機版顏色選擇器調整 */
-@media (max-width: 768px) {
-    .color-picker {
-        position: fixed;
-        bottom: 20px;
-        top: auto;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-    }
-    
-    .color-options {
-        position: fixed;
-        bottom: 70px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        gap: 6px;
-        padding: 6px 10px;
-    }
-    
-    .color-option {
-        width: 20px;
-        height: 20px;
-    }
-}
 
 .color-option {
     width: 24px;
