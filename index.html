@@ -267,26 +267,30 @@
                             </div>
                         </div>
                         
-                        <!-- 新增：即時測試統計 -->
+                        <!-- 節點快速統計 -->
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h6 class="mb-0">系統健康度指標</h6>
+                                        <h6 class="mb-0">節點快速統計</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-4">
-                                                <h6 class="text-muted small">平均響應時間</h6>
-                                                <h4 id="avgResponseTime">-</h4>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted small">最新節點</h6>
+                                                <p class="mb-0" id="newestNode">-</p>
                                             </div>
-                                            <div class="col-md-4">
-                                                <h6 class="text-muted small">最快響應節點</h6>
-                                                <p class="mb-0" id="fastestNode">-</p>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted small">最舊節點</h6>
+                                                <p class="mb-0" id="oldestNode">-</p>
                                             </div>
-                                            <div class="col-md-4">
-                                                <h6 class="text-muted small">最佳可用節點</h6>
-                                                <p class="mb-0" id="bestAvailableNode">-</p>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted small">平均 Uptime</h6>
+                                                <h4 id="avgUptime">-</h4>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted small">最佳 Uptime</h6>
+                                                <p class="mb-0" id="bestUptime">-</p>
                                             </div>
                                         </div>
                                     </div>
@@ -319,7 +323,7 @@
                                                 <th>上線時間</th>
                                                 <th>版本</th>
                                                 <th>ASN</th>
-                                                <th>支援協議</th>
+                                                <th>Uptime</th>
                                             </tr>
                                         </thead>
                                         <tbody id="nodeDetailsList">
