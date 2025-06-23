@@ -386,7 +386,7 @@ a:hover {
 .color-picker {
     position: fixed;
     top: 20px;
-    right: 150px;
+    right: 110px;
     z-index: 1000;
 }
 
@@ -619,23 +619,23 @@ a:hover {
 }
 
 /* 統計面板置中顯示 */
-.modal-dialog.modal-xl {
+#statsModal .modal-dialog.modal-xl {
     display: flex;
     align-items: center;
+    justify-content: center;
     min-height: calc(100vh - 3.5rem);
     margin: 1.75rem auto;
+    max-width: 90%;
 }
 
 @media (min-width: 1200px) {
-    .modal-dialog.modal-xl {
-        max-width: 90%;
+    #statsModal .modal-dialog.modal-xl {
+        max-width: 85%;
     }
-}
-    z-index: 10;
 }
 
 .node-card-status .bi-circle-fill {
-    font-size: 10px;
+    font-size: 8px;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
