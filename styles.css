@@ -382,44 +382,27 @@ a:hover {
     --primary-light: #4dd0a7;
 }
 
-/* 主題色選擇器樣式 */
-.color-picker {
-    position: fixed;
-    top: 20px;
-    right: 110px;
-    z-index: 1000;
-}
-
-/* 固定按鈕組樣式 */
-.fixed-buttons {
+/* 主題切換按鈕 */
+#themeToggle {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1001;
-    display: flex;
-    gap: 10px;
-}
-
-/* 主題切換按鈕樣式 */
-#themeToggle {
+    z-index: 1000;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--card-bg);
-    border-color: var(--card-border);
-    color: var(--text-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
 }
 
-#themeToggle:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* 統計按鈕樣式 */
-.stats-button,
+/* 統計按鈕 - 與其他按鈕樣式一致 */
 #statsBtn {
+    position: fixed;
+    top: 20px;
+    right: 70px;
+    z-index: 1000;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -429,20 +412,22 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 0;
-    outline: none;
+    cursor: pointer;
 }
 
-.stats-button:hover,
 #statsBtn:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+}
+
+/* 主題色選擇器樣式 */
+.color-picker {
+    position: fixed;
+    top: 20px;
+    right: 120px;
+    z-index: 1000;
 }
 
 
