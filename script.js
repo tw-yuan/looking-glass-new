@@ -561,7 +561,7 @@ async function calculateStats(probes) {
             const supportedProtocols = detectSupportedProtocols(primaryProbe);
             
             // 計算 uptime 
-            const uptime = await calculateNodeUptime(node, primaryProbe);
+            const uptime = await calculateNodeUptime(primaryProbe);
             
             // 節點詳細信息
             stats.nodeDetails.push({
@@ -601,7 +601,7 @@ async function calculateStats(probes) {
 }
 
 // 計算節點 uptime - 嘗試獲取真實 uptime 數據
-async function calculateNodeUptime(node, probe) {
+async function calculateNodeUptime(probe) {
     if (!probe) return 'N/A';
     
     try {
@@ -628,23 +628,37 @@ async function calculateNodeUptime(node, probe) {
     }
     
     // 如果無法獲取真實數據，生成合理的估算值
-    return generateEstimatedUptime(node, probe);
+    return generateEstimatedUptime(probe);
 }
 
-// 格式化 uptime 為 幾d幾h幾m幾s
+// 格式化 uptime 為美觀的顯示格式
 function formatUptime(uptimeSeconds) {
     const days = Math.floor(uptimeSeconds / 86400);
     const hours = Math.floor((uptimeSeconds % 86400) / 3600);
     const minutes = Math.floor((uptimeSeconds % 3600) / 60);
     const seconds = uptimeSeconds % 60;
     
-    let result = '';
-    if (days > 0) result += `${days}d`;
-    if (hours > 0) result += `${hours}h`;
-    if (minutes > 0) result += `${minutes}m`;
-    if (seconds > 0) result += `${seconds}s`;
+    const parts = [];
     
-    return result || '0s';
+    if (days > 0) {
+        parts.push(`<span class="uptime-value">${days}</span><span class="uptime-unit">天</span>`);
+    }
+    if (hours > 0) {
+        parts.push(`<span class="uptime-value">${hours}</span><span class="uptime-unit">小時</span>`);
+    }
+    if (minutes > 0) {
+        parts.push(`<span class="uptime-value">${minutes}</span><span class="uptime-unit">分</span>`);
+    }
+    if (seconds > 0) {
+        parts.push(`<span class="uptime-value">${seconds}</span><span class="uptime-unit">秒</span>`);
+    }
+    
+    if (parts.length === 0) {
+        return '<span class="uptime-value">0</span><span class="uptime-unit">秒</span>';
+    }
+    
+    // 只顯示最重要的兩個單位
+    return parts.slice(0, 2).join(' ');
 }
 
 // 從毫秒數格式化 uptime
@@ -654,7 +668,7 @@ function formatUptimeFromMs(milliseconds) {
 }
 
 // 生成估算的 uptime
-function generateEstimatedUptime(node, probe) {
+function generateEstimatedUptime(probe) {
     // 生成隨機但合理的 uptime
     let baseDays = 30; // 基礎天數
     
@@ -1057,16 +1071,32 @@ function parseUptimeToSeconds(uptimeStr) {
     
     let totalSeconds = 0;
     
-    // 解析 幾d幾h幾m幾s 格式
-    const dayMatch = uptimeStr.match(/(\d+)d/);
-    const hourMatch = uptimeStr.match(/(\d+)h/);
-    const minuteMatch = uptimeStr.match(/(\d+)m/);
-    const secondMatch = uptimeStr.match(/(\d+)s/);
+    // 移除 HTML 標籤，只保留數字和單位
+    const cleanStr = uptimeStr.replace(/<[^>]*>/g, '');
+    
+    // 解析中文格式: 天、小時、分、秒
+    const dayMatch = cleanStr.match(/(\d+)天/);
+    const hourMatch = cleanStr.match(/(\d+)小時/);
+    const minuteMatch = cleanStr.match(/(\d+)分/);
+    const secondMatch = cleanStr.match(/(\d+)秒/);
+    
+    // 也支援英文格式: d、h、m、s (向後兼容)
+    const dayMatchEn = cleanStr.match(/(\d+)d/);
+    const hourMatchEn = cleanStr.match(/(\d+)h/);
+    const minuteMatchEn = cleanStr.match(/(\d+)m/);
+    const secondMatchEn = cleanStr.match(/(\d+)s/);
     
     if (dayMatch) totalSeconds += parseInt(dayMatch[1]) * 86400;
+    else if (dayMatchEn) totalSeconds += parseInt(dayMatchEn[1]) * 86400;
+    
     if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+    else if (hourMatchEn) totalSeconds += parseInt(hourMatchEn[1]) * 3600;
+    
     if (minuteMatch) totalSeconds += parseInt(minuteMatch[1]) * 60;
+    else if (minuteMatchEn) totalSeconds += parseInt(minuteMatchEn[1]) * 60;
+    
     if (secondMatch) totalSeconds += parseInt(secondMatch[1]);
+    else if (secondMatchEn) totalSeconds += parseInt(secondMatchEn[1]);
     
     return totalSeconds;
 }
