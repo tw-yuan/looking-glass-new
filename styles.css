@@ -386,7 +386,7 @@ a:hover {
 .color-picker {
     position: fixed;
     top: 20px;
-    right: 130px;
+    right: 150px;
     z-index: 1000;
 }
 
@@ -395,12 +395,13 @@ a:hover {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1000;
+    z-index: 1001;
     display: flex;
     gap: 10px;
 }
 
 /* 統計按鈕樣式 */
+.stats-button,
 #statsBtn {
     width: 40px;
     height: 40px;
@@ -414,8 +415,13 @@ a:hover {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1002;
+    padding: 0;
+    outline: none;
 }
 
+.stats-button:hover,
 #statsBtn:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

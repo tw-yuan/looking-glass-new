@@ -439,8 +439,12 @@ function initStatsPanel() {
     const refreshStatsBtn = document.getElementById('refreshStats');
     const exportStatsBtn = document.getElementById('exportStats');
     
-    // 綁定按鈕事件
-    statsBtn.addEventListener('click', showStatsModal);
+    // 綁定統計按鈕事件
+    if (statsBtn) {
+        statsBtn.addEventListener('click', showStatsModal);
+    }
+    
+    // 綁定其他按鈕事件
     if (refreshStatsBtn) {
         refreshStatsBtn.addEventListener('click', refreshStats);
     }
