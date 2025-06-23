@@ -522,13 +522,13 @@ function calculateStats(probes) {
     // 分析每個探測節點
     probes.forEach(probe => {
         // 檢查是否是我們的節點
-        const matchedNode = Array.from(nodeTagsMap.entries()).find(([tags, node]) => {
+        const matchedNode = Array.from(nodeTagsMap.entries()).find(([tags]) => {
             // 比對 tags 數組
             return probe.tags && probe.tags.some(tag => tags.includes(tag));
         });
         
         if (matchedNode) {
-            const [tags, node] = matchedNode;
+            const [, node] = matchedNode;
             stats.total++;
             
             // 假設有 version 的節點是在線的
@@ -546,6 +546,9 @@ function calculateStats(probes) {
             const networkType = detectNetworkType(probe.tags);
             stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
             
+            // 檢測支援的協議
+            const supportedProtocols = detectSupportedProtocols(probe);
+            
             // 節點詳細信息
             stats.nodeDetails.push({
                 name: node.name,
@@ -558,6 +561,7 @@ function calculateStats(probes) {
                 version: probe.version || 'N/A',
                 network: probe.location?.network || 'N/A',
                 asn: probe.location?.asn || 'N/A',
+                protocols: supportedProtocols,
                 probeData: probe
             });
         }
@@ -585,6 +589,68 @@ function detectNetworkType(tags) {
     }
     
     return '其他';
+}
+
+// 檢測支援的協議
+function detectSupportedProtocols(probe) {
+    const protocols = [];
+    
+    // 檢查 resolvers 來判斷支援的協議
+    if (probe.resolvers && Array.isArray(probe.resolvers)) {
+        // 大部分節點都支援 IPv4
+        protocols.push('IPv4');
+        
+        // 檢測 IPv6 支援（通過解析器或其他指標）
+        const hasIPv6Indicators = probe.resolvers.some(resolver => 
+            resolver.includes('::') || // IPv6 地址格式
+            resolver.includes('2001:') || // 常見 IPv6 前綴
+            resolver.includes('2400:') || // 亞洲 IPv6 前綴
+            resolver.includes('2a00:')    // 歐洲 IPv6 前綴
+        );
+        
+        // 檢查 tags 中是否有 IPv6 相關標記
+        const hasIPv6Tags = probe.tags && probe.tags.some(tag => 
+            tag.toLowerCase().includes('ipv6') ||
+            tag.toLowerCase().includes('dual-stack') ||
+            tag.toLowerCase().includes('dualstack')
+        );
+        
+        // 檢查位置信息中是否有 IPv6 支援的跡象
+        const locationSupportsIPv6 = probe.location && (
+            probe.location.network && probe.location.network.toLowerCase().includes('ipv6')
+        );
+        
+        if (hasIPv6Indicators || hasIPv6Tags || locationSupportsIPv6) {
+            protocols.push('IPv6');
+        }
+    } else {
+        // 如果沒有 resolvers 信息，默認支援 IPv4
+        protocols.push('IPv4');
+    }
+    
+    // 如果沒有檢測到任何協議，默認為 IPv4
+    if (protocols.length === 0) {
+        protocols.push('IPv4');
+    }
+    
+    return protocols;
+}
+
+// 格式化協議顯示
+function formatProtocols(protocols) {
+    if (!protocols || protocols.length === 0) {
+        return '<span class="badge bg-secondary">未知</span>';
+    }
+    
+    return protocols.map(protocol => {
+        if (protocol === 'IPv4') {
+            return '<span class="badge bg-primary me-1">IPv4</span>';
+        } else if (protocol === 'IPv6') {
+            return '<span class="badge bg-success me-1">IPv6</span>';
+        } else {
+            return `<span class="badge bg-secondary me-1">${protocol}</span>`;
+        }
+    }).join('');
 }
 
 // 更新統計 UI
@@ -708,11 +774,12 @@ function updateNodeDetailsList(nodeDetails) {
                     <td>${node.status === 'online' ? '運行中' : '-'}</td>
                     <td>${node.version}</td>
                     <td>${node.asn}</td>
+                    <td>${formatProtocols(node.protocols)}</td>
                 </tr>
             `;
         }).join('');
     
-    tbody.innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">無數據</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="8" class="text-center text-muted">無數據</td></tr>';
 }
 
 // 顯示統計錯誤
@@ -743,7 +810,7 @@ async function refreshStats() {
     
     document.getElementById('nodeDetailsList').innerHTML = `
         <tr>
-            <td colspan="7" class="text-center text-muted">
+            <td colspan="8" class="text-center text-muted">
                 <div class="spinner-border spinner-border-sm" role="status">
                     <span class="visually-hidden">載入中...</span>
                 </div>
@@ -884,7 +951,8 @@ function exportStats() {
             status: node.status,
             version: node.version,
             network: node.network,
-            asn: node.asn
+            asn: node.asn,
+            protocols: node.protocols
         }))
     };
     
