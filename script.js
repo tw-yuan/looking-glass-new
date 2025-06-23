@@ -517,41 +517,48 @@ function calculateStats(probes) {
         nodeDetails: []
     };
     
-    // 創建節點名稱到tags的映射
-    const nodeTagsMap = new Map();
-    nodesData.nodes.forEach(node => {
-        nodeTagsMap.set(node.tags, node);
-    });
-    
-    // 分析每個探測節點
-    probes.forEach(probe => {
-        // 檢查是否是我們的節點
-        const matchedNode = Array.from(nodeTagsMap.entries()).find(([tags]) => {
-            // 比對 tags 數組
-            return probe.tags && probe.tags.some(tag => tags.includes(tag));
+    // 為每個節點檢查是否在線
+    for (const node of nodesData.nodes) {
+        stats.total++;
+        
+        // 在 probes 中查找匹配的節點
+        const matchingProbes = probes.filter(probe => {
+            if (!probe.tags || !Array.isArray(probe.tags)) return false;
+            
+            // 檢查是否有匹配的 tags
+            return probe.tags.some(tag => {
+                if (typeof node.tags === 'string') {
+                    return node.tags.includes(tag);
+                } else if (Array.isArray(node.tags)) {
+                    return node.tags.includes(tag);
+                }
+                return false;
+            });
         });
         
-        if (matchedNode) {
-            const [, node] = matchedNode;
-            stats.total++;
-            
-            // 假設有 version 的節點是在線的
-            if (probe.version) {
-                stats.online++;
-            } else {
-                stats.offline++;
-            }
-            
+        // 判斷節點狀態
+        const isOnline = matchingProbes.length > 0 && matchingProbes.some(probe => probe.version);
+        
+        if (isOnline) {
+            stats.online++;
+        } else {
+            stats.offline++;
+        }
+        
+        // 使用第一個匹配的 probe 來獲取詳細信息
+        const primaryProbe = matchingProbes.find(probe => probe.version) || matchingProbes[0];
+        
+        if (primaryProbe) {
             // 地區統計
-            const region = probe.location?.continent || 'Unknown';
+            const region = primaryProbe.location?.continent || 'Unknown';
             stats.byRegion[region] = (stats.byRegion[region] || 0) + 1;
             
             // 網路類型統計
-            const networkType = detectNetworkType(probe.tags);
+            const networkType = detectNetworkType(primaryProbe.tags);
             stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
             
             // 檢測支援的協議
-            const supportedProtocols = detectSupportedProtocols(probe);
+            const supportedProtocols = detectSupportedProtocols(primaryProbe);
             
             // 節點詳細信息
             stats.nodeDetails.push({
@@ -561,15 +568,31 @@ function calculateStats(probes) {
                 location_zh: node.location_zh,
                 provider: node.provider,
                 providerLink: node['provider-link'],
-                status: probe.version ? 'online' : 'offline',
-                version: probe.version || 'N/A',
-                network: probe.location?.network || 'N/A',
-                asn: probe.location?.asn || 'N/A',
+                status: isOnline ? 'online' : 'offline',
+                version: primaryProbe.version || 'N/A',
+                network: primaryProbe.location?.network || 'N/A',
+                asn: primaryProbe.location?.asn || 'N/A',
                 protocols: supportedProtocols,
-                probeData: probe
+                probeData: primaryProbe
+            });
+        } else {
+            // 沒有找到匹配的 probe，標記為離線
+            stats.nodeDetails.push({
+                name: node.name,
+                name_zh: node.name_zh,
+                location: node.location,
+                location_zh: node.location_zh,
+                provider: node.provider,
+                providerLink: node['provider-link'],
+                status: 'offline',
+                version: 'N/A',
+                network: 'N/A',
+                asn: 'N/A',
+                protocols: ['未知'],
+                probeData: null
             });
         }
-    });
+    }
     
     return stats;
 }
@@ -597,47 +620,75 @@ function detectNetworkType(tags) {
 
 // 檢測支援的協議
 function detectSupportedProtocols(probe) {
+    if (!probe) {
+        return ['未知'];
+    }
+    
     const protocols = [];
+    let hasIPv4 = false;
+    let hasIPv6 = false;
     
     // 檢查 resolvers 來判斷支援的協議
     if (probe.resolvers && Array.isArray(probe.resolvers)) {
-        // 大部分節點都支援 IPv4
-        protocols.push('IPv4');
+        probe.resolvers.forEach(resolver => {
+            // IPv4 地址格式檢測
+            if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(resolver)) {
+                hasIPv4 = true;
+            }
+            // IPv6 地址格式檢測
+            else if (resolver.includes(':') && (
+                resolver.includes('::') || // 縮寫格式
+                /^[0-9a-fA-F:]+$/.test(resolver) // 完整格式
+            )) {
+                hasIPv6 = true;
+            }
+            // 常見的 IPv6 DNS 服務器
+            else if (resolver === '2001:4860:4860::8888' || // Google IPv6 DNS
+                     resolver === '2001:4860:4860::8844' ||
+                     resolver.startsWith('2001:') ||
+                     resolver.startsWith('2400:') ||
+                     resolver.startsWith('2a00:') ||
+                     resolver.startsWith('2606:')) {
+                hasIPv6 = true;
+            }
+        });
+    }
+    
+    // 檢查 tags 中是否有 IPv6 相關標記
+    if (probe.tags && Array.isArray(probe.tags)) {
+        const tagStr = probe.tags.join(' ').toLowerCase();
         
-        // 檢測 IPv6 支援（通過解析器或其他指標）
-        const hasIPv6Indicators = probe.resolvers.some(resolver => 
-            resolver.includes('::') || // IPv6 地址格式
-            resolver.includes('2001:') || // 常見 IPv6 前綴
-            resolver.includes('2400:') || // 亞洲 IPv6 前綴
-            resolver.includes('2a00:')    // 歐洲 IPv6 前綴
-        );
-        
-        // 檢查 tags 中是否有 IPv6 相關標記
-        const hasIPv6Tags = probe.tags && probe.tags.some(tag => 
-            tag.toLowerCase().includes('ipv6') ||
-            tag.toLowerCase().includes('dual-stack') ||
-            tag.toLowerCase().includes('dualstack')
-        );
-        
-        // 檢查位置信息中是否有 IPv6 支援的跡象
-        const locationSupportsIPv6 = probe.location && (
-            probe.location.network && probe.location.network.toLowerCase().includes('ipv6')
-        );
-        
-        if (hasIPv6Indicators || hasIPv6Tags || locationSupportsIPv6) {
-            protocols.push('IPv6');
+        if (tagStr.includes('ipv6') || 
+            tagStr.includes('dual-stack') || 
+            tagStr.includes('dualstack') ||
+            tagStr.includes('v6')) {
+            hasIPv6 = true;
         }
-    } else {
-        // 如果沒有 resolvers 信息，默認支援 IPv4
-        protocols.push('IPv4');
+        
+        // 如果沒有明確的 IPv4 檢測，但有網路相關標記，預設支援 IPv4
+        if (!hasIPv4 && (tagStr.includes('datacenter') || tagStr.includes('network') || tagStr.includes('isp'))) {
+            hasIPv4 = true;
+        }
     }
     
-    // 如果沒有檢測到任何協議，默認為 IPv4
-    if (protocols.length === 0) {
-        protocols.push('IPv4');
+    // 檢查位置信息中是否有 IPv6 支援的跡象
+    if (probe.location && probe.location.network) {
+        const networkStr = probe.location.network.toLowerCase();
+        if (networkStr.includes('ipv6') || networkStr.includes('dual') || networkStr.includes('v6')) {
+            hasIPv6 = true;
+        }
     }
     
-    return protocols;
+    // 如果都沒有明確檢測到，預設支援 IPv4
+    if (!hasIPv4 && !hasIPv6) {
+        hasIPv4 = true;
+    }
+    
+    // 建立協議列表
+    if (hasIPv4) protocols.push('IPv4');
+    if (hasIPv6) protocols.push('IPv6');
+    
+    return protocols.length > 0 ? protocols : ['IPv4'];
 }
 
 // 格式化協議顯示
@@ -831,26 +882,32 @@ async function updateHealthMetrics(stats) {
     const onlineNodes = stats.nodeDetails.filter(node => node.status === 'online');
     
     if (onlineNodes.length > 0) {
-        // 測試幾個節點的響應時間
-        const responseTests = await testNodesResponseTime(onlineNodes.slice(0, 5));
+        // 最佳可用節點（即使無法測試響應時間也能顯示）
+        const bestNode = determineBestNode(onlineNodes);
+        document.getElementById('bestAvailableNode').textContent = bestNode.name;
         
-        if (responseTests.length > 0) {
-            // 計算平均響應時間
-            const avgTime = responseTests.reduce((sum, test) => sum + test.time, 0) / responseTests.length;
-            document.getElementById('avgResponseTime').textContent = `${avgTime.toFixed(0)}ms`;
+        // 嘗試測試響應時間
+        try {
+            const responseTests = await testNodesResponseTime(onlineNodes);
             
-            // 找出最快響應節點
-            const fastest = responseTests.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
-            document.getElementById('fastestNode').textContent = 
-                `${fastest.node.name} (${fastest.time}ms)`;
-            
-            // 最佳可用節點（考慮地理位置和網路類型）
-            const bestNode = determineBestNode(onlineNodes);
-            document.getElementById('bestAvailableNode').textContent = bestNode.name;
-        } else {
-            document.getElementById('avgResponseTime').textContent = '無法測試';
-            document.getElementById('fastestNode').textContent = '無法測試';
-            document.getElementById('bestAvailableNode').textContent = '無法確定';
+            if (responseTests.length > 0) {
+                // 計算平均響應時間
+                const avgTime = responseTests.reduce((sum, test) => sum + test.time, 0) / responseTests.length;
+                document.getElementById('avgResponseTime').textContent = `${avgTime.toFixed(0)}ms`;
+                
+                // 找出最快響應節點
+                const fastest = responseTests.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+                document.getElementById('fastestNode').textContent = 
+                    `${fastest.node.name} (${fastest.time}ms)`;
+            } else {
+                // 無法測試響應時間，但可以顯示推薦節點
+                document.getElementById('avgResponseTime').textContent = '無法測試';
+                document.getElementById('fastestNode').textContent = `推薦: ${bestNode.name}`;
+            }
+        } catch (error) {
+            console.error('響應時間測試失敗:', error);
+            document.getElementById('avgResponseTime').textContent = '測試失敗';
+            document.getElementById('fastestNode').textContent = `推薦: ${bestNode.name}`;
         }
     } else {
         document.getElementById('avgResponseTime').textContent = 'N/A';
@@ -863,9 +920,19 @@ async function updateHealthMetrics(stats) {
 async function testNodesResponseTime(nodes) {
     const results = [];
     
-    for (const node of nodes) {
+    // 只測試前3個在線節點，避免過多的 API 請求
+    const testNodes = nodes.slice(0, 3);
+    
+    for (const node of testNodes) {
         try {
             const startTime = Date.now();
+            
+            // 找到對應的原始節點資料來獲取正確的 tags
+            const originalNode = nodesData.nodes.find(n => n.name === node.name);
+            if (!originalNode || !originalNode.tags) {
+                console.warn(`無法找到節點 ${node.name} 的 tags`);
+                continue;
+            }
             
             // 發送簡單的測試請求
             const response = await fetch('https://api.globalping.io/v1/measurements', {
@@ -879,18 +946,23 @@ async function testNodesResponseTime(nodes) {
                     target: '8.8.8.8',
                     limit: 1,
                     locations: [{
-                        magic: nodesData.nodes.find(n => n.name === node.name)?.tags || node.name
+                        magic: originalNode.tags
                     }]
                 })
             });
             
             const endTime = Date.now();
+            const responseTime = endTime - startTime;
             
             if (response.ok) {
-                results.push({
-                    node: node,
-                    time: endTime - startTime
-                });
+                const data = await response.json();
+                // 檢查是否成功創建了測量
+                if (data.id) {
+                    results.push({
+                        node: node,
+                        time: responseTime
+                    });
+                }
             }
         } catch (error) {
             console.error(`測試節點 ${node.name} 失敗:`, error);
