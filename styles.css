@@ -932,6 +932,38 @@ a:hover {
     color: var(--text-color);
 }
 
+/* 統計面板進度條樣式 */
+.progress {
+    background-color: var(--light-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] .progress {
+    background-color: var(--input-bg);
+}
+
+[data-theme="dark"] .progress-bar {
+    background-color: var(--primary-light);
+}
+
+/* 統計卡片間距調整 */
+#regionStats .d-flex,
+#networkStats .d-flex {
+    margin-bottom: 0.75rem;
+}
+
+#regionStats .d-flex:last-child,
+#networkStats .d-flex:last-child {
+    margin-bottom: 0;
+}
+
 /* 手機版優化 */
 @media (max-width: 768px) {
     .batch-result-status {
