@@ -116,6 +116,15 @@
       "provider": "Ricky",
       "provider-link": "https://www.simple.taipei",
       "tags": "u-simple-taipei:unitedstates-lowend"
+    },
+    {
+      "name": "VeeTIME",
+      "name_zh": "大台中數位",
+      "location": "Taichung",
+      "location_zh": "台中",
+      "provider": "Cheese_ge",
+      "provider-link": "https://cheesege.github.io/",
+      "tags": "u-tw-yuan:veetime"
     }
   ]
 } 

@@ -114,8 +114,8 @@
     <button class="btn btn-outline-secondary btn-sm" id="themeToggle" aria-label="切換深色模式">
         <i class="bi bi-moon-fill"></i>
     </button>
-    <button id="batchTestBtn" title="批量測試">
-        <i class="bi bi-speedometer2"></i>
+    <button id="statsBtn" title="節點統計">
+        <i class="bi bi-graph-up"></i>
     </button>
     
     <main class="container py-5">
@@ -185,69 +185,152 @@
             </div>
         </div>
 
-        <!-- 批量測試模態框 -->
-        <div class="modal fade" id="batchTestModal" tabindex="-1" role="dialog" aria-labelledby="batchTestModalLabel" aria-hidden="true">
+        <!-- 統計面板模態框 -->
+        <div class="modal fade" id="statsModal" tabindex="-1" role="dialog" aria-labelledby="statsModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 class="modal-title h5" id="batchTestModalLabel">批量測試</h2>
+                        <h2 class="modal-title h5" id="statsModalLabel">節點統計面板</h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row h-100">
-                            <!-- 左側：測試設定 -->
-                            <div class="col-md-4 d-flex flex-column">
-                                <h6 class="mb-3">測試設定</h6>
-                                <div class="mb-3">
-                                    <label for="batchTarget" class="form-label">目標主機</label>
-                                    <input type="text" class="form-control" id="batchTarget" placeholder="輸入 IP 或域名">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="batchTestType" class="form-label">測試類型</label>
-                                    <select class="form-select" id="batchTestType">
-                                        <option value="ping">Ping</option>
-                                        <option value="traceroute">Traceroute</option>
-                                        <option value="mtr" selected>MTR</option>
-                                    </select>
-                                </div>
-                                
-                                <h6 class="mb-3">選擇節點</h6>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="selectAllNodes">
-                                        <label class="form-check-label fw-bold" for="selectAllNodes">
-                                            全選/取消全選
-                                        </label>
+                        <!-- 最後更新時間 -->
+                        <div class="text-end text-muted small mb-3">
+                            <span id="lastUpdateTime">尚未更新</span>
+                        </div>
+                        
+                        <!-- 統計概覽 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">總節點數</h6>
+                                        <h3 class="mb-0" id="totalNodesCount">-</h3>
                                     </div>
                                 </div>
-                                <div class="node-selection-list" id="nodeSelectionList" style="max-height: 300px; overflow-y: auto;">
-                                    <!-- 節點選擇列表將由 JavaScript 生成 -->
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">在線節點</h6>
+                                        <h3 class="mb-0" id="onlineNodesCount">-</h3>
+                                    </div>
                                 </div>
-                                
-                                <div class="mt-3">
-                                    <button class="btn btn-primary w-100" id="startBatchTest">
-                                        <i class="bi bi-play-fill me-1"></i>開始批量測試
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">離線節點</h6>
+                                        <h3 class="mb-0" id="offlineNodesCount">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">在線率</h6>
+                                        <h3 class="mb-0" id="onlinePercentage">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 地區分布統計 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">地區分布</h6>
+                                    </div>
+                                    <div class="card-body" id="regionStats" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-center text-muted">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">載入中...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">網絡類型分布</h6>
+                                    </div>
+                                    <div class="card-body" id="networkStats" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-center text-muted">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">載入中...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 新增：即時測試統計 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">系統健康度指標</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <h6 class="text-muted small">平均響應時間</h6>
+                                                <h4 id="avgResponseTime">-</h4>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h6 class="text-muted small">最快響應節點</h6>
+                                                <p class="mb-0" id="fastestNode">-</p>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h6 class="text-muted small">最佳可用節點</h6>
+                                                <p class="mb-0" id="bestAvailableNode">-</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 節點詳細列表 -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">節點詳細狀態</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary me-2" id="exportStats">
+                                        <i class="bi bi-download"></i> 匯出
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" id="refreshStats">
+                                        <i class="bi bi-arrow-clockwise"></i> 刷新
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- 右側：測試結果 -->
-                            <div class="col-md-8 d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0">測試結果</h6>
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-outline-primary btn-sm" id="compareSelectedBtn" style="display: none;">
-                                            <i class="bi bi-layout-sidebar me-1"></i>比較選中
-                                        </button>
-                                        <div class="text-muted small align-self-center" id="batchProgress">選擇節點並開始測試</div>
-                                    </div>
-                                </div>
-                                
-                                <div id="batchResults" class="batch-results flex-grow-1 d-flex align-items-center justify-content-center">
-                                    <div class="text-center text-muted">
-                                        <i class="bi bi-speedometer2 fs-1 mb-3"></i>
-                                        <p>選擇要測試的節點並點擊「開始批量測試」</p>
-                                    </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>節點名稱</th>
+                                                <th>位置</th>
+                                                <th>提供者</th>
+                                                <th>狀態</th>
+                                                <th>上線時間</th>
+                                                <th>版本</th>
+                                                <th>ASN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="nodeDetailsList">
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted">
+                                                    <div class="spinner-border spinner-border-sm" role="status">
+                                                        <span class="visually-hidden">載入中...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>

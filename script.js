@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupModal();
         updateCopyrightYear();
         
-        // 初始化批量測試功能
-        initBatchTest();
+        // 初始化統計面板
+        initStatsPanel();
         
         // 檢查主畫面節點狀態
         checkMainNodeStatus();
@@ -426,583 +426,378 @@ function updateFaviconColor(color) {
     }
 }
 
-// === 批量測試功能 ===
+// === 統計面板功能 ===
 
-let selectedNodes = new Set();
-let batchTestResults = new Map();
+// GlobalPing API 探測資料快取
+let probesData = null;
+let lastProbesUpdate = 0;
+const PROBES_CACHE_TIME = 5 * 60 * 1000; // 5分鐘快取
 
-// 初始化批量測試功能
-function initBatchTest() {
-    const batchTestBtn = document.getElementById('batchTestBtn');
-    const selectAllNodesBtn = document.getElementById('selectAllNodes');
-    const startBatchTestBtn = document.getElementById('startBatchTest');
-    const compareSelectedBtn = document.getElementById('compareSelectedBtn');
+// 初始化統計面板
+function initStatsPanel() {
+    const statsBtn = document.getElementById('statsBtn');
+    const refreshStatsBtn = document.getElementById('refreshStats');
+    const exportStatsBtn = document.getElementById('exportStats');
     
     // 綁定按鈕事件
-    batchTestBtn.addEventListener('click', showBatchTestModal);
-    selectAllNodesBtn.addEventListener('change', toggleSelectAll);
-    startBatchTestBtn.addEventListener('click', startBatchTest);
-    compareSelectedBtn.addEventListener('click', showCompareModal);
-    
-    // 綁定模態框關閉事件
-    const batchModal = document.getElementById('batchTestModal');
-    batchModal.addEventListener('hidden.bs.modal', clearBatchTestData);
+    statsBtn.addEventListener('click', showStatsModal);
+    if (refreshStatsBtn) {
+        refreshStatsBtn.addEventListener('click', refreshStats);
+    }
+    if (exportStatsBtn) {
+        exportStatsBtn.addEventListener('click', exportStats);
+    }
 }
 
-// 顯示批量測試模態框
-function showBatchTestModal() {
-    const modal = document.getElementById('batchTestModal');
-    generateNodeSelectionList();
-    checkNodeStatus(); // 檢查節點狀態
-    
+// 顯示統計模態框
+async function showStatsModal() {
+    const modal = document.getElementById('statsModal');
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     modalInstance.show();
+    
+    // 載入統計數據
+    await loadStats();
 }
 
-// 清除批量測試資料
-function clearBatchTestData() {
-    // 清除所有測試結果
-    batchTestResults.clear();
-    selectedResults.clear();
-    selectedNodes.clear();
+// 獲取 GlobalPing probes 數據
+async function fetchProbesData() {
+    const now = Date.now();
     
-    // 重置 UI
-    const resultsContainer = document.getElementById('batchResults');
-    resultsContainer.className = 'batch-results flex-grow-1 d-flex align-items-center justify-content-center';
-    resultsContainer.innerHTML = `
-        <div class="text-center text-muted">
-            <i class="bi bi-speedometer2 fs-1 mb-3"></i>
-            <p>選擇要測試的節點並點擊「開始批量測試」</p>
-        </div>
-    `;
-    
-    // 重置進度顯示
-    const progressElement = document.getElementById('batchProgress');
-    progressElement.textContent = '選擇節點並開始測試';
-    
-    // 隱藏比較按鈕
-    const compareBtn = document.getElementById('compareSelectedBtn');
-    compareBtn.style.display = 'none';
-    
-    // 重置表單
-    document.getElementById('batchTarget').value = '';
-    document.getElementById('batchTestType').value = 'mtr';
-    
-    // 取消所有選擇
-    document.querySelectorAll('.node-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    document.getElementById('selectAllNodes').checked = false;
-    document.getElementById('selectAllNodes').indeterminate = false;
-    
-    // 重置開始按鈕
-    const startBtn = document.getElementById('startBatchTest');
-    startBtn.disabled = true;
-    startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>請選擇節點';
-}
-
-// 生成節點選擇列表
-function generateNodeSelectionList() {
-    const container = document.getElementById('nodeSelectionList');
-    container.innerHTML = '';
-    
-    nodesData.nodes.forEach((node, index) => {
-        const nodeItem = document.createElement('div');
-        nodeItem.className = 'node-selection-item';
-        
-        nodeItem.innerHTML = `
-            <div class="form-check d-flex align-items-center">
-                <input class="form-check-input node-checkbox" type="checkbox" 
-                       id="node_${index}" data-node-index="${index}">
-                <label class="form-check-label flex-grow-1" for="node_${index}">
-                    <div class="fw-medium">${node.name}</div>
-                    <div class="small text-muted">
-                        ${node.name_zh ? node.name_zh + ' • ' : ''}${node.location_zh || node.location}
-                    </div>
-                </label>
-                <div class="node-status-indicator" id="status_${index}">
-                    <div class="spinner-border spinner-border-sm text-muted" role="status">
-                        <span class="visually-hidden">檢查中...</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        const checkbox = nodeItem.querySelector('.node-checkbox');
-        checkbox.addEventListener('change', updateSelectedNodes);
-        
-        container.appendChild(nodeItem);
-    });
-}
-
-// 更新選中的節點
-function updateSelectedNodes() {
-    selectedNodes.clear();
-    const checkboxes = document.querySelectorAll('.node-checkbox:checked');
-    checkboxes.forEach(checkbox => {
-        selectedNodes.add(parseInt(checkbox.dataset.nodeIndex));
-    });
-    
-    // 更新全選按鈕狀態
-    const selectAllBtn = document.getElementById('selectAllNodes');
-    const totalNodes = nodesData.nodes.length;
-    selectAllBtn.indeterminate = selectedNodes.size > 0 && selectedNodes.size < totalNodes;
-    selectAllBtn.checked = selectedNodes.size === totalNodes;
-    
-    // 更新開始測試按鈕狀態
-    const startBtn = document.getElementById('startBatchTest');
-    startBtn.disabled = selectedNodes.size === 0;
-    startBtn.innerHTML = selectedNodes.size === 0 
-        ? '<i class="bi bi-play-fill me-1"></i>請選擇節點'
-        : `<i class="bi bi-play-fill me-1"></i>開始測試 (${selectedNodes.size} 個節點)`;
-}
-
-// 全選/取消全選
-function toggleSelectAll() {
-    const selectAllBtn = document.getElementById('selectAllNodes');
-    const checkboxes = document.querySelectorAll('.node-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAllBtn.checked;
-    });
-    
-    updateSelectedNodes();
-}
-
-// 開始批量測試
-async function startBatchTest() {
-    const target = document.getElementById('batchTarget').value.trim();
-    const testType = document.getElementById('batchTestType').value;
-    
-    if (!target) {
-        alert('請輸入目標主機');
-        return;
+    // 檢查快取
+    if (probesData && (now - lastProbesUpdate) < PROBES_CACHE_TIME) {
+        return probesData;
     }
     
-    if (selectedNodes.size === 0) {
-        alert('請選擇至少一個節點');
-        return;
-    }
-    
-    // 重置結果容器
-    batchTestResults.clear();
-    const resultsContainer = document.getElementById('batchResults');
-    resultsContainer.className = 'batch-results';
-    resultsContainer.innerHTML = '';
-    updateUIAfterTestStart();
-    
-    // 更新進度顯示
-    const progressElement = document.getElementById('batchProgress');
-    progressElement.textContent = `測試進行中... (0/${selectedNodes.size})`;
-    
-    // 禁用開始按鈕
-    const startBtn = document.getElementById('startBatchTest');
-    startBtn.disabled = true;
-    startBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>測試中...';
-    
-    let completedCount = 0;
-    
-    // 為每個選中的節點創建測試項目
-    const testPromises = Array.from(selectedNodes).map(async (nodeIndex) => {
-        const node = nodesData.nodes[nodeIndex];
-        const resultId = `batch_result_${nodeIndex}`;
-        
-        // 創建結果項目
-        createBatchResultItem(node, resultId, target, testType);
-        
-        try {
-            // 執行測試
-            const result = await performSingleTest(node, target, testType, resultId);
-            batchTestResults.set(resultId, result);
-            updateBatchResultItem(resultId, 'completed', result);
-        } catch (error) {
-            console.error(`節點 ${node.name} 測試失敗:`, error);
-            updateBatchResultItem(resultId, 'failed', { error: error.message });
-        } finally {
-            completedCount++;
-            progressElement.textContent = `測試進行中... (${completedCount}/${selectedNodes.size})`;
-            
-            if (completedCount === selectedNodes.size) {
-                progressElement.textContent = `測試完成！(${completedCount}/${selectedNodes.size})`;
-                startBtn.disabled = false;
-                startBtn.innerHTML = `<i class="bi bi-play-fill me-1"></i>重新測試 (${selectedNodes.size} 個節點)`;
-                updateUIAfterTestStart();
-            }
-        }
-    });
-    
-    // 等待所有測試完成
-    await Promise.allSettled(testPromises);
-}
-
-// 創建批量測試結果項目
-function createBatchResultItem(node, resultId, target, testType) {
-    const resultsContainer = document.getElementById('batchResults');
-    
-    const resultItem = document.createElement('div');
-    resultItem.className = 'batch-result-item';
-    resultItem.id = resultId;
-    
-    resultItem.innerHTML = `
-        <div class="batch-result-header">
-            <span class="batch-result-status status-pending">等待中</span>
-            <div class="batch-result-info">
-                <strong>${node.name}</strong>
-                ${node.name_zh ? `<span class="text-muted ms-1">${node.name_zh}</span>` : ''}
-                <div class="small text-muted">${node.location_zh || node.location}</div>
-            </div>
-            <div class="batch-result-checkbox">
-                <input class="form-check-input result-checkbox" type="checkbox" 
-                       data-result-id="${resultId}">
-            </div>
-        </div>
-        <div class="batch-result-content">
-            <div class="text-muted">正在等待測試開始...</div>
-        </div>
-    `;
-    
-    // 添加點擊選擇功能
-    resultItem.classList.add('selectable');
-    resultItem.addEventListener('click', (e) => {
-        if (e.target.type !== 'checkbox') {
-            handleResultClick(resultId);
-        }
-    });
-    
-    // 綁定 checkbox 事件
-    const checkbox = resultItem.querySelector('.result-checkbox');
-    checkbox.addEventListener('change', () => {
-        updateResultSelection(resultId, checkbox.checked);
-    });
-    
-    resultsContainer.appendChild(resultItem);
-}
-
-// 更新批量測試結果項目
-function updateBatchResultItem(resultId, status, data) {
-    const resultItem = document.getElementById(resultId);
-    if (!resultItem) return;
-    
-    const statusElement = resultItem.querySelector('.batch-result-status');
-    const contentElement = resultItem.querySelector('.batch-result-content');
-    
-    // 更新狀態
-    statusElement.className = `batch-result-status status-${status}`;
-    
-    switch (status) {
-        case 'running':
-            statusElement.textContent = '測試中';
-            contentElement.innerHTML = '<div class="text-muted">正在執行測試...</div>';
-            break;
-        case 'completed':
-            statusElement.textContent = '完成';
-            contentElement.innerHTML = generateBatchResultContent(data);
-            break;
-        case 'failed':
-            statusElement.textContent = '失敗';
-            contentElement.innerHTML = `<div class="text-danger">測試失敗: ${data.error}</div>`;
-            break;
+    try {
+        const response = await fetch('https://api.globalping.io/v1/probes');
+        const data = await response.json();
+        probesData = data;
+        lastProbesUpdate = now;
+        return data;
+    } catch (error) {
+        console.error('獲取 probes 數據失敗:', error);
+        return null;
     }
 }
 
-// 生成批量測試結果內容
-function generateBatchResultContent(data) {
-    const isIPv6 = data.target.includes(':');
-    
-    return `
-        <div class="row small">
-            <div class="col-md-6">
-                <p class="mb-1"><strong>網路：</strong> ${data.probe.network}</p>
-                <p class="mb-1"><strong>ASN：</strong> ${data.probe.asn}</p>
-                <p class="mb-1"><strong>使用協議：</strong> ${isIPv6 ? 'IPv6' : 'IPv4'}</p>
-            </div>
-            <div class="col-md-6">
-                <p class="mb-1"><strong>目標：</strong> ${data.target}</p>
-                <p class="mb-1"><strong>測試 ID：</strong> ${data.measurementId}</p>
-            </div>
-        </div>
-        <div class="text-muted small mt-1">
-            <i class="bi bi-info-circle"></i>
-            IPv4/IPv6 混合環境下 ASN 資訊可能不準確
-        </div>
-        <div class="mt-3">
-            <h6 class="small mb-2">測試輸出</h6>
-            <pre class="small p-2 rounded test-output" style="max-height: 500px; overflow-y: auto; background-color: var(--pre-bg); color: var(--text-color);">${data.rawOutput}</pre>
-        </div>
-    `;
-}
-
-// 執行單個測試
-async function performSingleTest(node, target, testType, resultId) {
-    // 更新狀態為測試中
-    updateBatchResultItem(resultId, 'running');
-    
-    // 發送測量請求
-    const measurementResponse = await fetch('https://api.globalping.io/v1/measurements', {
-        method: 'POST',
-        headers: {
-            'accept': 'application/json',
-            'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-            type: testType,
-            target: target,
-            inProgressUpdates: true,
-            locations: [{
-                magic: node.tags
-            }]
-        })
-    });
-    
-    const measurementData = await measurementResponse.json();
-    
-    if (!measurementData.id) {
-        throw new Error('無法獲取測量 ID');
-    }
-    
-    // 輪詢測量結果
-    let result = null;
-    let attempts = 0;
-    const maxAttempts = 30;
-    
-    while (attempts < maxAttempts) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        try {
-            const resultResponse = await fetch(`https://api.globalping.io/v1/measurements/${measurementData.id}`, {
-                method: 'GET',
-                headers: {
-                    'accept': 'application/json'
-                }
-            });
-            const resultData = await resultResponse.json();
-            
-            if (resultData.results && resultData.results.length > 0) {
-                result = resultData.results[0];
-                if (result.result.status === 'finished') {
-                    break;
-                }
-            }
-        } catch (error) {
-            console.error('輪詢失敗:', error);
-        }
-    }
-    
-    if (!result || result.result.status !== 'finished') {
-        throw new Error('測試超時或未完成');
-    }
-    
-    return {
-        probe: result.probe,
-        target: target,
-        measurementId: measurementData.id,
-        rawOutput: result.result.rawOutput
-    };
-}
-
-// 結果項目點擊處理（簡化版）
-function handleResultClick(resultId) {
-    toggleResultSelection(resultId);
-}
-
-let selectedResults = new Set();
-
-// 切換結果選擇狀態
-function toggleResultSelection(resultId) {
-    const checkbox = document.querySelector(`input[data-result-id="${resultId}"]`);
-    checkbox.checked = !checkbox.checked;
-    updateResultSelection(resultId, checkbox.checked);
-}
-
-// 更新結果選擇狀態
-function updateResultSelection(resultId, isSelected) {
-    const resultItem = document.getElementById(resultId);
-    
-    if (isSelected) {
-        // 限制最多只能選擇2個結果
-        if (selectedResults.size >= 2) {
-            // 如果已經選了2個，取消勾選這個checkbox
-            const checkbox = document.querySelector(`input[data-result-id="${resultId}"]`);
-            checkbox.checked = false;
-            alert('最多只能選擇2個結果進行比較');
+// 載入統計數據
+async function loadStats() {
+    try {
+        // 獲取 probes 數據
+        const probes = await fetchProbesData();
+        if (!probes) {
+            showStatsError('無法獲取節點數據');
             return;
         }
-        selectedResults.add(resultId);
-        resultItem.classList.add('selected');
-    } else {
-        selectedResults.delete(resultId);
-        resultItem.classList.remove('selected');
+        
+        // 計算統計數據
+        const stats = calculateStats(probes);
+        
+        // 更新 UI
+        updateStatsUI(stats);
+        
+    } catch (error) {
+        console.error('載入統計數據失敗:', error);
+        showStatsError('載入統計數據失敗');
     }
-    
-    updateCompareButton();
 }
 
-// 更新比較按鈕狀態
-function updateCompareButton() {
-    const compareBtn = document.getElementById('compareSelectedBtn');
-    const hasCompleted = batchTestResults.size > 0;
-    const selectedCount = selectedResults.size;
+// 計算統計數據
+function calculateStats(probes) {
+    const stats = {
+        total: 0,
+        online: 0,
+        offline: 0,
+        byRegion: {},
+        byNetwork: {},
+        nodeDetails: []
+    };
     
-    if (hasCompleted) {
-        compareBtn.style.display = 'block';
-        compareBtn.disabled = selectedCount < 1;
+    // 創建節點名稱到tags的映射
+    const nodeTagsMap = new Map();
+    nodesData.nodes.forEach(node => {
+        nodeTagsMap.set(node.tags, node);
+    });
+    
+    // 分析每個探測節點
+    probes.forEach(probe => {
+        // 檢查是否是我們的節點
+        const matchedNode = Array.from(nodeTagsMap.entries()).find(([tags, node]) => {
+            // 比對 tags 數組
+            return probe.tags && probe.tags.some(tag => tags.includes(tag));
+        });
         
-        if (selectedCount === 0) {
-            compareBtn.innerHTML = '<i class="bi bi-layout-sidebar me-1"></i>選擇結果比較';
-        } else if (selectedCount === 1) {
-            compareBtn.innerHTML = `<i class="bi bi-eye me-1"></i>檢視結果 (${selectedCount})`;
-        } else {
-            compareBtn.innerHTML = `<i class="bi bi-layout-sidebar me-1"></i>比較結果 (${selectedCount})`;
+        if (matchedNode) {
+            const [tags, node] = matchedNode;
+            stats.total++;
+            
+            // 假設有 version 的節點是在線的
+            if (probe.version) {
+                stats.online++;
+            } else {
+                stats.offline++;
+            }
+            
+            // 地區統計
+            const region = probe.location?.continent || 'Unknown';
+            stats.byRegion[region] = (stats.byRegion[region] || 0) + 1;
+            
+            // 網路類型統計
+            const networkType = detectNetworkType(probe.tags);
+            stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
+            
+            // 節點詳細信息
+            stats.nodeDetails.push({
+                name: node.name,
+                name_zh: node.name_zh,
+                location: node.location,
+                location_zh: node.location_zh,
+                provider: node.provider,
+                providerLink: node['provider-link'],
+                status: probe.version ? 'online' : 'offline',
+                version: probe.version || 'N/A',
+                network: probe.location?.network || 'N/A',
+                asn: probe.location?.asn || 'N/A',
+                probeData: probe
+            });
         }
-    } else {
-        compareBtn.style.display = 'none';
-    }
+    });
+    
+    return stats;
 }
 
-// 顯示比較模態框
-function showCompareModal() {
-    if (selectedResults.size < 1) {
-        alert('請選擇至少一個測試結果進行檢視');
-        return;
+// 檢測網路類型
+function detectNetworkType(tags) {
+    if (!tags || !Array.isArray(tags)) return '未知';
+    
+    const tagStr = tags.join(' ').toLowerCase();
+    
+    if (tagStr.includes('datacenter') || tagStr.includes('vps') || tagStr.includes('cloud')) {
+        return '數據中心';
+    } else if (tagStr.includes('residential') || tagStr.includes('home')) {
+        return '家庭寬帶';
+    } else if (tagStr.includes('business') || tagStr.includes('corporate')) {
+        return '企業網路';
+    } else if (tagStr.includes('mobile') || tagStr.includes('cellular')) {
+        return '移動網路';
+    } else if (tagStr.includes('university') || tagStr.includes('education')) {
+        return '教育網路';
     }
     
-    // 創建比較模態框
-    createCompareModal();
+    return '其他';
 }
 
-// 創建比較模態框
-function createCompareModal() {
-    // 檢查是否已存在比較模態框
-    let compareModal = document.getElementById('compareModal');
-    if (compareModal) {
-        compareModal.remove();
-    }
+// 更新統計 UI
+function updateStatsUI(stats) {
+    // 更新概覽卡片
+    document.getElementById('totalNodesCount').textContent = stats.total;
+    document.getElementById('onlineNodesCount').textContent = stats.online;
+    document.getElementById('offlineNodesCount').textContent = stats.offline;
     
-    // 創建新的比較模態框
-    compareModal = document.createElement('div');
-    compareModal.className = 'modal fade';
-    compareModal.id = 'compareModal';
-    compareModal.tabIndex = -1;
+    const onlinePercentage = stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0;
+    document.getElementById('onlinePercentage').textContent = `${onlinePercentage}%`;
     
-    const selectedResultsArray = Array.from(selectedResults);
-    const resultCount = selectedResultsArray.length;
+    // 更新地區分布
+    updateRegionStats(stats.byRegion);
     
-    // 根據結果數量決定 Bootstrap 欄位類別
-    let colClass;
-    if (resultCount === 1) {
-        colClass = 'col-12'; // 單個結果佔滿整個寬度
-    } else if (resultCount === 2) {
-        colClass = 'col-md-6'; // 兩個結果各佔50%
-    } else if (resultCount <= 4) {
-        colClass = 'col-lg-6 col-xl-6'; // 3-4個結果，大螢幕2欄，中螢幕1欄
-    } else {
-        colClass = 'col-lg-4 col-xl-4'; // 5個以上結果，大螢幕3欄
-    }
+    // 更新網路類型分布
+    updateNetworkStats(stats.byNetwork);
     
-    const compareContent = selectedResultsArray.map(resultId => {
-        const resultData = batchTestResults.get(resultId);
-        if (!resultData) return '';
-        
-        const nodeIndex = parseInt(resultId.replace('batch_result_', ''));
-        const node = nodesData.nodes[nodeIndex];
-        
-        return `
-            <div class="${colClass} mb-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h6 class="mb-0">${node.name}</h6>
-                        <small class="text-muted">${node.name_zh || ''} • ${node.location_zh || node.location}</small>
+    // 更新節點詳細列表
+    updateNodeDetailsList(stats.nodeDetails);
+    
+    // 更新健康度指標
+    updateHealthMetrics(stats);
+    
+    // 更新最後更新時間
+    const now = new Date();
+    document.getElementById('lastUpdateTime').textContent = 
+        `最後更新：${now.toLocaleTimeString('zh-TW')}`;
+}
+
+// 更新地區統計
+function updateRegionStats(regionData) {
+    const container = document.getElementById('regionStats');
+    const total = Object.values(regionData).reduce((sum, count) => sum + count, 0);
+    
+    // 地區名稱映射
+    const regionNames = {
+        'AS': '亞洲',
+        'EU': '歐洲',
+        'NA': '北美洲',
+        'SA': '南美洲',
+        'OC': '大洋洲',
+        'AF': '非洲',
+        'Unknown': '未知'
+    };
+    
+    const html = Object.entries(regionData)
+        .sort((a, b) => b[1] - a[1])
+        .map(([region, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            const regionName = regionNames[region] || region;
+            return `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${regionName}</span>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 100px; height: 6px;">
+                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="text-muted">${count} (${percentage}%)</span>
                     </div>
-                    <div class="card-body">
-                        ${generateBatchResultContent(resultData)}
+                </div>
+            `;
+        }).join('');
+    
+    container.innerHTML = html || '<div class="text-muted text-center">無數據</div>';
+}
+
+// 更新網路類型統計
+function updateNetworkStats(networkData) {
+    const container = document.getElementById('networkStats');
+    const total = Object.values(networkData).reduce((sum, count) => sum + count, 0);
+    
+    const html = Object.entries(networkData)
+        .sort((a, b) => b[1] - a[1])
+        .map(([network, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            return `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${network}</span>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 100px; height: 6px;">
+                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="text-muted">${count} (${percentage}%)</span>
                     </div>
+                </div>
+            `;
+        }).join('');
+    
+    container.innerHTML = html || '<div class="text-muted text-center">無數據</div>';
+}
+
+// 更新節點詳細列表
+function updateNodeDetailsList(nodeDetails) {
+    const tbody = document.getElementById('nodeDetailsList');
+    
+    const html = nodeDetails
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(node => {
+            const statusBadge = node.status === 'online' 
+                ? '<span class="badge bg-success">在線</span>'
+                : '<span class="badge bg-danger">離線</span>';
+            
+            const locationText = node.location_zh 
+                ? `${node.location_zh}<br><small class="text-muted">${node.location}</small>`
+                : node.location;
+            
+            return `
+                <tr>
+                    <td>
+                        ${node.name}
+                        ${node.name_zh ? `<br><small class="text-muted">${node.name_zh}</small>` : ''}
+                    </td>
+                    <td>${locationText}</td>
+                    <td>
+                        <a href="${node.providerLink}" target="_blank" class="text-decoration-none">
+                            ${node.provider}
+                        </a>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>${node.status === 'online' ? '運行中' : '-'}</td>
+                    <td>${node.version}</td>
+                    <td>${node.asn}</td>
+                </tr>
+            `;
+        }).join('');
+    
+    tbody.innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">無數據</td></tr>';
+}
+
+// 顯示統計錯誤
+function showStatsError(message) {
+    ['regionStats', 'networkStats', 'nodeDetailsList'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.innerHTML = `<div class="text-center text-danger">${message}</div>`;
+        }
+    });
+}
+
+// 刷新統計數據
+async function refreshStats() {
+    // 清除快取
+    lastProbesUpdate = 0;
+    
+    // 顯示載入中
+    ['regionStats', 'networkStats'].forEach(id => {
+        document.getElementById(id).innerHTML = `
+            <div class="text-center text-muted">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">載入中...</span>
                 </div>
             </div>
         `;
-    }).join('');
+    });
     
-    // 根據結果數量決定 row 的額外類別
-    let rowClass = 'row';
-    if (resultCount === 1) {
-        rowClass = 'row justify-content-center'; // 單個結果居中
-    } else if (resultCount === 2) {
-        rowClass = 'row align-items-stretch'; // 兩個結果等高
-    } else {
-        rowClass = 'row align-items-stretch'; // 多個結果等高
-    }
-    
-    compareModal.innerHTML = `
-        <div class="modal-dialog modal-fullscreen">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${resultCount === 1 ? '測試結果檢視' : '測試結果比較'} (${resultCount} 個節點)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    document.getElementById('nodeDetailsList').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center text-muted">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">載入中...</span>
                 </div>
-                <div class="modal-body">
-                    <div class="${rowClass}">
-                        ${compareContent}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-                    <button type="button" class="btn btn-primary" onclick="exportComparison()">
-                        <i class="bi bi-download me-1"></i>匯出比較
-                    </button>
-                </div>
-            </div>
-        </div>
+            </td>
+        </tr>
     `;
     
-    document.body.appendChild(compareModal);
-    
-    // 顯示模態框
-    const modalInstance = new bootstrap.Modal(compareModal);
-    modalInstance.show();
-    
-    // 模態框關閉時移除
-    compareModal.addEventListener('hidden.bs.modal', () => {
-        compareModal.remove();
-    });
+    // 重新載入數據
+    await loadStats();
 }
 
-// 匯出比較結果
-function exportComparison() {
-    const selectedResultsArray = Array.from(selectedResults);
-    const exportData = selectedResultsArray.map(resultId => {
-        const resultData = batchTestResults.get(resultId);
-        const nodeIndex = parseInt(resultId.replace('batch_result_', ''));
-        const node = nodesData.nodes[nodeIndex];
-        
-        return {
-            node: node.name,
-            node_zh: node.name_zh,
-            location: node.location_zh || node.location,
-            target: resultData.target,
-            network: resultData.probe.network,
-            asn: resultData.probe.asn,
-            rawOutput: resultData.rawOutput
-        };
-    });
+// 更新健康度指標
+async function updateHealthMetrics(stats) {
+    const onlineNodes = stats.nodeDetails.filter(node => node.status === 'online');
     
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `looking-glass-comparison-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (onlineNodes.length > 0) {
+        // 測試幾個節點的響應時間
+        const responseTests = await testNodesResponseTime(onlineNodes.slice(0, 5));
+        
+        if (responseTests.length > 0) {
+            // 計算平均響應時間
+            const avgTime = responseTests.reduce((sum, test) => sum + test.time, 0) / responseTests.length;
+            document.getElementById('avgResponseTime').textContent = `${avgTime.toFixed(0)}ms`;
+            
+            // 找出最快響應節點
+            const fastest = responseTests.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+            document.getElementById('fastestNode').textContent = 
+                `${fastest.node.name} (${fastest.time}ms)`;
+            
+            // 最佳可用節點（考慮地理位置和網路類型）
+            const bestNode = determineBestNode(onlineNodes);
+            document.getElementById('bestAvailableNode').textContent = bestNode.name;
+        } else {
+            document.getElementById('avgResponseTime').textContent = '無法測試';
+            document.getElementById('fastestNode').textContent = '無法測試';
+            document.getElementById('bestAvailableNode').textContent = '無法確定';
+        }
+    } else {
+        document.getElementById('avgResponseTime').textContent = 'N/A';
+        document.getElementById('fastestNode').textContent = 'N/A';
+        document.getElementById('bestAvailableNode').textContent = 'N/A';
+    }
 }
 
-// 檢查節點狀態
-async function checkNodeStatus() {
-    const statusChecks = nodesData.nodes.map(async (node, index) => {
-        const statusIndicator = document.getElementById(`status_${index}`);
-        const checkbox = document.getElementById(`node_${index}`);
-        
+// 測試節點響應時間
+async function testNodesResponseTime(nodes) {
+    const results = [];
+    
+    for (const node of nodes) {
         try {
-            // 發送快速測試請求檢查節點是否線上
-            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+            const startTime = Date.now();
+            
+            // 發送簡單的測試請求
+            const response = await fetch('https://api.globalping.io/v1/measurements', {
                 method: 'POST',
                 headers: {
                     'accept': 'application/json',
@@ -1013,38 +808,93 @@ async function checkNodeStatus() {
                     target: '8.8.8.8',
                     limit: 1,
                     locations: [{
-                        magic: node.tags
+                        magic: nodesData.nodes.find(n => n.name === node.name)?.tags || node.name
                     }]
                 })
             });
             
-            const data = await testResponse.json();
-            console.log(`節點 ${node.name} API 回應:`, data);
+            const endTime = Date.now();
             
-            if (data.id) {
-                // 節點線上
-                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-success" title="線上"></i>';
-                checkbox.disabled = false;
-            } else {
-                // 節點可能離線
-                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
-                checkbox.disabled = true;
-                checkbox.checked = false;
-                console.warn(`節點 ${node.name} 離線 - API 回應:`, data);
+            if (response.ok) {
+                results.push({
+                    node: node,
+                    time: endTime - startTime
+                });
             }
         } catch (error) {
-            // 檢查失敗，顯示警告
-            statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-warning" title="狀態未知"></i>';
-            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
-            console.warn('詳細錯誤資訊:', error.message);
+            console.error(`測試節點 ${node.name} 失敗:`, error);
         }
+    }
+    
+    return results;
+}
+
+// 確定最佳可用節點
+function determineBestNode(onlineNodes) {
+    // 簡單的評分系統
+    const scored = onlineNodes.map(node => {
+        let score = 0;
+        
+        // 數據中心網路加分
+        if (node.probeData?.tags?.some(tag => 
+            ['datacenter', 'vps', 'cloud'].some(keyword => tag.includes(keyword))
+        )) {
+            score += 10;
+        }
+        
+        // 版本越新越好
+        if (node.version && node.version !== 'N/A') {
+            const versionNum = parseFloat(node.version.replace(/[^0-9.]/g, ''));
+            if (!isNaN(versionNum)) {
+                score += versionNum;
+            }
+        }
+        
+        return { node, score };
     });
     
-    // 等待所有狀態檢查完成
-    await Promise.allSettled(statusChecks);
+    // 返回得分最高的節點
+    return scored.sort((a, b) => b.score - a.score)[0]?.node || onlineNodes[0];
+}
+
+// 匯出統計數據
+function exportStats() {
+    if (!probesData) {
+        alert('請先載入統計數據');
+        return;
+    }
     
-    // 更新選擇狀態
-    updateSelectedNodes();
+    const stats = calculateStats(probesData);
+    const exportData = {
+        exportTime: new Date().toISOString(),
+        summary: {
+            total: stats.total,
+            online: stats.online,
+            offline: stats.offline,
+            onlinePercentage: Math.round((stats.online / stats.total) * 100)
+        },
+        regionDistribution: stats.byRegion,
+        networkDistribution: stats.byNetwork,
+        nodeDetails: stats.nodeDetails.map(node => ({
+            name: node.name,
+            name_zh: node.name_zh,
+            location: node.location,
+            location_zh: node.location_zh,
+            provider: node.provider,
+            status: node.status,
+            version: node.version,
+            network: node.network,
+            asn: node.asn
+        }))
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `looking-glass-stats-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // 檢查主畫面節點狀態
@@ -1088,13 +938,6 @@ async function checkMainNodeStatus() {
     
     // 等待所有狀態檢查完成
     await Promise.allSettled(statusChecks);
-}
-
-// 更新開始測試後的 UI 狀態
-function updateUIAfterTestStart() {
-    // 重置選擇狀態
-    selectedResults.clear();
-    updateCompareButton();
 }
 
 
