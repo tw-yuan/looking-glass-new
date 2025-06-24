@@ -1,6 +1,246 @@
 // 節點數據
 let nodesData = { nodes: [] };
 
+// 使用日誌
+let usageLogs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
+
+// 記錄使用日誌
+function logUsage(action, details = {}) {
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        action: action,
+        details: details,
+        userAgent: navigator.userAgent,
+        ip: 'client-side' // 客戶端無法直接獲取真實IP
+    };
+    
+    usageLogs.push(logEntry);
+    
+    // 只保留最近1000條記錄
+    if (usageLogs.length > 1000) {
+        usageLogs = usageLogs.slice(-1000);
+    }
+    
+    // 保存到 localStorage
+    localStorage.setItem('lookingGlassLogs', JSON.stringify(usageLogs));
+    
+    // 可選：發送到伺服器（如果有後端）
+    // sendLogToServer(logEntry);
+}
+
+// 顯示使用日誌
+function showUsageLogs() {
+    // 獲取最近的日誌條目
+    const logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
+    const recentLogs = logs.slice(-100).reverse(); // 最近100條，最新的在前
+    
+    // 統計分析
+    const stats = {
+        totalTests: 0,
+        testsByType: {},
+        testsByNode: {},
+        testsByTarget: {},
+        popularTargets: {},
+        recentActivity: logs.slice(-20).reverse()
+    };
+    
+    logs.forEach(log => {
+        if (log.action === 'test_completed' || log.action === 'test_failed') {
+            stats.totalTests++;
+            stats.testsByType[log.details.testType] = (stats.testsByType[log.details.testType] || 0) + 1;
+            stats.testsByNode[log.details.nodeName] = (stats.testsByNode[log.details.nodeName] || 0) + 1;
+            stats.popularTargets[log.details.target] = (stats.popularTargets[log.details.target] || 0) + 1;
+        }
+    });
+    
+    // 創建日誌模態框
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'logsModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">使用日誌分析</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 class="text-primary">${stats.totalTests}</h3>
+                                    <p class="mb-0">總測試次數</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 class="text-success">${logs.length}</h3>
+                                    <p class="mb-0">總日誌條數</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 class="text-info">${Object.keys(stats.testsByNode).length}</h3>
+                                    <p class="mb-0">使用過的節點</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 class="text-warning">${Object.keys(stats.popularTargets).length}</h3>
+                                    <p class="mb-0">測試過的目標</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">測試類型分布</h6>
+                                </div>
+                                <div class="card-body">
+                                    ${Object.entries(stats.testsByType).map(([type, count]) => `
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>${type.toUpperCase()}</span>
+                                            <span class="badge bg-primary">${count}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">熱門測試目標</h6>
+                                </div>
+                                <div class="card-body">
+                                    ${Object.entries(stats.popularTargets)
+                                        .sort((a, b) => b[1] - a[1])
+                                        .slice(0, 10)
+                                        .map(([target, count]) => `
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-truncate" style="max-width: 200px;" title="${target}">${target}</span>
+                                            <span class="badge bg-success">${count}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">最近日誌記錄</h6>
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除日誌</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>時間</th>
+                                            <th>動作</th>
+                                            <th>詳細</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${recentLogs.map(log => `
+                                            <tr>
+                                                <td class="text-nowrap">${new Date(log.timestamp).toLocaleString('zh-TW')}</td>
+                                                <td><span class="badge bg-${getActionColor(log.action)}">${getActionName(log.action)}</span></td>
+                                                <td class="text-truncate" style="max-width: 300px;" title="${JSON.stringify(log.details, null, 2)}">${formatLogDetails(log)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // 清理 modal
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// 格式化日誌詳細信息
+function formatLogDetails(log) {
+    switch (log.action) {
+        case 'test_started':
+        case 'test_completed':
+        case 'test_failed':
+            return `${log.details.testType?.toUpperCase() || 'Unknown'} → ${log.details.target || 'Unknown'} (${log.details.nodeName || 'Unknown'})`;
+        case 'node_clicked':
+            return `${log.details.nodeName || 'Unknown'} (${log.details.nodeLocation || 'Unknown'})`;
+        case 'page_loaded':
+            return `載入 ${log.details.nodesCount || 0} 個節點`;
+        case 'stats_panel_opened':
+            return '開啟統計面板';
+        default:
+            return JSON.stringify(log.details).substring(0, 100);
+    }
+}
+
+// 獲取動作對應的顏色
+function getActionColor(action) {
+    const colors = {
+        'test_started': 'info',
+        'test_completed': 'success',
+        'test_failed': 'danger',
+        'node_clicked': 'primary',
+        'page_loaded': 'secondary',
+        'stats_panel_opened': 'warning'
+    };
+    return colors[action] || 'light';
+}
+
+// 獲取動作的中文名稱
+function getActionName(action) {
+    const names = {
+        'test_started': '開始測試',
+        'test_completed': '測試完成',
+        'test_failed': '測試失敗',
+        'node_clicked': '點擊節點',
+        'page_loaded': '頁面載入',
+        'stats_panel_opened': '開啟統計',
+        'measurement_created': '創建測量'
+    };
+    return names[action] || action;
+}
+
+// 清除日誌
+function clearLogs() {
+    if (confirm('確定要清除所有日誌嗎？此操作無法復原。')) {
+        localStorage.removeItem('lookingGlassLogs');
+        usageLogs.length = 0;
+        alert('日誌已清除');
+        // 關閉模態框並重新開啟
+        const modal = document.getElementById('logsModal');
+        if (modal) {
+            bootstrap.Modal.getInstance(modal).hide();
+        }
+    }
+}
+
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -18,6 +258,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 檢查主畫面節點狀態
         checkMainNodeStatus();
+        
+        // 記錄頁面載入
+        logUsage('page_loaded', {
+            nodesCount: nodesData.nodes.length,
+            userAgent: navigator.userAgent.substring(0, 100) // 限制長度
+        });
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -65,6 +311,13 @@ function createNodeCard(node) {
     `;
 
     col.querySelector('.node-card').addEventListener('click', () => {
+        // 記錄節點點擊
+        logUsage('node_clicked', {
+            nodeName: node.name,
+            nodeLocation: node.location,
+            nodeProvider: node.provider
+        });
+        
         showNodeModal(node);
     });
 
@@ -127,6 +380,15 @@ function showNodeModal(node) {
             return;
         }
 
+        // 記錄測試開始
+        logUsage('test_started', {
+            testType: testType,
+            target: target,
+            nodeName: node.name,
+            nodeLocation: node.location,
+            nodeProvider: node.provider
+        });
+
         try {
             newTestButton.disabled = true;
             newTestButton.textContent = '測試中...';
@@ -153,6 +415,14 @@ function showNodeModal(node) {
             if (!measurementData.id) {
                 throw new Error('無法獲取測量 ID');
             }
+
+            // 記錄測量創建成功
+            logUsage('measurement_created', {
+                measurementId: measurementData.id,
+                testType: testType,
+                target: target,
+                nodeName: node.name
+            });
 
             // 顯示等待訊息
             const resultContainer = document.createElement('div');
@@ -280,8 +550,28 @@ function showNodeModal(node) {
                 </div>
             `;
 
+            // 記錄測試完成
+            logUsage('test_completed', {
+                measurementId: measurementData.id,
+                testType: testType,
+                target: target,
+                nodeName: node.name,
+                status: result.result.status,
+                protocolUsed: protocolInfo,
+                sourceIP: sourceIP || 'unknown'
+            });
+
         } catch (error) {
             console.error('測試失敗:', error);
+            
+            // 記錄測試失敗
+            logUsage('test_failed', {
+                testType: testType,
+                target: target,
+                nodeName: node.name,
+                error: error.message
+            });
+            
             alert('測試失敗: ' + error.message);
         } finally {
             newTestButton.disabled = false;
@@ -437,8 +727,6 @@ const PROBES_CACHE_TIME = 5 * 60 * 1000; // 5分鐘快取
 function initStatsPanel() {
     const statsBtn = document.getElementById('statsBtn');
     const refreshStatsBtn = document.getElementById('refreshStats');
-    const networkTypeInfoBtn = document.getElementById('networkTypeInfo');
-    const updateNodesBtn = document.getElementById('updateNodesBtn');
     
     // 綁定統計按鈕事件
     if (statsBtn) {
@@ -449,20 +737,15 @@ function initStatsPanel() {
     if (refreshStatsBtn) {
         refreshStatsBtn.addEventListener('click', refreshStats);
     }
-    
-    // 綁定網路類型說明按鈕事件
-    if (networkTypeInfoBtn) {
-        networkTypeInfoBtn.addEventListener('click', showNetworkTypeInfo);
-    }
-    
-    // 綁定更新節點按鈕事件
-    if (updateNodesBtn) {
-        updateNodesBtn.addEventListener('click', updateNodesFromGlobalPing);
-    }
 }
 
 // 顯示統計模態框
 async function showStatsModal() {
+    // 記錄統計面板開啟
+    logUsage('stats_panel_opened', {
+        timestamp: new Date().toISOString()
+    });
+    
     const modal = document.getElementById('statsModal');
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     modalInstance.show();
@@ -582,6 +865,7 @@ function calculateStats(probes) {
                 asn: node.asn || primaryProbe.location?.asn || 'N/A',
                 networkType: networkType,
                 protocols: supportedProtocols,
+                continent: node.continent, // 確保傳遞大陸資訊
                 probeData: primaryProbe
             });
         } else {
@@ -599,6 +883,7 @@ function calculateStats(probes) {
                 asn: node.asn || 'N/A',
                 networkType: getNodeNetworkType(node, null),
                 protocols: ['未知'],
+                continent: node.continent, // 確保傳遞大陸資訊
                 probeData: null
             });
         }
@@ -941,33 +1226,6 @@ async function refreshStats() {
     await loadStats();
 }
 
-// 顯示網路類型說明
-function showNetworkTypeInfo() {
-    const info = `
-網路類型分類說明：
-
-📡 電信商：中華電信(HINET)、遠傳電信(FET)等
-🏠 家庭寬頻：大大寬頻等家用網路
-📺 有線電視：凱擘寬頻、大台中數位等
-🏫 教育網路：國網中心、臺灣學術網路等
-🏢 資料中心：CoCoDigit、Simple Information等
-👤 個人維護：由個人維護的節點
-
-自訂網路類型方法：
-1. 在 nodes.json 中新增 "networkType" 欄位
-2. 修改 script.js 中的 getCustomNetworkTypeMapping() 函數
-3. 重新載入頁面即可生效
-
-例如：
-{
-  "name": "MyNode",
-  "networkType": "自訂類型",
-  ...
-}
-    `;
-    
-    alert(info);
-}
 
 // 更新地理分布統計
 function updateGeographicStats(stats) {
@@ -997,74 +1255,6 @@ function updateGeographicStats(stats) {
     document.getElementById('africaNodes').textContent = continentStats.africa;
 }
 
-// 自動更新節點資料從 GlobalPing
-async function updateNodesFromGlobalPing() {
-    const updateBtn = document.getElementById('updateNodesBtn');
-    const originalHTML = updateBtn.innerHTML;
-    
-    try {
-        // 更新按鈕狀態
-        updateBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
-        updateBtn.disabled = true;
-        
-        // 獲取 GlobalPing probes 資料
-        const response = await fetch('https://api.globalping.io/v1/probes');
-        if (!response.ok) {
-            throw new Error('無法獲取 GlobalPing 資料');
-        }
-        
-        const probes = await response.json();
-        
-        // 更新現有節點資料
-        const updatedNodes = nodesData.nodes.map(node => {
-            // 尋找對應的 probe
-            const matchingProbes = probes.filter(probe => {
-                if (!probe.tags || !Array.isArray(probe.tags)) return false;
-                return probe.tags.some(tag => {
-                    if (typeof node.tags === 'string') {
-                        return node.tags.includes(tag);
-                    } else if (Array.isArray(node.tags)) {
-                        return node.tags.includes(tag);
-                    }
-                    return false;
-                });
-            });
-            
-            if (matchingProbes.length > 0) {
-                const primaryProbe = matchingProbes.find(probe => probe.version) || matchingProbes[0];
-                
-                // 更新節點資料
-                return {
-                    ...node,
-                    asn: primaryProbe.location?.asn || node.asn || 'N/A',
-                    continent: node.continent || detectContinentFromProbe(primaryProbe),
-                    networkType: node.networkType || detectNetworkTypeFromProbe(primaryProbe),
-                    lastUpdated: new Date().toISOString()
-                };
-            }
-            
-            return node;
-        });
-        
-        // 生成更新後的 JSON
-        const updatedJSON = {
-            nodes: updatedNodes,
-            lastUpdate: new Date().toISOString(),
-            source: 'GlobalPing API'
-        };
-        
-        // 顯示更新結果
-        showUpdateResult(updatedJSON);
-        
-    } catch (error) {
-        console.error('更新節點資料失敗:', error);
-        alert('更新失敗：' + error.message);
-    } finally {
-        // 恢復按鈕狀態
-        updateBtn.innerHTML = originalHTML;
-        updateBtn.disabled = false;
-    }
-}
 
 // 從 probe 資料檢測洲別
 function detectContinentFromProbe(probe) {
@@ -1199,7 +1389,22 @@ async function copyToClipboard(event) {
 function getNodeContinent(node) {
     // 優先使用 nodes.json 中定義的洲別
     if (node.continent) {
-        return node.continent;
+        // 統一洲別命名
+        const continentMap = {
+            'Asia': 'asia',
+            'asia': 'asia',
+            'Europe': 'europe',
+            'europe': 'europe',
+            'northAmerica': 'northAmerica',
+            'NorthAmerica': 'northAmerica',
+            'southAmerica': 'southAmerica',
+            'SouthAmerica': 'southAmerica',
+            'oceania': 'oceania',
+            'Oceania': 'oceania',
+            'africa': 'africa',
+            'Africa': 'africa'
+        };
+        return continentMap[node.continent] || node.continent;
     }
     
     const location = node.location.toLowerCase();
