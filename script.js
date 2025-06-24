@@ -4,6 +4,14 @@ let nodesData = { nodes: [] };
 // 使用日誌
 let usageLogs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
 let userIP = 'unknown';
+let sessionId = localStorage.getItem('sessionId') || generateSessionId();
+
+// 生成會話ID
+function generateSessionId() {
+    const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    localStorage.setItem('sessionId', id);
+    return id;
+}
 
 // 獲取用戶IP
 async function getUserIP() {
@@ -17,39 +25,70 @@ async function getUserIP() {
     }
 }
 
-// 記錄使用日誌（簡化版，只記錄節點使用）
-function logUsage(action, details = {}) {
+// 記錄使用日誌到伺服器
+async function logUsage(action, details = {}) {
     // 只記錄重要的節點使用動作
     if (action !== 'test_started' && action !== 'node_clicked') {
         return;
     }
     
     const logEntry = {
-        timestamp: new Date().toISOString(),
         action: action,
         nodeName: details.nodeName || 'unknown',
         nodeLocation: details.nodeLocation || 'unknown',
         testType: details.testType || null,
         target: details.target || null,
+        sessionId: sessionId
+    };
+    
+    // 同時保存到本地和伺服器
+    const localEntry = {
+        ...logEntry,
+        timestamp: new Date().toISOString(),
         ip: userIP
     };
     
-    usageLogs.push(logEntry);
-    
-    // 只保留最近500條記錄
+    usageLogs.push(localEntry);
     if (usageLogs.length > 500) {
         usageLogs = usageLogs.slice(-500);
     }
-    
-    // 保存到 localStorage
     localStorage.setItem('lookingGlassLogs', JSON.stringify(usageLogs));
+    
+    // 發送到伺服器
+    try {
+        await fetch('log-server.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(logEntry)
+        });
+    } catch (error) {
+        console.log('無法發送日誌到伺服器:', error);
+    }
 }
 
 // 顯示使用日誌
-function showUsageLogs() {
-    // 獲取最近的日誌條目
-    const logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
-    const recentLogs = logs.slice(-50).reverse(); // 最近50條，最新的在前
+async function showUsageLogs() {
+    // 先顯示模態框
+    showLogsModal();
+    
+    // 從伺服器獲取全域日誌
+    let logs = [];
+    try {
+        const response = await fetch('log-server.php?limit=200');
+        if (response.ok) {
+            const data = await response.json();
+            logs = data.logs || [];
+        } else {
+            throw new Error('伺服器回應錯誤');
+        }
+    } catch (error) {
+        console.log('無法從伺服器獲取日誌，使用本地日誌:', error);
+        logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
+    }
+    
+    const recentLogs = logs.slice(0, 50); // 最近50條
     
     // 統計分析
     const stats = {
@@ -122,154 +161,181 @@ function showUsageLogs() {
         }))
         .sort((a, b) => b.totalActivity - a.totalActivity);
     
-    // 創建日誌模態框
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.id = 'logsModal';
-    modal.innerHTML = `
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">節點使用分析</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- 統計概覽 -->
-                    <div class="row mb-3">
-                        <div class="col-3">
-                            <div class="text-center p-2 bg-light rounded">
-                                <h5 class="text-primary mb-0">${stats.totalTests}</h5>
-                                <small class="text-muted">測試</small>
+    // 更新現有模態框內容
+    updateLogsModalContent(stats, nodeUsageArray, recentLogs);
+}
+
+// 顯示日誌模態框
+function showLogsModal() {
+    let modal = document.getElementById('logsModal');
+    
+    if (!modal) {
+        // 創建日誌模態框
+        modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'logsModal';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">全域日誌分析</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="logsModalBody">
+                        <div class="text-center p-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">載入中...</span>
                             </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 bg-light rounded">
-                                <h5 class="text-success mb-0">${stats.totalClicks}</h5>
-                                <small class="text-muted">點擊</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 bg-light rounded">
-                                <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
-                                <small class="text-muted">用戶</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 bg-light rounded">
-                                <h5 class="text-warning mb-0">${logs.length}</h5>
-                                <small class="text-muted">記錄</small>
-                            </div>
+                            <p class="mt-2 text-muted">正在載入日誌資料...</p>
                         </div>
                     </div>
-                    
-                    <!-- 節點使用情況 -->
-                    <div class="card mb-3">
-                        <div class="card-header py-2">
-                            <h6 class="mb-0">各節點使用情況</h6>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="py-2 text-center">節點</th>
-                                            <th class="py-2 text-center">提供者</th>
-                                            <th class="py-2 text-center">點擊</th>
-                                            <th class="py-2 text-center">測試</th>
-                                            <th class="py-2 text-center">用戶</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${nodeUsageArray.map(node => `
-                                            <tr>
-                                                <td class="py-2 text-center">
-                                                    <div class="fw-bold">${node.name}</div>
-                                                    <small class="text-muted">${node.location}</small>
-                                                </td>
-                                                <td class="py-2 text-center">${node.provider}</td>
-                                                <td class="py-2 text-center">
-                                                    ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '<span class="text-muted">-</span>'}
-                                                </td>
-                                                <td class="py-2 text-center">
-                                                    ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '<span class="text-muted">-</span>'}
-                                                </td>
-                                                <td class="py-2 text-center">
-                                                    ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '<span class="text-muted">-</span>'}
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 最近活動 -->
-                    <div class="card">
-                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">最近活動</h6>
-                            <div>
-                                <button class="btn btn-sm btn-outline-success me-2" onclick="exportLogs()">匯出</button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除</button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div style="max-height: 250px; overflow-y: auto;">
-                                <table class="table table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="py-1 text-center small">時間</th>
-                                            <th class="py-1 text-center small">動作</th>
-                                            <th class="py-1 text-center small">節點</th>
-                                            <th class="py-1 text-center small">詳細</th>
-                                            <th class="py-1 text-center small">IP</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${recentLogs.slice(0, 20).map(log => `
-                                            <tr>
-                                                <td class="py-1 text-center small text-muted">
-                                                    ${new Date(log.timestamp).toLocaleString('zh-TW', {
-                                                        month: 'numeric', 
-                                                        day: 'numeric', 
-                                                        hour: '2-digit', 
-                                                        minute: '2-digit'
-                                                    })}
-                                                </td>
-                                                <td class="py-1 text-center">
-                                                    <span class="badge bg-${getActionColor(log.action)} small">${getActionName(log.action)}</span>
-                                                </td>
-                                                <td class="py-1 text-center fw-bold small">${log.nodeName}</td>
-                                                <td class="py-1 text-center small">
-                                                    ${log.testType ? 
-                                                        `<span class="text-primary">${log.testType.toUpperCase()}</span><br><span class="text-muted">${log.target || ''}</span>` : 
-                                                        `<span class="text-muted">${log.nodeLocation}</span>`
-                                                    }
-                                                </td>
-                                                <td class="py-1 text-center small text-muted">${log.ip}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">關閉</button>
                     </div>
                 </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 清理 modal
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal);
+        });
+    }
+    
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+}
+
+// 更新日誌模態框內容
+function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
+    const modalBody = document.getElementById('logsModalBody');
+    if (!modalBody) return;
+    
+    modalBody.innerHTML = `
+        <!-- 統計概覽 -->
+        <div class="row mb-3">
+            <div class="col-3">
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-primary mb-0">${stats.totalTests}</h5>
+                    <small class="text-muted">測試</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-success mb-0">${stats.totalClicks}</h5>
+                    <small class="text-muted">點擊</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
+                    <small class="text-muted">用戶</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-warning mb-0">${recentLogs.length}</h5>
+                    <small class="text-muted">記錄</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 節點使用情況 -->
+        <div class="card mb-3">
+            <div class="card-header py-2">
+                <h6 class="mb-0">各節點使用情況</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th class="py-2 text-center">節點</th>
+                                <th class="py-2 text-center">提供者</th>
+                                <th class="py-2 text-center">點擊</th>
+                                <th class="py-2 text-center">測試</th>
+                                <th class="py-2 text-center">用戶</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${nodeUsageArray.map(node => `
+                                <tr>
+                                    <td class="py-2 text-center">
+                                        <div class="fw-bold">${node.name}</div>
+                                        <small class="text-muted">${node.location}</small>
+                                    </td>
+                                    <td class="py-2 text-center">${node.provider}</td>
+                                    <td class="py-2 text-center">
+                                        ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '<span class="text-muted">-</span>'}
+                                    </td>
+                                    <td class="py-2 text-center">
+                                        ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '<span class="text-muted">-</span>'}
+                                    </td>
+                                    <td class="py-2 text-center">
+                                        ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '<span class="text-muted">-</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最近活動 -->
+        <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">最近活動 (全域)</h6>
+                <div>
+                    <button class="btn btn-sm btn-outline-success me-2" onclick="exportServerLogs(event)" title="匯出全域日誌">全域匯出</button>
+                    <button class="btn btn-sm btn-outline-info me-2" onclick="exportLogs(event)" title="匯出本地日誌">本地匯出</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除本地</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th class="py-1 text-center small">時間</th>
+                                <th class="py-1 text-center small">動作</th>
+                                <th class="py-1 text-center small">節點</th>
+                                <th class="py-1 text-center small">詳細</th>
+                                <th class="py-1 text-center small">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${recentLogs.slice(0, 20).map(log => `
+                                <tr>
+                                    <td class="py-1 text-center small text-muted">
+                                        ${new Date(log.timestamp).toLocaleString('zh-TW', {
+                                            month: 'numeric', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit'
+                                        })}
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <span class="badge bg-${getActionColor(log.action)} small">${getActionName(log.action)}</span>
+                                    </td>
+                                    <td class="py-1 text-center fw-bold small">${log.nodeName}</td>
+                                    <td class="py-1 text-center small">
+                                        ${log.testType ? 
+                                            `<span class="text-primary">${log.testType.toUpperCase()}</span><br><span class="text-muted">${log.target || ''}</span>` : 
+                                            `<span class="text-muted">${log.nodeLocation}</span>`
+                                        }
+                                    </td>
+                                    <td class="py-1 text-center small text-muted">${log.ip}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     `;
-    
-    document.body.appendChild(modal);
-    const modalInstance = new bootstrap.Modal(modal);
-    modalInstance.show();
-    
-    // 清理 modal
-    modal.addEventListener('hidden.bs.modal', () => {
-        document.body.removeChild(modal);
-    });
 }
 
 
@@ -292,7 +358,7 @@ function getActionName(action) {
 }
 
 // 匯出日誌
-function exportLogs() {
+function exportLogs(event) {
     const logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
     
     if (logs.length === 0) {
@@ -300,26 +366,38 @@ function exportLogs() {
         return;
     }
     
-    // 準備CSV內容
+    // 準備CSV內容 - 修復格式問題
     const csvHeaders = ['時間', '動作', '節點名稱', '節點位置', '測試類型', '測試目標', 'IP地址'];
-    const csvRows = logs.map(log => [
-        new Date(log.timestamp).toLocaleString('zh-TW'),
-        log.action === 'test_started' ? '測試' : '點擊',
-        log.nodeName || '',
-        log.nodeLocation || '',
-        log.testType || '',
-        log.target || '',
-        log.ip || ''
-    ]);
+    const csvRows = logs.map(log => {
+        // 清理和格式化每個欄位，避免換行符號問題
+        return [
+            new Date(log.timestamp).toLocaleString('zh-TW').replace(/[\\r\\n]/g, ' '),
+            log.action === 'test_started' ? '測試' : '點擊',
+            (log.nodeName || '').replace(/[\\r\\n,]/g, ' '),
+            (log.nodeLocation || '').replace(/[\\r\\n,]/g, ' '),
+            (log.testType || '').replace(/[\\r\\n,]/g, ' '),
+            (log.target || '').replace(/[\\r\\n,]/g, ' '),
+            (log.ip || '').replace(/[\\r\\n,]/g, ' ')
+        ];
+    });
     
-    // 建立CSV內容
-    const csvContent = [
-        csvHeaders.join(','),
-        ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
-    ].join('\\n');
+    // 建立正確的CSV內容
+    const csvContent = csvHeaders.join(',') + '\\r\\n' + 
+        csvRows.map(row => 
+            row.map(field => {
+                // 處理包含逗號或引號的欄位
+                const cleanField = String(field).replace(/"/g, '""');
+                return cleanField.includes(',') || cleanField.includes('"') ? 
+                    `"${cleanField}"` : cleanField;
+            }).join(',')
+        ).join('\\r\\n');
     
-    // 建立下載連結
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // 建立下載連結，使用UTF-8 BOM確保中文正確顯示
+    const BOM = '\\uFEFF';
+    const blob = new Blob([BOM + csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+    });
+    
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -357,6 +435,84 @@ function clearLogs() {
         if (modal) {
             bootstrap.Modal.getInstance(modal).hide();
         }
+    }
+}
+
+// 匯出伺服器全域日誌
+async function exportServerLogs(event) {
+    try {
+        const response = await fetch('log-server.php?limit=1000');
+        if (!response.ok) {
+            throw new Error('無法從伺服器獲取日誌');
+        }
+        
+        const data = await response.json();
+        const logs = data.logs || [];
+        
+        if (logs.length === 0) {
+            alert('沒有伺服器日誌資料可以匯出');
+            return;
+        }
+        
+        // 準備CSV內容
+        const csvHeaders = ['時間', '動作', '節點名稱', '節點位置', '測試類型', '測試目標', 'IP地址', '會話ID'];
+        const csvRows = logs.map(log => {
+            return [
+                new Date(log.timestamp).toLocaleString('zh-TW').replace(/[\r\n]/g, ' '),
+                log.action === 'test_started' ? '測試' : '點擊',
+                (log.nodeName || '').replace(/[\r\n,]/g, ' '),
+                (log.nodeLocation || '').replace(/[\r\n,]/g, ' '),
+                (log.testType || '').replace(/[\r\n,]/g, ' '),
+                (log.target || '').replace(/[\r\n,]/g, ' '),
+                (log.ip || '').replace(/[\r\n,]/g, ' '),
+                (log.sessionId || '').replace(/[\r\n,]/g, ' ')
+            ];
+        });
+        
+        // 建立CSV內容
+        const csvContent = csvHeaders.join(',') + '\r\n' + 
+            csvRows.map(row => 
+                row.map(field => {
+                    const cleanField = String(field).replace(/"/g, '""');
+                    return cleanField.includes(',') || cleanField.includes('"') ? 
+                        `"${cleanField}"` : cleanField;
+                }).join(',')
+            ).join('\r\n');
+        
+        // 下載檔案
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { 
+            type: 'text/csv;charset=utf-8;' 
+        });
+        
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `global-logs-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // 顯示成功訊息
+        const btn = event?.target;
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i> 已匯出';
+            btn.classList.remove('btn-outline-success');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('匯出伺服器日誌失敗:', error);
+        alert('匯出失敗：' + error.message);
     }
 }
 

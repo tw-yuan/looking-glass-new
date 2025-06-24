@@ -1202,33 +1202,137 @@ a:hover {
 /* 手機版日誌優化 */
 @media (max-width: 768px) {
     #logsModal .modal-dialog {
-        margin: 0.5rem;
-        max-width: calc(100% - 1rem);
-        height: calc(100vh - 1rem);
-        max-height: calc(100vh - 1rem);
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
+        height: calc(100vh - 0.5rem);
+        max-height: calc(100vh - 0.5rem);
     }
     
     #logsModal .modal-content {
         height: 100%;
-        border-radius: 12px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    #logsModal .modal-header {
+        padding: 0.75rem 1rem;
+        background: var(--primary-color);
+        color: white;
+        border-bottom: none;
+        flex-shrink: 0;
+    }
+    
+    #logsModal .modal-header .modal-title {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    #logsModal .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+        margin: 0;
+        padding: 0.5rem;
     }
     
     #logsModal .modal-body {
-        padding: 0.75rem;
-        font-size: 0.875rem;
+        padding: 0.5rem;
+        font-size: 0.8rem;
+        flex: 1;
+        overflow-y: auto;
     }
     
+    #logsModal .modal-footer {
+        padding: 0.5rem 1rem;
+        border-top: 1px solid var(--card-border);
+        flex-shrink: 0;
+    }
+    
+    /* 統計概覽手機版 */
     #logsModal .row .col-3 {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
+        padding: 0 0.25rem;
     }
     
-    #logsModal .table {
+    #logsModal .row .col-3 > div {
+        padding: 0.4rem;
         font-size: 0.75rem;
     }
     
-    #logsModal .table th,
+    #logsModal .row .col-3 h5 {
+        font-size: 1.1rem;
+        margin-bottom: 0.1rem;
+    }
+    
+    #logsModal .row .col-3 small {
+        font-size: 0.65rem;
+    }
+    
+    /* 卡片間距調整 */
+    #logsModal .card {
+        margin-bottom: 0.5rem;
+        border-radius: 6px;
+    }
+    
+    #logsModal .card-header {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    #logsModal .card-body {
+        padding: 0;
+    }
+    
+    /* 表格優化 */
+    #logsModal .table {
+        font-size: 0.7rem;
+        margin-bottom: 0;
+    }
+    
+    #logsModal .table th {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+    
     #logsModal .table td {
-        padding: 0.375rem 0.25rem;
+        padding: 0.3rem 0.2rem;
+        vertical-align: middle;
+        line-height: 1.2;
+    }
+    
+    /* 節點表格特殊調整 */
+    #logsModal .table td .fw-bold {
+        font-size: 0.7rem;
+        line-height: 1.1;
+    }
+    
+    #logsModal .table td small {
+        font-size: 0.6rem;
+        display: block;
+        margin-top: 0.1rem;
+    }
+    
+    /* 徽章大小調整 */
+    #logsModal .badge {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    /* 按鈕組優化 */
+    #logsModal .card-header .btn-sm {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        margin-left: 0.25rem;
+    }
+    
+    /* 最近活動表格特殊處理 */
+    #logsModal .card:last-child .table td {
+        font-size: 0.65rem;
+    }
+    
+    /* 滾動區域優化 */
+    #logsModal .card-body > div[style*="max-height"] {
+        max-height: 200px !important;
     }
 }
 
