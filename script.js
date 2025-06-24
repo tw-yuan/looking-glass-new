@@ -825,7 +825,6 @@ function updateNodeDetailsList(nodeDetails) {
                         </a>
                     </td>
                     <td>${statusBadge}</td>
-                    <td>${node.status === 'online' ? '運行中' : '-'}</td>
                     <td>${node.version}</td>
                     <td>${node.asn}</td>
                     <td>${node.networkType}</td>
@@ -833,7 +832,7 @@ function updateNodeDetailsList(nodeDetails) {
             `;
         }).join('');
     
-    tbody.innerHTML = html || '<tr><td colspan="8" class="text-center text-muted">無數據</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">無數據</td></tr>';
 }
 
 // 顯示統計錯誤
