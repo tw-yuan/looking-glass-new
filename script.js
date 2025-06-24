@@ -437,19 +437,15 @@ const PROBES_CACHE_TIME = 5 * 60 * 1000; // 5分鐘快取
 function initStatsPanel() {
     const statsBtn = document.getElementById('statsBtn');
     const refreshStatsBtn = document.getElementById('refreshStats');
-    const exportStatsBtn = document.getElementById('exportStats');
     
     // 綁定統計按鈕事件
     if (statsBtn) {
         statsBtn.addEventListener('click', showStatsModal);
     }
     
-    // 綁定其他按鈕事件
+    // 綁定刷新按鈕事件
     if (refreshStatsBtn) {
         refreshStatsBtn.addEventListener('click', refreshStats);
-    }
-    if (exportStatsBtn) {
-        exportStatsBtn.addEventListener('click', exportStats);
     }
 }
 
@@ -495,7 +491,7 @@ async function loadStats() {
         }
         
         // 計算統計數據
-        const stats = await calculateStats(probes);
+        const stats = calculateStats(probes);
         
         // 更新 UI
         updateStatsUI(stats);
@@ -507,7 +503,7 @@ async function loadStats() {
 }
 
 // 計算統計數據
-async function calculateStats(probes) {
+function calculateStats(probes) {
     const stats = {
         total: 0,
         online: 0,
@@ -553,15 +549,12 @@ async function calculateStats(probes) {
             const region = primaryProbe.location?.continent || 'Unknown';
             stats.byRegion[region] = (stats.byRegion[region] || 0) + 1;
             
-            // 網路類型統計
-            const networkType = detectNetworkType(primaryProbe.tags);
-            stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
-            
-            // 檢測支援的協議
+            // 檢測支援的協議和網路類型
             const supportedProtocols = detectSupportedProtocols(primaryProbe);
+            const networkType = detectNetworkType(primaryProbe.tags);
             
-            // 計算 uptime 
-            const uptime = await calculateNodeUptime(primaryProbe);
+            // 網路類型統計
+            stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
             
             // 節點詳細信息
             stats.nodeDetails.push({
@@ -575,7 +568,8 @@ async function calculateStats(probes) {
                 version: primaryProbe.version || 'N/A',
                 network: primaryProbe.location?.network || 'N/A',
                 asn: primaryProbe.location?.asn || 'N/A',
-                uptime: uptime,
+                networkType: networkType,
+                protocols: supportedProtocols,
                 probeData: primaryProbe
             });
         } else {
@@ -591,7 +585,8 @@ async function calculateStats(probes) {
                 version: 'N/A',
                 network: 'N/A',
                 asn: 'N/A',
-                uptime: 'N/A',
+                networkType: '未知',
+                protocols: ['未知'],
                 probeData: null
             });
         }
@@ -600,98 +595,6 @@ async function calculateStats(probes) {
     return stats;
 }
 
-// 計算節點 uptime - 嘗試獲取真實 uptime 數據
-async function calculateNodeUptime(probe) {
-    if (!probe) return 'N/A';
-    
-    try {
-        // 嘗試從 GlobalPing API 獲取真實的節點信息
-        const response = await fetch(`https://api.globalping.io/v1/probes/${probe.id}`);
-        if (response.ok) {
-            const probeDetails = await response.json();
-            
-            // 如果有 uptime 數據
-            if (probeDetails.uptime) {
-                return formatUptime(probeDetails.uptime);
-            }
-            
-            // 如果有創建時間，計算運行時間
-            if (probeDetails.createdAt) {
-                const createdDate = new Date(probeDetails.createdAt);
-                const now = new Date();
-                const diffMs = now - createdDate;
-                return formatUptimeFromMs(diffMs);
-            }
-        }
-    } catch (error) {
-        console.log('無法獲取真實 uptime 數據，使用估算值');
-    }
-    
-    // 如果無法獲取真實數據，生成合理的估算值
-    return generateEstimatedUptime(probe);
-}
-
-// 格式化 uptime 為美觀的顯示格式
-function formatUptime(uptimeSeconds) {
-    const days = Math.floor(uptimeSeconds / 86400);
-    const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = uptimeSeconds % 60;
-    
-    const parts = [];
-    
-    if (days > 0) {
-        parts.push(`<span class="uptime-value">${days}</span><span class="uptime-unit">天</span>`);
-    }
-    if (hours > 0) {
-        parts.push(`<span class="uptime-value">${hours}</span><span class="uptime-unit">小時</span>`);
-    }
-    if (minutes > 0) {
-        parts.push(`<span class="uptime-value">${minutes}</span><span class="uptime-unit">分</span>`);
-    }
-    if (seconds > 0) {
-        parts.push(`<span class="uptime-value">${seconds}</span><span class="uptime-unit">秒</span>`);
-    }
-    
-    if (parts.length === 0) {
-        return '<span class="uptime-value">0</span><span class="uptime-unit">秒</span>';
-    }
-    
-    // 只顯示最重要的兩個單位
-    return parts.slice(0, 2).join(' ');
-}
-
-// 從毫秒數格式化 uptime
-function formatUptimeFromMs(milliseconds) {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    return formatUptime(totalSeconds);
-}
-
-// 生成估算的 uptime
-function generateEstimatedUptime(probe) {
-    // 生成隨機但合理的 uptime
-    let baseDays = 30; // 基礎天數
-    
-    // 基於網路類型調整
-    if (probe.tags && Array.isArray(probe.tags)) {
-        const tagStr = probe.tags.join(' ').toLowerCase();
-        if (tagStr.includes('datacenter') || tagStr.includes('cloud')) {
-            baseDays = Math.floor(Math.random() * 90) + 60; // 60-150天
-        } else if (tagStr.includes('home') || tagStr.includes('residential')) {
-            baseDays = Math.floor(Math.random() * 30) + 10; // 10-40天
-        } else {
-            baseDays = Math.floor(Math.random() * 60) + 20; // 20-80天
-        }
-    }
-    
-    // 轉換為秒並添加隨機的小時、分鐘、秒
-    const totalSeconds = baseDays * 86400 + 
-                        Math.floor(Math.random() * 24) * 3600 + 
-                        Math.floor(Math.random() * 60) * 60 + 
-                        Math.floor(Math.random() * 60);
-    
-    return formatUptime(totalSeconds);
-}
 
 // 檢測網路類型
 function detectNetworkType(tags) {
@@ -823,8 +726,8 @@ function updateStatsUI(stats) {
     // 更新節點詳細列表
     updateNodeDetailsList(stats.nodeDetails);
     
-    // 更新節點快速統計
-    updateNodeQuickStats(stats);
+    // 更新地理分布統計
+    updateGeographicStats(stats);
     
     // 更新最後更新時間
     const now = new Date();
@@ -925,7 +828,7 @@ function updateNodeDetailsList(nodeDetails) {
                     <td>${node.status === 'online' ? '運行中' : '-'}</td>
                     <td>${node.version}</td>
                     <td>${node.asn}</td>
-                    <td>${node.uptime}</td>
+                    <td>${node.networkType}</td>
                 </tr>
             `;
         }).join('');
@@ -973,139 +876,40 @@ async function refreshStats() {
     await loadStats();
 }
 
-// 更新節點快速統計
-function updateNodeQuickStats(stats) {
+// 更新地理分布統計
+function updateGeographicStats(stats) {
     const allNodes = stats.nodeDetails;
-    const onlineNodes = allNodes.filter(node => node.status === 'online');
     
-    // 最新節點 (基於版本號或隨機選擇)
-    const newestNode = findNewestNode(allNodes);
-    document.getElementById('newestNode').textContent = newestNode ? newestNode.name : 'N/A';
+    // 台灣節點計算
+    const taiwanLocations = ['Tainan', 'New Taipei City', 'Taipei', 'Taichung', 'Pingtung', 'Yilan'];
+    const taiwanNodes = allNodes.filter(node => 
+        taiwanLocations.some(location => node.location.includes(location)) ||
+        node.location_zh
+    ).length;
     
-    // 最舊節點 (基於版本號或隨機選擇)  
-    const oldestNode = findOldestNode(allNodes);
-    document.getElementById('oldestNode').textContent = oldestNode ? oldestNode.name : 'N/A';
+    // 亞洲節點計算 (包括台灣和香港)
+    const asiaLocations = ['Taiwan', 'Hong Kong', 'Japan', 'Korea', 'Singapore', 'China'];
+    const asiaNodes = allNodes.filter(node => 
+        taiwanLocations.some(location => node.location.includes(location)) ||
+        node.location_zh ||
+        node.location.includes('Hong Kong') ||
+        asiaLocations.some(location => node.location.includes(location))
+    ).length;
     
-    // 平均 Uptime
-    const avgUptime = calculateAverageUptime(onlineNodes);
-    document.getElementById('avgUptime').textContent = avgUptime;
+    // 國際節點 (非亞洲)
+    const internationalNodes = allNodes.length - asiaNodes;
     
-    // 最佳 Uptime
-    const bestUptimeNode = findBestUptimeNode(onlineNodes);
-    document.getElementById('bestUptime').textContent = bestUptimeNode 
-        ? `${bestUptimeNode.name} (${bestUptimeNode.uptime})`
-        : 'N/A';
+    // 服務提供商數量
+    const providers = new Set(allNodes.map(node => node.provider));
+    const totalProviders = providers.size;
+    
+    // 更新 UI
+    document.getElementById('taiwanNodes').textContent = taiwanNodes;
+    document.getElementById('asiaNodes').textContent = asiaNodes;
+    document.getElementById('internationalNodes').textContent = internationalNodes;
+    document.getElementById('totalProviders').textContent = totalProviders;
 }
 
-// 尋找最新節點 (在 nodes.json 中排序最後的節點)
-function findNewestNode(allNodes) {
-    if (!allNodes || allNodes.length === 0) return null;
-    
-    // 找到在 nodesData.nodes 原始陣列中索引最高的節點
-    let newestNode = null;
-    let highestIndex = -1;
-    
-    for (const node of allNodes) {
-        const originalIndex = nodesData.nodes.findIndex(n => n.name === node.name && n.location === node.location);
-        if (originalIndex > highestIndex) {
-            highestIndex = originalIndex;
-            newestNode = node;
-        }
-    }
-    
-    return newestNode;
-}
-
-// 尋找最舊節點 (在 nodes.json 中排序最前的節點)
-function findOldestNode(allNodes) {
-    if (!allNodes || allNodes.length === 0) return null;
-    
-    // 找到在 nodesData.nodes 原始陣列中索引最低的節點
-    let oldestNode = null;
-    let lowestIndex = Infinity;
-    
-    for (const node of allNodes) {
-        const originalIndex = nodesData.nodes.findIndex(n => n.name === node.name && n.location === node.location);
-        if (originalIndex !== -1 && originalIndex < lowestIndex) {
-            lowestIndex = originalIndex;
-            oldestNode = node;
-        }
-    }
-    
-    return oldestNode;
-}
-
-// 計算平均 Uptime
-function calculateAverageUptime(nodes) {
-    if (nodes.length === 0) return 'N/A';
-    
-    const uptimeSeconds = nodes
-        .map(node => {
-            return parseUptimeToSeconds(node.uptime);
-        })
-        .filter(seconds => seconds > 0);
-    
-    if (uptimeSeconds.length === 0) return 'N/A';
-    
-    const avgSeconds = Math.round(uptimeSeconds.reduce((sum, seconds) => sum + seconds, 0) / uptimeSeconds.length);
-    return formatUptime(avgSeconds);
-}
-
-// 尋找最佳 Uptime 節點
-function findBestUptimeNode(nodes) {
-    if (nodes.length === 0) return null;
-    
-    return nodes.reduce((best, current) => {
-        if (!best) return current;
-        
-        const bestDays = extractUptimeDays(best.uptime);
-        const currentDays = extractUptimeDays(current.uptime);
-        
-        return currentDays > bestDays ? current : best;
-    }, null);
-}
-
-// 從 uptime 字串解析為秒數
-function parseUptimeToSeconds(uptimeStr) {
-    if (!uptimeStr || uptimeStr === 'N/A') return 0;
-    
-    let totalSeconds = 0;
-    
-    // 移除 HTML 標籤，只保留數字和單位
-    const cleanStr = uptimeStr.replace(/<[^>]*>/g, '');
-    
-    // 解析中文格式: 天、小時、分、秒
-    const dayMatch = cleanStr.match(/(\d+)天/);
-    const hourMatch = cleanStr.match(/(\d+)小時/);
-    const minuteMatch = cleanStr.match(/(\d+)分/);
-    const secondMatch = cleanStr.match(/(\d+)秒/);
-    
-    // 也支援英文格式: d、h、m、s (向後兼容)
-    const dayMatchEn = cleanStr.match(/(\d+)d/);
-    const hourMatchEn = cleanStr.match(/(\d+)h/);
-    const minuteMatchEn = cleanStr.match(/(\d+)m/);
-    const secondMatchEn = cleanStr.match(/(\d+)s/);
-    
-    if (dayMatch) totalSeconds += parseInt(dayMatch[1]) * 86400;
-    else if (dayMatchEn) totalSeconds += parseInt(dayMatchEn[1]) * 86400;
-    
-    if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
-    else if (hourMatchEn) totalSeconds += parseInt(hourMatchEn[1]) * 3600;
-    
-    if (minuteMatch) totalSeconds += parseInt(minuteMatch[1]) * 60;
-    else if (minuteMatchEn) totalSeconds += parseInt(minuteMatchEn[1]) * 60;
-    
-    if (secondMatch) totalSeconds += parseInt(secondMatch[1]);
-    else if (secondMatchEn) totalSeconds += parseInt(secondMatchEn[1]);
-    
-    return totalSeconds;
-}
-
-// 從 uptime 字串提取天數 (向後兼容)
-function extractUptimeDays(uptimeStr) {
-    const totalSeconds = parseUptimeToSeconds(uptimeStr);
-    return Math.floor(totalSeconds / 86400);
-}
 
 // 測試節點響應時間
 async function testNodesResponseTime(nodes) {
@@ -1191,46 +995,6 @@ function determineBestNode(onlineNodes) {
     return scored.sort((a, b) => b.score - a.score)[0]?.node || onlineNodes[0];
 }
 
-// 匯出統計數據
-async function exportStats() {
-    if (!probesData) {
-        alert('請先載入統計數據');
-        return;
-    }
-    
-    const stats = await calculateStats(probesData);
-    const exportData = {
-        exportTime: new Date().toISOString(),
-        summary: {
-            total: stats.total,
-            online: stats.online,
-            offline: stats.offline,
-            onlinePercentage: Math.round((stats.online / stats.total) * 100)
-        },
-        regionDistribution: stats.byRegion,
-        networkDistribution: stats.byNetwork,
-        nodeDetails: stats.nodeDetails.map(node => ({
-            name: node.name,
-            name_zh: node.name_zh,
-            location: node.location,
-            location_zh: node.location_zh,
-            provider: node.provider,
-            status: node.status,
-            version: node.version,
-            network: node.network,
-            asn: node.asn,
-            uptime: node.uptime
-        }))
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `looking-glass-stats-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
 
 // 檢查主畫面節點狀態
 async function checkMainNodeStatus() {

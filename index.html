@@ -267,30 +267,30 @@
                             </div>
                         </div>
                         
-                        <!-- 節點快速統計 -->
+                        <!-- 節點地理分布 -->
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h6 class="mb-0">節點快速統計</h6>
+                                        <h6 class="mb-0">節點地理分布</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-3">
-                                                <h6 class="text-muted small">最新節點</h6>
-                                                <p class="mb-0" id="newestNode">-</p>
+                                                <h6 class="text-muted small">台灣節點</h6>
+                                                <h4 class="mb-0 text-primary" id="taiwanNodes">-</h4>
                                             </div>
                                             <div class="col-md-3">
-                                                <h6 class="text-muted small">最舊節點</h6>
-                                                <p class="mb-0" id="oldestNode">-</p>
+                                                <h6 class="text-muted small">亞洲節點</h6>
+                                                <h4 class="mb-0 text-success" id="asiaNodes">-</h4>
                                             </div>
                                             <div class="col-md-3">
-                                                <h6 class="text-muted small">平均 Uptime</h6>
-                                                <h4 id="avgUptime">-</h4>
+                                                <h6 class="text-muted small">國際節點</h6>
+                                                <h4 class="mb-0 text-info" id="internationalNodes">-</h4>
                                             </div>
                                             <div class="col-md-3">
-                                                <h6 class="text-muted small">最佳 Uptime</h6>
-                                                <p class="mb-0" id="bestUptime">-</p>
+                                                <h6 class="text-muted small">服務提供商</h6>
+                                                <h4 class="mb-0 text-warning" id="totalProviders">-</h4>
                                             </div>
                                         </div>
                                     </div>
@@ -303,9 +303,6 @@
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">節點詳細狀態</h6>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-primary me-2" id="exportStats">
-                                        <i class="bi bi-download"></i> 匯出
-                                    </button>
                                     <button class="btn btn-sm btn-primary" id="refreshStats">
                                         <i class="bi bi-arrow-clockwise"></i> 刷新
                                     </button>
@@ -323,7 +320,7 @@
                                                 <th>上線時間</th>
                                                 <th>版本</th>
                                                 <th>ASN</th>
-                                                <th>Uptime</th>
+                                                <th>網路類型</th>
                                             </tr>
                                         </thead>
                                         <tbody id="nodeDetailsList">
