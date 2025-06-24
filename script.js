@@ -882,19 +882,37 @@ function updateGeographicStats(stats) {
     
     // 台灣節點計算
     const taiwanLocations = ['Tainan', 'New Taipei City', 'Taipei', 'Taichung', 'Pingtung', 'Yilan'];
-    const taiwanNodes = allNodes.filter(node => 
-        taiwanLocations.some(location => node.location.includes(location)) ||
-        node.location_zh
-    ).length;
+    const taiwanNodes = allNodes.filter(node => {
+        // 檢查是否有中文位置 (通常表示台灣)
+        if (node.location_zh) return true;
+        // 檢查英文位置名稱
+        return taiwanLocations.some(location => node.location.includes(location));
+    }).length;
     
-    // 亞洲節點計算 (包括台灣和香港)
-    const asiaLocations = ['Taiwan', 'Hong Kong', 'Japan', 'Korea', 'Singapore', 'China'];
-    const asiaNodes = allNodes.filter(node => 
-        taiwanLocations.some(location => node.location.includes(location)) ||
-        node.location_zh ||
-        node.location.includes('Hong Kong') ||
-        asiaLocations.some(location => node.location.includes(location))
-    ).length;
+    // 亞洲節點計算 (包括台灣和香港，但不包括美國等其他地區)
+    const asiaNodes = allNodes.filter(node => {
+        // 先排除明確的非亞洲地區
+        if (node.location.includes('United States') || 
+            node.location.includes('USA') || 
+            node.location_zh === '美國' ||
+            node.location.includes('Europe') ||
+            node.location.includes('Canada') ||
+            node.location.includes('Brazil') ||
+            node.location.includes('Australia')) {
+            return false;
+        }
+        
+        // 檢查是否為亞洲地區
+        // 1. 有中文位置名稱 (通常是亞洲)
+        if (node.location_zh) return true;
+        
+        // 2. 檢查香港
+        if (node.location.includes('Hong Kong') || node.location_zh === '香港') return true;
+        
+        // 3. 檢查其他亞洲國家/地區
+        const asiaKeywords = ['Japan', 'Korea', 'Singapore', 'China', 'India', 'Thailand', 'Vietnam', 'Malaysia', 'Indonesia', 'Philippines'];
+        return asiaKeywords.some(keyword => node.location.includes(keyword));
+    }).length;
     
     // 國際節點 (非亞洲)
     const internationalNodes = allNodes.length - asiaNodes;
