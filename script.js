@@ -170,10 +170,10 @@ function showUsageLogs() {
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-sm mb-0">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
-                                            <th class="py-2">節點</th>
-                                            <th class="py-2">提供者</th>
+                                            <th class="py-2 text-center">節點</th>
+                                            <th class="py-2 text-center">提供者</th>
                                             <th class="py-2 text-center">點擊</th>
                                             <th class="py-2 text-center">測試</th>
                                             <th class="py-2 text-center">用戶</th>
@@ -182,19 +182,19 @@ function showUsageLogs() {
                                     <tbody>
                                         ${nodeUsageArray.map(node => `
                                             <tr>
-                                                <td class="py-2">
+                                                <td class="py-2 text-center">
                                                     <div class="fw-bold">${node.name}</div>
                                                     <small class="text-muted">${node.location}</small>
                                                 </td>
-                                                <td class="py-2">${node.provider}</td>
+                                                <td class="py-2 text-center">${node.provider}</td>
                                                 <td class="py-2 text-center">
-                                                    ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '-'}
+                                                    ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '<span class="text-muted">-</span>'}
                                                 </td>
                                                 <td class="py-2 text-center">
-                                                    ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '-'}
+                                                    ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '<span class="text-muted">-</span>'}
                                                 </td>
                                                 <td class="py-2 text-center">
-                                                    ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '-'}
+                                                    ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '<span class="text-muted">-</span>'}
                                                 </td>
                                             </tr>
                                         `).join('')}
@@ -208,15 +208,27 @@ function showUsageLogs() {
                     <div class="card">
                         <div class="card-header py-2 d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">最近活動</h6>
-                            <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除</button>
+                            <div>
+                                <button class="btn btn-sm btn-outline-success me-2" onclick="exportLogs()">匯出</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除</button>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div style="max-height: 250px; overflow-y: auto;">
                                 <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="py-1 text-center small">時間</th>
+                                            <th class="py-1 text-center small">動作</th>
+                                            <th class="py-1 text-center small">節點</th>
+                                            <th class="py-1 text-center small">詳細</th>
+                                            <th class="py-1 text-center small">IP</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         ${recentLogs.slice(0, 20).map(log => `
                                             <tr>
-                                                <td class="py-1 small text-muted" style="width: 80px;">
+                                                <td class="py-1 text-center small text-muted">
                                                     ${new Date(log.timestamp).toLocaleString('zh-TW', {
                                                         month: 'numeric', 
                                                         day: 'numeric', 
@@ -224,17 +236,17 @@ function showUsageLogs() {
                                                         minute: '2-digit'
                                                     })}
                                                 </td>
-                                                <td class="py-1" style="width: 60px;">
+                                                <td class="py-1 text-center">
                                                     <span class="badge bg-${getActionColor(log.action)} small">${getActionName(log.action)}</span>
                                                 </td>
-                                                <td class="py-1 fw-bold" style="width: 120px;">${log.nodeName}</td>
-                                                <td class="py-1">
+                                                <td class="py-1 text-center fw-bold small">${log.nodeName}</td>
+                                                <td class="py-1 text-center small">
                                                     ${log.testType ? 
-                                                        `<span class="small text-primary">${log.testType.toUpperCase()}</span> → <span class="small">${log.target || ''}</span>` : 
-                                                        `<span class="small text-muted">${log.nodeLocation}</span>`
+                                                        `<span class="text-primary">${log.testType.toUpperCase()}</span><br><span class="text-muted">${log.target || ''}</span>` : 
+                                                        `<span class="text-muted">${log.nodeLocation}</span>`
                                                     }
                                                 </td>
-                                                <td class="py-1 small text-muted" style="width: 100px;">${log.ip}</td>
+                                                <td class="py-1 text-center small text-muted">${log.ip}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -277,6 +289,61 @@ function getActionName(action) {
         'node_clicked': '點擊'
     };
     return names[action] || action;
+}
+
+// 匯出日誌
+function exportLogs() {
+    const logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
+    
+    if (logs.length === 0) {
+        alert('沒有日誌資料可以匯出');
+        return;
+    }
+    
+    // 準備CSV內容
+    const csvHeaders = ['時間', '動作', '節點名稱', '節點位置', '測試類型', '測試目標', 'IP地址'];
+    const csvRows = logs.map(log => [
+        new Date(log.timestamp).toLocaleString('zh-TW'),
+        log.action === 'test_started' ? '測試' : '點擊',
+        log.nodeName || '',
+        log.nodeLocation || '',
+        log.testType || '',
+        log.target || '',
+        log.ip || ''
+    ]);
+    
+    // 建立CSV內容
+    const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+    ].join('\\n');
+    
+    // 建立下載連結
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `looking-glass-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // 顯示成功訊息
+    const btn = event?.target;
+    if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> 已匯出';
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+        }, 2000);
+    }
 }
 
 // 清除日誌
