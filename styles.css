@@ -227,27 +227,33 @@ a:hover {
 
 /* 手機版按鈕調整 */
 @media (max-width: 768px) {
+    /* 統一所有頂部按鈕樣式 */
+    .top-button,
+    .color-toggle-btn {
+        position: fixed !important;
+        top: 15px !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        font-size: 16px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+    }
+    
     /* 主題切換按鈕 - 最右邊 */
     #themeToggle {
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        width: 36px;
-        height: 36px;
-        z-index: 1000;
+        right: 15px !important;
     }
     
     /* 統計按鈕 - 中間 */
     #statsBtn {
-        position: fixed !important;
-        top: 15px !important;
         right: 56px !important;  /* 15px + 36px + 5px 間距 */
-        width: 36px !important;
-        height: 36px !important;
-        z-index: 1000;
     }
     
-    /* 調色盤按鈕 - 最左邊 */
+    /* 調色盤按鈕容器 - 最左邊 */
     .color-picker {
         position: fixed !important;
         top: 15px !important;
@@ -260,8 +266,6 @@ a:hover {
     
     .color-toggle-btn {
         position: relative !important;
-        width: 36px !important;
-        height: 36px !important;
         margin: 0 !important;
     }
     
@@ -284,28 +288,16 @@ a:hover {
         padding-top: 4rem !important;
     }
     
-    /* 確保按鈕圖標大小適中 */
-    #themeToggle i,
-    #statsBtn i,
+    /* 確保按鈕圖標大小適中且統一 */
+    .top-button i,
     .color-toggle-btn i {
-        font-size: 18px;
-    }
-    
-    /* 手機版按鈕陰影調整 */
-    #themeToggle,
-    #statsBtn,
-    .color-toggle-btn {
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
     }
 }
 
-[data-theme="dark"] #themeToggle {
-    background-color: var(--light-bg);
-    border-color: var(--card-border);
-    color: var(--text-color);
-}
-
-[data-theme="dark"] #batchTestBtn {
+[data-theme="dark"] .top-button,
+[data-theme="dark"] .color-toggle-btn {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
@@ -407,26 +399,10 @@ a:hover {
     --primary-light: #4dd0a7;
 }
 
-/* 主題切換按鈕 */
-#themeToggle {
+/* 統一的按鈕基礎樣式 */
+.top-button {
     position: fixed;
     top: 20px;
-    right: 20px;
-    z-index: 1000;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-/* 統計按鈕 - 與其他按鈕樣式一致 */
-#statsBtn {
-    position: fixed;
-    top: 20px;
-    right: 70px;
     z-index: 1000;
     width: 40px;
     height: 40px;
@@ -437,14 +413,24 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
 }
 
-#statsBtn:hover {
+.top-button:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 主題切換按鈕 */
+#themeToggle {
+    right: 20px;
+}
+
+/* 統計按鈕 */
+#statsBtn {
+    right: 70px;
 }
 
 /* 主題色選擇器樣式 */
@@ -454,7 +440,6 @@ a:hover {
     right: 120px;
     z-index: 1000;
 }
-
 
 .color-toggle-btn {
     width: 40px;
