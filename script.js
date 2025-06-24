@@ -438,6 +438,7 @@ function initStatsPanel() {
     const statsBtn = document.getElementById('statsBtn');
     const refreshStatsBtn = document.getElementById('refreshStats');
     const networkTypeInfoBtn = document.getElementById('networkTypeInfo');
+    const updateNodesBtn = document.getElementById('updateNodesBtn');
     
     // 綁定統計按鈕事件
     if (statsBtn) {
@@ -452,6 +453,11 @@ function initStatsPanel() {
     // 綁定網路類型說明按鈕事件
     if (networkTypeInfoBtn) {
         networkTypeInfoBtn.addEventListener('click', showNetworkTypeInfo);
+    }
+    
+    // 綁定更新節點按鈕事件
+    if (updateNodesBtn) {
+        updateNodesBtn.addEventListener('click', updateNodesFromGlobalPing);
     }
 }
 
@@ -571,9 +577,9 @@ function calculateStats(probes) {
                 provider: node.provider,
                 providerLink: node['provider-link'],
                 status: isOnline ? 'online' : 'offline',
-                version: primaryProbe.version || 'N/A',
+                version: node.version || primaryProbe.version || 'N/A',
                 network: primaryProbe.location?.network || 'N/A',
-                asn: primaryProbe.location?.asn || 'N/A',
+                asn: node.asn || primaryProbe.location?.asn || 'N/A',
                 networkType: networkType,
                 protocols: supportedProtocols,
                 probeData: primaryProbe
@@ -588,10 +594,10 @@ function calculateStats(probes) {
                 provider: node.provider,
                 providerLink: node['provider-link'],
                 status: 'offline',
-                version: 'N/A',
+                version: node.version || 'N/A',
                 network: 'N/A',
-                asn: 'N/A',
-                networkType: '未知',
+                asn: node.asn || 'N/A',
+                networkType: getNodeNetworkType(node, null),
                 protocols: ['未知'],
                 probeData: null
             });
@@ -626,33 +632,33 @@ function getNodeNetworkType(node, probe) {
     return detectNetworkType(probe?.tags);
 }
 
-// 自定義網路類型映射表
+// 自訂網路類型映射表
 function getCustomNetworkTypeMapping() {
     return {
         // 基於節點名稱和位置的映射
         'CDX-NCHC-Tainan': '教育網路',
-        'DaDa-Chief-New Taipei City': '家庭寬帶',
-        'DaDa-FET-New Taipei City': '家庭寬帶',
-        'CoCoDigit-Taipei': '數據中心',
+        'DaDa-Chief-New Taipei City': '家庭寬頻',
+        'DaDa-FET-New Taipei City': '家庭寬頻',
+        'CoCoDigit-Taipei': '資料中心',
         'FET-New Taipei City': '電信商',
         'HINET-Taichung': '電信商',
         'Kbro-TFN-Pingtung': '有線電視',
-        'NCSE Network-Taipei': '數據中心',
+        'NCSE Network-Taipei': '資料中心',
         'TANET-Yilan': '教育網路',
-        'TINP-Taichung': '數據中心',
-        'Simple Information-Taipei': '數據中心',
-        'Simple Information-Hong Kong': '數據中心',
-        'Simple Information-United States': '數據中心',
+        'TINP-Taichung': '資料中心',
+        'Simple Information-Taipei': '資料中心',
+        'Simple Information-Hong Kong': '資料中心',
+        'Simple Information-United States': '資料中心',
         'VeeTIME-Taichung': '有線電視',
         
         // 基於提供者的映射
         'Yuan': '個人維護',
         'CH': '個人維護',
         'Zhuyuan': '個人維護',
-        'CoCoDigit': '數據中心',
-        'NCSE Network': '數據中心',
+        'CoCoDigit': '資料中心',
+        'NCSE Network': '資料中心',
         'cute_panda': '個人維護',
-        'Ricky': '數據中心',
+        'Ricky': '資料中心',
         'Cheese_ge': '個人維護'
     };
 }
@@ -664,13 +670,13 @@ function detectNetworkType(tags) {
     const tagStr = tags.join(' ').toLowerCase();
     
     if (tagStr.includes('datacenter') || tagStr.includes('vps') || tagStr.includes('cloud')) {
-        return '數據中心';
+        return '資料中心';
     } else if (tagStr.includes('residential') || tagStr.includes('home')) {
-        return '家庭寬帶';
+        return '家庭寬頻';
     } else if (tagStr.includes('business') || tagStr.includes('corporate')) {
         return '企業網路';
     } else if (tagStr.includes('mobile') || tagStr.includes('cellular')) {
-        return '移動網路';
+        return '行動網路';
     } else if (tagStr.includes('university') || tagStr.includes('education')) {
         return '教育網路';
     }
@@ -942,21 +948,21 @@ function showNetworkTypeInfo() {
 網路類型分類說明：
 
 📡 電信商：中華電信(HINET)、遠傳電信(FET)等
-🏠 家庭寬帶：大大寬頻等家用網路
+🏠 家庭寬頻：大大寬頻等家用網路
 📺 有線電視：凱擘寬頻、大台中數位等
 🏫 教育網路：國網中心、臺灣學術網路等
-🏢 數據中心：CoCoDigit、Simple Information等
+🏢 資料中心：CoCoDigit、Simple Information等
 👤 個人維護：由個人維護的節點
 
-自定義網路類型方法：
-1. 在 nodes.json 中添加 "networkType" 字段
+自訂網路類型方法：
+1. 在 nodes.json 中新增 "networkType" 欄位
 2. 修改 script.js 中的 getCustomNetworkTypeMapping() 函數
 3. 重新載入頁面即可生效
 
 例如：
 {
   "name": "MyNode",
-  "networkType": "自定義類型",
+  "networkType": "自訂類型",
   ...
 }
     `;
@@ -968,52 +974,293 @@ function showNetworkTypeInfo() {
 function updateGeographicStats(stats) {
     const allNodes = stats.nodeDetails;
     
-    // 台灣節點計算
-    const taiwanLocations = ['Tainan', 'New Taipei City', 'Taipei', 'Taichung', 'Pingtung', 'Yilan'];
-    const taiwanNodes = allNodes.filter(node => {
-        // 檢查是否有中文位置 (通常表示台灣)
-        if (node.location_zh) return true;
-        // 檢查英文位置名稱
-        return taiwanLocations.some(location => node.location.includes(location));
-    }).length;
+    // 按五大洲分類統計
+    const continentStats = {
+        asia: 0,
+        europe: 0,
+        northAmerica: 0,
+        southAmerica: 0,
+        oceania: 0,
+        africa: 0
+    };
     
-    // 亞洲節點計算 (包括台灣和香港，但不包括美國等其他地區)
-    const asiaNodes = allNodes.filter(node => {
-        // 先排除明確的非亞洲地區
-        if (node.location.includes('United States') || 
-            node.location.includes('USA') || 
-            node.location_zh === '美國' ||
-            node.location.includes('Europe') ||
-            node.location.includes('Canada') ||
-            node.location.includes('Brazil') ||
-            node.location.includes('Australia')) {
-            return false;
-        }
-        
-        // 檢查是否為亞洲地區
-        // 1. 有中文位置名稱 (通常是亞洲)
-        if (node.location_zh) return true;
-        
-        // 2. 檢查香港
-        if (node.location.includes('Hong Kong') || node.location_zh === '香港') return true;
-        
-        // 3. 檢查其他亞洲國家/地區
-        const asiaKeywords = ['Japan', 'Korea', 'Singapore', 'China', 'India', 'Thailand', 'Vietnam', 'Malaysia', 'Indonesia', 'Philippines'];
-        return asiaKeywords.some(keyword => node.location.includes(keyword));
-    }).length;
-    
-    // 國際節點 (非亞洲)
-    const internationalNodes = allNodes.length - asiaNodes;
-    
-    // 服務提供商數量
-    const providers = new Set(allNodes.map(node => node.provider));
-    const totalProviders = providers.size;
+    allNodes.forEach(node => {
+        const continent = getNodeContinent(node);
+        continentStats[continent]++;
+    });
     
     // 更新 UI
-    document.getElementById('taiwanNodes').textContent = taiwanNodes;
-    document.getElementById('asiaNodes').textContent = asiaNodes;
-    document.getElementById('internationalNodes').textContent = internationalNodes;
-    document.getElementById('totalProviders').textContent = totalProviders;
+    document.getElementById('asiaNodes').textContent = continentStats.asia;
+    document.getElementById('europeNodes').textContent = continentStats.europe;
+    document.getElementById('northAmericaNodes').textContent = continentStats.northAmerica;
+    document.getElementById('southAmericaNodes').textContent = continentStats.southAmerica;
+    document.getElementById('oceaniaNodes').textContent = continentStats.oceania;
+    document.getElementById('africaNodes').textContent = continentStats.africa;
+}
+
+// 自動更新節點資料從 GlobalPing
+async function updateNodesFromGlobalPing() {
+    const updateBtn = document.getElementById('updateNodesBtn');
+    const originalHTML = updateBtn.innerHTML;
+    
+    try {
+        // 更新按鈕狀態
+        updateBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+        updateBtn.disabled = true;
+        
+        // 獲取 GlobalPing probes 資料
+        const response = await fetch('https://api.globalping.io/v1/probes');
+        if (!response.ok) {
+            throw new Error('無法獲取 GlobalPing 資料');
+        }
+        
+        const probes = await response.json();
+        
+        // 更新現有節點資料
+        const updatedNodes = nodesData.nodes.map(node => {
+            // 尋找對應的 probe
+            const matchingProbes = probes.filter(probe => {
+                if (!probe.tags || !Array.isArray(probe.tags)) return false;
+                return probe.tags.some(tag => {
+                    if (typeof node.tags === 'string') {
+                        return node.tags.includes(tag);
+                    } else if (Array.isArray(node.tags)) {
+                        return node.tags.includes(tag);
+                    }
+                    return false;
+                });
+            });
+            
+            if (matchingProbes.length > 0) {
+                const primaryProbe = matchingProbes.find(probe => probe.version) || matchingProbes[0];
+                
+                // 更新節點資料
+                return {
+                    ...node,
+                    version: primaryProbe.version || node.version || 'N/A',
+                    asn: primaryProbe.location?.asn || node.asn || 'N/A',
+                    continent: node.continent || detectContinentFromProbe(primaryProbe),
+                    networkType: node.networkType || detectNetworkTypeFromProbe(primaryProbe),
+                    lastUpdated: new Date().toISOString()
+                };
+            }
+            
+            return node;
+        });
+        
+        // 生成更新後的 JSON
+        const updatedJSON = {
+            nodes: updatedNodes,
+            lastUpdate: new Date().toISOString(),
+            source: 'GlobalPing API'
+        };
+        
+        // 顯示更新結果
+        showUpdateResult(updatedJSON);
+        
+    } catch (error) {
+        console.error('更新節點資料失敗:', error);
+        alert('更新失敗：' + error.message);
+    } finally {
+        // 恢復按鈕狀態
+        updateBtn.innerHTML = originalHTML;
+        updateBtn.disabled = false;
+    }
+}
+
+// 從 probe 資料檢測洲別
+function detectContinentFromProbe(probe) {
+    if (!probe.location) return 'asia';
+    
+    const continent = probe.location.continent;
+    
+    // GlobalPing API 的洲別對應
+    const continentMapping = {
+        'AS': 'asia',
+        'EU': 'europe', 
+        'NA': 'northAmerica',
+        'SA': 'southAmerica',
+        'OC': 'oceania',
+        'AF': 'africa'
+    };
+    
+    return continentMapping[continent] || 'asia';
+}
+
+// 從 probe 資料檢測網路類型
+function detectNetworkTypeFromProbe(probe) {
+    if (!probe.tags || !Array.isArray(probe.tags)) return '未知';
+    
+    const tagStr = probe.tags.join(' ').toLowerCase();
+    
+    if (tagStr.includes('datacenter') || tagStr.includes('vps') || tagStr.includes('cloud')) {
+        return '資料中心';
+    } else if (tagStr.includes('residential') || tagStr.includes('home')) {
+        return '家庭寬頻';
+    } else if (tagStr.includes('business') || tagStr.includes('corporate')) {
+        return '企業網路';
+    } else if (tagStr.includes('mobile') || tagStr.includes('cellular')) {
+        return '行動網路';
+    } else if (tagStr.includes('university') || tagStr.includes('education')) {
+        return '教育網路';
+    }
+    
+    return '其他';
+}
+
+// 顯示更新結果
+function showUpdateResult(updatedData) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'updateResultModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">節點資料更新結果</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>
+                        成功從 GlobalPing API 更新節點資料！
+                    </div>
+                    <p><strong>更新時間：</strong>${new Date().toLocaleString('zh-TW')}</p>
+                    <p><strong>節點數量：</strong>${updatedData.nodes.length} 個</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">更新後的 nodes.json 內容：</label>
+                        <textarea class="form-control" rows="15" readonly id="updatedJSON">${JSON.stringify(updatedData, null, 2)}</textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        請複製上方內容並手動更新 nodes.json 檔案
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="copyToClipboard(event)">
+                        <i class="bi bi-clipboard"></i> 複製到剪貼簿
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // 清理 modal
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// 複製到剪貼簿
+async function copyToClipboard(event) {
+    const textarea = document.getElementById('updatedJSON');
+    
+    try {
+        await navigator.clipboard.writeText(textarea.value);
+        
+        // 顯示複製成功提示
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> 已複製';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    } catch (err) {
+        // 降級到舊方法
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> 已複製';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    }
+}
+
+// 根據節點判斷所屬洲別
+function getNodeContinent(node) {
+    // 優先使用 nodes.json 中定義的洲別
+    if (node.continent) {
+        return node.continent;
+    }
+    
+    const location = node.location.toLowerCase();
+    const location_zh = node.location_zh?.toLowerCase() || '';
+    
+    // 亞洲
+    if (node.location_zh || // 有中文位置通常是亞洲（台灣）
+        location.includes('hong kong') || location_zh.includes('香港') ||
+        location.includes('japan') || location.includes('korea') || 
+        location.includes('singapore') || location.includes('china') ||
+        location.includes('india') || location.includes('thailand') ||
+        location.includes('vietnam') || location.includes('malaysia') ||
+        location.includes('indonesia') || location.includes('philippines') ||
+        location.includes('taiwan') || location.includes('tainan') ||
+        location.includes('taipei') || location.includes('taichung') ||
+        location.includes('pingtung') || location.includes('yilan')) {
+        return 'asia';
+    }
+    
+    // 北美洲
+    if (location.includes('united states') || location.includes('usa') ||
+        location.includes('canada') || location.includes('mexico')) {
+        return 'northAmerica';
+    }
+    
+    // 歐洲
+    if (location.includes('europe') || location.includes('united kingdom') ||
+        location.includes('germany') || location.includes('france') ||
+        location.includes('netherlands') || location.includes('poland') ||
+        location.includes('spain') || location.includes('italy') ||
+        location.includes('sweden') || location.includes('norway') ||
+        location.includes('finland') || location.includes('denmark') ||
+        location.includes('belgium') || location.includes('austria') ||
+        location.includes('switzerland') || location.includes('russia')) {
+        return 'europe';
+    }
+    
+    // 南美洲
+    if (location.includes('brazil') || location.includes('argentina') ||
+        location.includes('chile') || location.includes('colombia') ||
+        location.includes('peru') || location.includes('venezuela')) {
+        return 'southAmerica';
+    }
+    
+    // 大洋洲
+    if (location.includes('australia') || location.includes('new zealand') ||
+        location.includes('fiji') || location.includes('papua new guinea')) {
+        return 'oceania';
+    }
+    
+    // 非洲
+    if (location.includes('africa') || location.includes('south africa') ||
+        location.includes('egypt') || location.includes('nigeria') ||
+        location.includes('morocco') || location.includes('kenya')) {
+        return 'africa';
+    }
+    
+    // 預設為亞洲（因為目前節點主要在亞洲）
+    return 'asia';
 }
 
 
