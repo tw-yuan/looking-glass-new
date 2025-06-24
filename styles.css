@@ -372,39 +372,75 @@ a:hover {
     /* 表格手機版優化 */
     #statsModal .table-responsive {
         border-radius: 8px;
-        overflow: hidden;
+        overflow-x: auto;
+        overflow-y: visible;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        -webkit-overflow-scrolling: touch;
     }
     
     #statsModal .table {
         margin-bottom: 0;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
+        min-width: 600px;
+        white-space: nowrap;
     }
     
     #statsModal .table th {
-        padding: 0.6rem 0.4rem;
-        font-size: 0.8rem;
+        padding: 0.5rem 0.3rem;
+        font-size: 0.7rem;
         font-weight: 600;
         background: var(--light-bg);
         border-bottom: 2px solid var(--card-border);
+        white-space: nowrap;
     }
     
     #statsModal .table td {
-        padding: 0.6rem 0.4rem;
+        padding: 0.5rem 0.3rem;
         vertical-align: middle;
         border-bottom: 1px solid var(--card-border);
+        white-space: nowrap;
     }
     
-    /* 節點名稱和位置優化 */
+    /* 節點名稱欄位 */
     #statsModal .table td:first-child {
         font-weight: 500;
-        max-width: 100px;
+        min-width: 80px;
+        max-width: 120px;
+        white-space: normal;
         word-break: break-word;
     }
     
+    /* 位置欄位 */
     #statsModal .table td:nth-child(2) {
-        max-width: 80px;
+        min-width: 70px;
+        max-width: 100px;
+        white-space: normal;
         word-break: break-word;
+    }
+    
+    /* 提供者欄位 */
+    #statsModal .table td:nth-child(3) {
+        min-width: 60px;
+    }
+    
+    /* 狀態欄位 */
+    #statsModal .table td:nth-child(4) {
+        min-width: 50px;
+    }
+    
+    /* 版本欄位 */
+    #statsModal .table td:nth-child(5) {
+        min-width: 50px;
+    }
+    
+    /* ASN欄位 */
+    #statsModal .table td:nth-child(6) {
+        min-width: 60px;
+    }
+    
+    /* 網路類型欄位 */
+    #statsModal .table td:nth-child(7) {
+        min-width: 70px;
     }
     
     /* 狀態標籤手機版優化 */

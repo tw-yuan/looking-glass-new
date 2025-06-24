@@ -437,6 +437,7 @@ const PROBES_CACHE_TIME = 5 * 60 * 1000; // 5分鐘快取
 function initStatsPanel() {
     const statsBtn = document.getElementById('statsBtn');
     const refreshStatsBtn = document.getElementById('refreshStats');
+    const networkTypeInfoBtn = document.getElementById('networkTypeInfo');
     
     // 綁定統計按鈕事件
     if (statsBtn) {
@@ -446,6 +447,11 @@ function initStatsPanel() {
     // 綁定刷新按鈕事件
     if (refreshStatsBtn) {
         refreshStatsBtn.addEventListener('click', refreshStats);
+    }
+    
+    // 綁定網路類型說明按鈕事件
+    if (networkTypeInfoBtn) {
+        networkTypeInfoBtn.addEventListener('click', showNetworkTypeInfo);
     }
 }
 
@@ -551,7 +557,7 @@ function calculateStats(probes) {
             
             // 檢測支援的協議和網路類型
             const supportedProtocols = detectSupportedProtocols(primaryProbe);
-            const networkType = detectNetworkType(primaryProbe.tags);
+            const networkType = getNodeNetworkType(node, primaryProbe);
             
             // 網路類型統計
             stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
@@ -596,7 +602,62 @@ function calculateStats(probes) {
 }
 
 
-// 檢測網路類型
+// 獲取節點網路類型（優先使用自定義類型）
+function getNodeNetworkType(node, probe) {
+    // 優先使用 nodes.json 中定義的自定義網路類型
+    if (node.networkType) {
+        return node.networkType;
+    }
+    
+    // 基於節點名稱和提供者的自定義映射
+    const customNetworkTypes = getCustomNetworkTypeMapping();
+    const nodeKey = `${node.name}-${node.location}`;
+    
+    if (customNetworkTypes[nodeKey]) {
+        return customNetworkTypes[nodeKey];
+    }
+    
+    // 基於提供者的映射
+    if (customNetworkTypes[node.provider]) {
+        return customNetworkTypes[node.provider];
+    }
+    
+    // 回退到自動檢測
+    return detectNetworkType(probe?.tags);
+}
+
+// 自定義網路類型映射表
+function getCustomNetworkTypeMapping() {
+    return {
+        // 基於節點名稱和位置的映射
+        'CDX-NCHC-Tainan': '教育網路',
+        'DaDa-Chief-New Taipei City': '家庭寬帶',
+        'DaDa-FET-New Taipei City': '家庭寬帶',
+        'CoCoDigit-Taipei': '數據中心',
+        'FET-New Taipei City': '電信商',
+        'HINET-Taichung': '電信商',
+        'Kbro-TFN-Pingtung': '有線電視',
+        'NCSE Network-Taipei': '數據中心',
+        'TANET-Yilan': '教育網路',
+        'TINP-Taichung': '數據中心',
+        'Simple Information-Taipei': '數據中心',
+        'Simple Information-Hong Kong': '數據中心',
+        'Simple Information-United States': '數據中心',
+        'VeeTIME-Taichung': '有線電視',
+        
+        // 基於提供者的映射
+        'Yuan': '個人維護',
+        'CH': '個人維護',
+        'Zhuyuan': '個人維護',
+        'CoCoDigit': '數據中心',
+        'NCSE Network': '數據中心',
+        'cute_panda': '個人維護',
+        'Ricky': '數據中心',
+        'Cheese_ge': '個人維護'
+    };
+}
+
+// 檢測網路類型（原始自動檢測功能）
 function detectNetworkType(tags) {
     if (!tags || !Array.isArray(tags)) return '未知';
     
@@ -873,6 +934,34 @@ async function refreshStats() {
     
     // 重新載入數據
     await loadStats();
+}
+
+// 顯示網路類型說明
+function showNetworkTypeInfo() {
+    const info = `
+網路類型分類說明：
+
+📡 電信商：中華電信(HINET)、遠傳電信(FET)等
+🏠 家庭寬帶：大大寬頻等家用網路
+📺 有線電視：凱擘寬頻、大台中數位等
+🏫 教育網路：國網中心、臺灣學術網路等
+🏢 數據中心：CoCoDigit、Simple Information等
+👤 個人維護：由個人維護的節點
+
+自定義網路類型方法：
+1. 在 nodes.json 中添加 "networkType" 字段
+2. 修改 script.js 中的 getCustomNetworkTypeMapping() 函數
+3. 重新載入頁面即可生效
+
+例如：
+{
+  "name": "MyNode",
+  "networkType": "自定義類型",
+  ...
+}
+    `;
+    
+    alert(info);
 }
 
 // 更新地理分布統計
