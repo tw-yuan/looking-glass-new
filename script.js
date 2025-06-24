@@ -127,78 +127,75 @@ function showUsageLogs() {
     modal.className = 'modal fade';
     modal.id = 'logsModal';
     modal.innerHTML = `
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">節點使用分析</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 class="text-primary">${stats.totalTests}</h3>
-                                    <p class="mb-0">總測試次數</p>
-                                </div>
+                    <!-- 統計概覽 -->
+                    <div class="row mb-3">
+                        <div class="col-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-primary mb-0">${stats.totalTests}</h5>
+                                <small class="text-muted">測試</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 class="text-success">${stats.totalClicks}</h3>
-                                    <p class="mb-0">節點點擊次數</p>
-                                </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-success mb-0">${stats.totalClicks}</h5>
+                                <small class="text-muted">點擊</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 class="text-info">${stats.uniqueIPs.size}</h3>
-                                    <p class="mb-0">不重複用戶</p>
-                                </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
+                                <small class="text-muted">用戶</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 class="text-warning">${logs.length}</h3>
-                                    <p class="mb-0">總記錄數</p>
-                                </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-warning mb-0">${logs.length}</h5>
+                                <small class="text-muted">記錄</small>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h6 class="mb-0">
-                                <i class="bi bi-bar-chart me-2"></i>各節點使用情況
-                            </h6>
+                    <!-- 節點使用情況 -->
+                    <div class="card mb-3">
+                        <div class="card-header py-2">
+                            <h6 class="mb-0">各節點使用情況</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
                                         <tr>
-                                            <th>節點名稱</th>
-                                            <th>位置</th>
-                                            <th>提供者</th>
-                                            <th>點擊次數</th>
-                                            <th>測試次數</th>
-                                            <th>不重複用戶</th>
-                                            <th>總活動</th>
+                                            <th class="py-2">節點</th>
+                                            <th class="py-2">提供者</th>
+                                            <th class="py-2 text-center">點擊</th>
+                                            <th class="py-2 text-center">測試</th>
+                                            <th class="py-2 text-center">用戶</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         ${nodeUsageArray.map(node => `
                                             <tr>
-                                                <td class="fw-bold">${node.name}</td>
-                                                <td>${node.location}</td>
-                                                <td>${node.provider}</td>
-                                                <td><span class="badge bg-info">${node.clicks}</span></td>
-                                                <td><span class="badge bg-primary">${node.tests}</span></td>
-                                                <td><span class="badge bg-success">${node.uniqueUsers}</span></td>
-                                                <td><span class="badge bg-warning">${node.totalActivity}</span></td>
+                                                <td class="py-2">
+                                                    <div class="fw-bold">${node.name}</div>
+                                                    <small class="text-muted">${node.location}</small>
+                                                </td>
+                                                <td class="py-2">${node.provider}</td>
+                                                <td class="py-2 text-center">
+                                                    ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '-'}
+                                                </td>
+                                                <td class="py-2 text-center">
+                                                    ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '-'}
+                                                </td>
+                                                <td class="py-2 text-center">
+                                                    ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '-'}
+                                                </td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -207,70 +204,37 @@ function showUsageLogs() {
                         </div>
                     </div>
                     
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">測試類型分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    ${Object.entries(stats.testsByType).length > 0 ? 
-                                        Object.entries(stats.testsByType).map(([type, count]) => `
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span>${type.toUpperCase()}</span>
-                                                <span class="badge bg-primary">${count}</span>
-                                            </div>
-                                        `).join('') : 
-                                        '<div class="text-muted text-center">尚無測試記錄</div>'
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">用戶IP分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    ${Object.entries(stats.testsByIP)
-                                        .sort((a, b) => b[1] - a[1])
-                                        .slice(0, 10)
-                                        .map(([ip, count]) => `
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="text-truncate" style="max-width: 150px;" title="${ip}">${ip}</span>
-                                                <span class="badge bg-success">${count} 次測試</span>
-                                            </div>
-                                        `).join('') || '<div class="text-muted text-center">尚無IP記錄</div>'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
+                    <!-- 最近活動 -->
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">最近活動記錄</h6>
-                            <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除日誌</button>
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">最近活動</h6>
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除</button>
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>時間</th>
-                                            <th>動作</th>
-                                            <th>節點</th>
-                                            <th>詳細</th>
-                                            <th>IP</th>
-                                        </tr>
-                                    </thead>
+                        <div class="card-body p-0">
+                            <div style="max-height: 250px; overflow-y: auto;">
+                                <table class="table table-sm mb-0">
                                     <tbody>
-                                        ${recentLogs.map(log => `
+                                        ${recentLogs.slice(0, 20).map(log => `
                                             <tr>
-                                                <td class="text-nowrap small">${new Date(log.timestamp).toLocaleString('zh-TW', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
-                                                <td><span class="badge bg-${getActionColor(log.action)}">${getActionName(log.action)}</span></td>
-                                                <td class="fw-bold">${log.nodeName}</td>
-                                                <td>${log.testType ? `${log.testType.toUpperCase()} → ${log.target || ''}` : log.nodeLocation}</td>
-                                                <td class="small text-muted">${log.ip}</td>
+                                                <td class="py-1 small text-muted" style="width: 80px;">
+                                                    ${new Date(log.timestamp).toLocaleString('zh-TW', {
+                                                        month: 'numeric', 
+                                                        day: 'numeric', 
+                                                        hour: '2-digit', 
+                                                        minute: '2-digit'
+                                                    })}
+                                                </td>
+                                                <td class="py-1" style="width: 60px;">
+                                                    <span class="badge bg-${getActionColor(log.action)} small">${getActionName(log.action)}</span>
+                                                </td>
+                                                <td class="py-1 fw-bold" style="width: 120px;">${log.nodeName}</td>
+                                                <td class="py-1">
+                                                    ${log.testType ? 
+                                                        `<span class="small text-primary">${log.testType.toUpperCase()}</span> → <span class="small">${log.target || ''}</span>` : 
+                                                        `<span class="small text-muted">${log.nodeLocation}</span>`
+                                                    }
+                                                </td>
+                                                <td class="py-1 small text-muted" style="width: 100px;">${log.ip}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -279,8 +243,8 @@ function showUsageLogs() {
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">關閉</button>
                 </div>
             </div>
         </div>

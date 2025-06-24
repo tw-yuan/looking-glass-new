@@ -1161,20 +1161,22 @@ a:hover {
 }
 
 /* 日誌模態框樣式 */
-#logsModal.modal.show {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-}
-
 #logsModal .modal-dialog {
-    margin: 1rem auto;
-    max-width: 90%;
-    width: 100%;
+    margin: 2rem auto;
+    max-width: 80%;
+    max-height: calc(100vh - 4rem);
 }
 
 #logsModal .modal-content {
-    width: 100%;
+    height: calc(100vh - 4rem);
+    display: flex;
+    flex-direction: column;
+}
+
+#logsModal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
 }
 
 /* 模態框背景模糊效果 */
