@@ -10,7 +10,6 @@
       "tags": "u-tw-yuan:cdx-nchc",
       "networkType": "Academic",
       "asn": "AS7539",
-      "version": "1.2.3",
       "continent": "Asia"
     },
     {
@@ -23,7 +22,6 @@
       "tags": "u-tw-yuan:dada-chief",
       "networkType": "Home ISP",
       "asn": "AS18419",
-      "version": "1.1.8",
       "continent": "Asia"
     },
     {
@@ -36,7 +34,6 @@
       "tags": "u-HaeImCH:probe-tw-taipei-01-dada-fet",
       "networkType": "家庭寬頻",
       "asn": "AS4780",
-      "version": "1.1.5",
       "continent": "asia"
     },
     {
@@ -49,7 +46,6 @@
       "tags": "u-tw-yuan:CoCoDigit",
       "networkType": "資料中心",
       "asn": "AS17408",
-      "version": "1.2.1",
       "continent": "asia"
     },
     {
@@ -62,7 +58,6 @@
       "tags": "u-tw-yuan:FET-NewTaipei",
       "networkType": "電信商",
       "asn": "AS4780",
-      "version": "1.2.0",
       "continent": "asia"
     },
     {
@@ -75,7 +70,6 @@
       "tags": "u-tw-yuan:HINET-TXG",
       "networkType": "電信商",
       "asn": "AS3462",
-      "version": "1.1.9",
       "continent": "asia"
     },
     {
@@ -88,7 +82,6 @@
       "tags": "u-tw-yuan:Kbro-TFN-PIF",
       "networkType": "有線電視",
       "asn": "AS9505",
-      "version": "1.1.7",
       "continent": "asia"
     },
     {
@@ -101,7 +94,6 @@
       "tags": "u-NCSE-NETWORK:tpe-1",
       "networkType": "資料中心",
       "asn": "AS60614",
-      "version": "1.2.4",
       "continent": "asia"
     },
     {
@@ -114,7 +106,6 @@
       "tags": "u-tw-yuan:tanet",
       "networkType": "教育網路",
       "asn": "AS1659",
-      "version": "1.1.6",
       "continent": "asia"
     },
     {
@@ -127,7 +118,6 @@
       "tags": "u-asdf3601a+AS18049",
       "networkType": "Home ISP",
       "asn": "AS18049",
-      "version": "1.2.2",
       "continent": "asia"
     },
     {
@@ -140,7 +130,6 @@
       "tags": "u-simple-taipei:taipei-standard",
       "networkType": "資料中心",
       "asn": "AS32595",
-      "version": "1.2.5",
       "continent": "asia"
     },
     {
@@ -153,7 +142,6 @@
       "tags": "u-simple-taipei:hongkong-standard",
       "networkType": "資料中心",
       "asn": "AS32595",
-      "version": "1.2.5",
       "continent": "asia"
     },
     {
@@ -166,7 +154,6 @@
       "tags": "u-simple-taipei:unitedstates-lowend",
       "networkType": "資料中心",
       "asn": "AS232595",
-      "version": "1.2.5",
       "continent": "northAmerica"
     },
     {
@@ -179,7 +166,6 @@
       "tags": "u-tw-yuan:veetime",
       "networkType": "有線電視",
       "asn": "AS17709",
-      "version": "1.1.4",
       "continent": "asia"
     },
     {
@@ -192,7 +178,6 @@
       "tags": "u-tw-yuan:nube-sg",
       "networkType": "有線電視",
       "asn": "AS17709",
-      "version": "1.2.5",
       "continent": "asia"
     }
   ]

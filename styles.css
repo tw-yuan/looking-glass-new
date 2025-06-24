@@ -428,18 +428,13 @@ a:hover {
         min-width: 50px;
     }
     
-    /* 版本欄位 */
-    #statsModal .table td:nth-child(5) {
-        min-width: 50px;
-    }
-    
     /* ASN欄位 */
-    #statsModal .table td:nth-child(6) {
+    #statsModal .table td:nth-child(5) {
         min-width: 60px;
     }
     
     /* 網路類型欄位 */
-    #statsModal .table td:nth-child(7) {
+    #statsModal .table td:nth-child(6) {
         min-width: 70px;
     }
     

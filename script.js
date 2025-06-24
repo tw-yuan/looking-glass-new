@@ -892,14 +892,13 @@ function updateNodeDetailsList(nodeDetails) {
                         </a>
                     </td>
                     <td>${statusBadge}</td>
-                    <td>${node.version}</td>
                     <td>${node.asn}</td>
                     <td>${node.networkType}</td>
                 </tr>
             `;
         }).join('');
     
-    tbody.innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">無數據</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="6" class="text-center text-muted">無數據</td></tr>';
 }
 
 // 顯示統計錯誤
@@ -930,7 +929,7 @@ async function refreshStats() {
     
     document.getElementById('nodeDetailsList').innerHTML = `
         <tr>
-            <td colspan="8" class="text-center text-muted">
+            <td colspan="6" class="text-center text-muted">
                 <div class="spinner-border spinner-border-sm" role="status">
                     <span class="visually-hidden">載入中...</span>
                 </div>
@@ -1037,7 +1036,6 @@ async function updateNodesFromGlobalPing() {
                 // 更新節點資料
                 return {
                     ...node,
-                    version: primaryProbe.version || node.version || 'N/A',
                     asn: primaryProbe.location?.asn || node.asn || 'N/A',
                     continent: node.continent || detectContinentFromProbe(primaryProbe),
                     networkType: node.networkType || detectNetworkTypeFromProbe(primaryProbe),
