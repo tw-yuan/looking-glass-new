@@ -9,8 +9,9 @@
       "provider-link": "https://yuan-tw.net",
       "tags": "u-tw-yuan:cdx-nchc",
       "networkType": "Academic",
-      "asn": "AS7539",
-      "continent": "Asia"
+      "asn": 7539,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.638Z"
     },
     {
       "name": "DaDa-Chief",
@@ -21,8 +22,9 @@
       "provider-link": "https://thisisch.net",
       "tags": "u-tw-yuan:dada-chief",
       "networkType": "Home ISP",
-      "asn": "AS18419",
-      "continent": "Asia"
+      "asn": 18419,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.638Z"
     },
     {
       "name": "DaDa-FET",
@@ -32,9 +34,10 @@
       "provider": "CH",
       "provider-link": "https://thisisch.net",
       "tags": "u-HaeImCH:probe-tw-taipei-01-dada-fet",
-      "networkType": "家庭寬頻",
-      "asn": "AS4780",
-      "continent": "asia"
+      "networkType": "Home ISP",
+      "asn": 4780,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.638Z"
     },
     {
       "name": "CoCoDigit",
@@ -44,9 +47,10 @@
       "provider": "CoCoDigit",
       "provider-link": "https://www.cocodigit.com/",
       "tags": "u-tw-yuan:CoCoDigit",
-      "networkType": "資料中心",
-      "asn": "AS17408",
-      "continent": "asia"
+      "networkType": "Server Hosting",
+      "asn": 150766,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.639Z"
     },
     {
       "name": "FET",
@@ -56,9 +60,10 @@
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:FET-NewTaipei",
-      "networkType": "電信商",
-      "asn": "AS4780",
-      "continent": "asia"
+      "networkType": "Home ISP",
+      "asn": 4780,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.639Z"
     },
     {
       "name": "HINET",
@@ -68,9 +73,10 @@
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:HINET-TXG",
-      "networkType": "電信商",
-      "asn": "AS3462",
-      "continent": "asia"
+      "networkType": "Home ISP",
+      "asn": 3462,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.639Z"
     },
     {
       "name": "Kbro-TFN",
@@ -80,9 +86,10 @@
       "provider": "Zhuyuan",
       "provider-link": "https://zhuyuan.tw",
       "tags": "u-tw-yuan:Kbro-TFN-PIF",
-      "networkType": "有線電視",
-      "asn": "AS9505",
-      "continent": "asia"
+      "networkType": "Home ISP",
+      "asn": 38841,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "NCSE Network",
@@ -92,9 +99,10 @@
       "provider": "NCSE Network",
       "provider-link": "https://ncse.tw",
       "tags": "u-NCSE-NETWORK:tpe-1",
-      "networkType": "資料中心",
-      "asn": "AS60614",
-      "continent": "asia"
+      "networkType": "Datacenter",
+      "asn": 204844,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "TANET",
@@ -104,9 +112,10 @@
       "provider": "Yuan",
       "provider-link": "https://yuan-tw.net",
       "tags": "u-tw-yuan:tanet",
-      "networkType": "教育網路",
-      "asn": "AS1659",
-      "continent": "asia"
+      "networkType": "Academic",
+      "asn": 1659,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "TINP",
@@ -117,8 +126,9 @@
       "provider-link": "https://github.com/asdf3601a",
       "tags": "u-asdf3601a+AS18049",
       "networkType": "Home ISP",
-      "asn": "AS18049",
-      "continent": "asia"
+      "asn": 18049,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "Simple Information",
@@ -128,9 +138,10 @@
       "provider": "Ricky",
       "provider-link": "https://www.simple.taipei",
       "tags": "u-simple-taipei:taipei-standard",
-      "networkType": "資料中心",
-      "asn": "AS32595",
-      "continent": "asia"
+      "networkType": "Server Hosting",
+      "asn": 32595,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "Simple Information",
@@ -140,9 +151,10 @@
       "provider": "Ricky",
       "provider-link": "https://www.simple.taipei",
       "tags": "u-simple-taipei:hongkong-standard",
-      "networkType": "資料中心",
-      "asn": "AS32595",
-      "continent": "asia"
+      "networkType": "Server Hosting",
+      "asn": 32595,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.640Z"
     },
     {
       "name": "Simple Information",
@@ -152,8 +164,8 @@
       "provider": "Ricky",
       "provider-link": "https://www.simple.taipei",
       "tags": "u-simple-taipei:unitedstates-lowend",
-      "networkType": "資料中心",
-      "asn": "AS232595",
+      "networkType": "Server Hosting",
+      "asn": "32595",
       "continent": "northAmerica"
     },
     {
@@ -164,9 +176,10 @@
       "provider": "Cheese_ge",
       "provider-link": "https://cheesege.github.io/",
       "tags": "u-tw-yuan:veetime",
-      "networkType": "有線電視",
-      "asn": "AS17709",
-      "continent": "asia"
+      "networkType": "Home ISP",
+      "asn": 17809,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.641Z"
     },
     {
       "name": "Nube Cloud",
@@ -176,9 +189,12 @@
       "provider": "Qian",
       "provider-link": "https://blog.qian30.net/",
       "tags": "u-tw-yuan:nube-sg",
-      "networkType": "有線電視",
-      "asn": "AS17709",
-      "continent": "asia"
+      "networkType": "Server Hosting",
+      "asn": 138997,
+      "continent": "asia",
+      "lastUpdated": "2025-06-24T03:38:09.641Z"
     }
-  ]
+  ],
+  "lastUpdate": "2025-06-24T03:38:09.641Z",
+  "source": "GlobalPing API"
 }
