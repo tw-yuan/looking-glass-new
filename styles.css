@@ -237,16 +237,21 @@ a:hover {
         z-index: 1000;
     }
     
-    /* 批量測試按鈕 - 手機版隱藏 */
-    #batchTestBtn {
-        display: none;
+    /* 統計按鈕 - 中間 */
+    #statsBtn {
+        position: fixed !important;
+        top: 15px !important;
+        right: 56px !important;  /* 15px + 36px + 5px 間距 */
+        width: 36px !important;
+        height: 36px !important;
+        z-index: 1000;
     }
     
-    /* 調色盤 - 移到批量測試的位置 */
+    /* 調色盤按鈕 - 最左邊 */
     .color-picker {
         position: fixed !important;
         top: 15px !important;
-        right: 60px !important;  /* 15px + 36px + 9px = 60px */
+        right: 97px !important;  /* 15px + 36px + 5px + 36px + 5px */
         left: auto !important;
         bottom: auto !important;
         transform: none !important;
@@ -260,6 +265,7 @@ a:hover {
         margin: 0 !important;
     }
     
+    /* 調色盤選項下拉位置 */
     .color-options {
         position: absolute;
         top: 45px;
@@ -268,9 +274,28 @@ a:hover {
         z-index: 1001;
     }
     
+    /* 批量測試按鈕 - 手機版隱藏 */
+    #batchTestBtn {
+        display: none;
+    }
+    
     /* 手機版主要內容區域調整 */
     main.container {
         padding-top: 4rem !important;
+    }
+    
+    /* 確保按鈕圖標大小適中 */
+    #themeToggle i,
+    #statsBtn i,
+    .color-toggle-btn i {
+        font-size: 18px;
+    }
+    
+    /* 手機版按鈕陰影調整 */
+    #themeToggle,
+    #statsBtn,
+    .color-toggle-btn {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
     }
 }
 
