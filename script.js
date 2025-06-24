@@ -32,6 +32,11 @@ async function logUsage(action, details = {}) {
         return;
     }
     
+    // 確保有 IP 地址
+    if (userIP === 'unknown') {
+        await getUserIP();
+    }
+    
     const logEntry = {
         action: action,
         nodeName: details.nodeName || 'unknown',
@@ -41,7 +46,7 @@ async function logUsage(action, details = {}) {
         sessionId: sessionId
     };
     
-    // 同時保存到本地和伺服器
+    // 同時保存到本地
     const localEntry = {
         ...logEntry,
         timestamp: new Date().toISOString(),
@@ -54,17 +59,39 @@ async function logUsage(action, details = {}) {
     }
     localStorage.setItem('lookingGlassLogs', JSON.stringify(usageLogs));
     
-    // 發送到伺服器
+    // 發送到伺服器 - 立即發送且確保送達
     try {
-        await fetch('log-server.php', {
+        const response = await fetch('log-server.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(logEntry)
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('日誌已記錄到伺服器:', result);
+        
     } catch (error) {
-        console.log('無法發送日誌到伺服器:', error);
+        console.error('無法發送日誌到伺服器:', error);
+        // 嘗試重新發送一次
+        setTimeout(async () => {
+            try {
+                await fetch('log-server.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(logEntry)
+                });
+            } catch (retryError) {
+                console.error('重試發送日誌失敗:', retryError);
+            }
+        }, 1000);
     }
 }
 
@@ -536,6 +563,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 獲取用戶IP
         await getUserIP();
+        
+        // 測試日誌功能（可選，用於除錯）
+        console.log('用戶IP:', userIP, '會話ID:', sessionId);
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -586,8 +616,7 @@ function createNodeCard(node) {
         // 記錄節點點擊
         logUsage('node_clicked', {
             nodeName: node.name,
-            nodeLocation: node.location,
-            nodeProvider: node.provider
+            nodeLocation: node.location
         });
         
         showNodeModal(node);
@@ -657,8 +686,7 @@ function showNodeModal(node) {
             testType: testType,
             target: target,
             nodeName: node.name,
-            nodeLocation: node.location,
-            nodeProvider: node.provider
+            nodeLocation: node.location
         });
 
         try {

@@ -27,14 +27,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 新增日誌記錄
     $input = json_decode(file_get_contents('php://input'), true);
     
+    // 記錄接收到的資料到錯誤日誌以便除錯
+    error_log('收到日誌資料: ' . json_encode($input));
+    
     if (!$input || !isset($input['action']) || !isset($input['nodeName'])) {
         http_response_code(400);
-        echo json_encode(['error' => '缺少必要參數']);
+        echo json_encode(['error' => '缺少必要參數', 'received' => $input]);
         exit();
     }
     
     // 讀取現有日誌
     $logsData = json_decode(file_get_contents($logsFile), true);
+    
+    // 獲取真實 IP
+    $realIp = $_SERVER['REMOTE_ADDR'];
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $realIp = trim($ips[0]);
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $realIp = $_SERVER['HTTP_X_REAL_IP'];
+    }
     
     // 建立新日誌記錄
     $newLog = [
@@ -45,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'nodeLocation' => $input['nodeLocation'] ?? '',
         'testType' => $input['testType'] ?? null,
         'target' => $input['target'] ?? null,
-        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'ip' => $realIp,
         'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
         'sessionId' => $input['sessionId'] ?? uniqid()
     ];
@@ -63,7 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // 寫入檔案
     if (file_put_contents($logsFile, json_encode($logsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
-        echo json_encode(['success' => true, 'id' => $newLog['id']]);
+        echo json_encode([
+            'success' => true, 
+            'id' => $newLog['id'],
+            'message' => '日誌已成功記錄',
+            'totalRecords' => $logsData['totalRecords']
+        ]);
     } else {
         http_response_code(500);
         echo json_encode(['error' => '無法寫入日誌檔案']);
