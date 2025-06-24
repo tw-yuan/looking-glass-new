@@ -3,55 +3,124 @@ let nodesData = { nodes: [] };
 
 // 使用日誌
 let usageLogs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
+let userIP = 'unknown';
 
-// 記錄使用日誌
+// 獲取用戶IP
+async function getUserIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        userIP = data.ip;
+    } catch (error) {
+        console.log('無法獲取IP地址');
+        userIP = 'unknown';
+    }
+}
+
+// 記錄使用日誌（簡化版，只記錄節點使用）
 function logUsage(action, details = {}) {
+    // 只記錄重要的節點使用動作
+    if (action !== 'test_started' && action !== 'node_clicked') {
+        return;
+    }
+    
     const logEntry = {
         timestamp: new Date().toISOString(),
         action: action,
-        details: details,
-        userAgent: navigator.userAgent,
-        ip: 'client-side' // 客戶端無法直接獲取真實IP
+        nodeName: details.nodeName || 'unknown',
+        nodeLocation: details.nodeLocation || 'unknown',
+        testType: details.testType || null,
+        target: details.target || null,
+        ip: userIP
     };
     
     usageLogs.push(logEntry);
     
-    // 只保留最近1000條記錄
-    if (usageLogs.length > 1000) {
-        usageLogs = usageLogs.slice(-1000);
+    // 只保留最近500條記錄
+    if (usageLogs.length > 500) {
+        usageLogs = usageLogs.slice(-500);
     }
     
     // 保存到 localStorage
     localStorage.setItem('lookingGlassLogs', JSON.stringify(usageLogs));
-    
-    // 可選：發送到伺服器（如果有後端）
-    // sendLogToServer(logEntry);
 }
 
 // 顯示使用日誌
 function showUsageLogs() {
     // 獲取最近的日誌條目
     const logs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
-    const recentLogs = logs.slice(-100).reverse(); // 最近100條，最新的在前
+    const recentLogs = logs.slice(-50).reverse(); // 最近50條，最新的在前
     
     // 統計分析
     const stats = {
         totalTests: 0,
+        totalClicks: 0,
         testsByType: {},
         testsByNode: {},
-        testsByTarget: {},
-        popularTargets: {},
-        recentActivity: logs.slice(-20).reverse()
+        clicksByNode: {},
+        uniqueIPs: new Set(),
+        testsByIP: {},
+        nodeUsage: {}
     };
     
+    // 統計所有節點的使用情況
+    nodesData.nodes.forEach(node => {
+        stats.nodeUsage[node.name] = {
+            name: node.name,
+            location: node.location_zh || node.location,
+            provider: node.provider,
+            clicks: 0,
+            tests: 0,
+            uniqueUsers: new Set()
+        };
+    });
+    
     logs.forEach(log => {
-        if (log.action === 'test_completed' || log.action === 'test_failed') {
+        if (log.ip && log.ip !== 'unknown') {
+            stats.uniqueIPs.add(log.ip);
+        }
+        
+        if (log.action === 'test_started') {
             stats.totalTests++;
-            stats.testsByType[log.details.testType] = (stats.testsByType[log.details.testType] || 0) + 1;
-            stats.testsByNode[log.details.nodeName] = (stats.testsByNode[log.details.nodeName] || 0) + 1;
-            stats.popularTargets[log.details.target] = (stats.popularTargets[log.details.target] || 0) + 1;
+            if (log.testType) {
+                stats.testsByType[log.testType] = (stats.testsByType[log.testType] || 0) + 1;
+            }
+            if (log.nodeName) {
+                stats.testsByNode[log.nodeName] = (stats.testsByNode[log.nodeName] || 0) + 1;
+                if (stats.nodeUsage[log.nodeName]) {
+                    stats.nodeUsage[log.nodeName].tests++;
+                    if (log.ip && log.ip !== 'unknown') {
+                        stats.nodeUsage[log.nodeName].uniqueUsers.add(log.ip);
+                    }
+                }
+            }
+            if (log.ip && log.ip !== 'unknown') {
+                stats.testsByIP[log.ip] = (stats.testsByIP[log.ip] || 0) + 1;
+            }
+        }
+        
+        if (log.action === 'node_clicked') {
+            stats.totalClicks++;
+            if (log.nodeName) {
+                stats.clicksByNode[log.nodeName] = (stats.clicksByNode[log.nodeName] || 0) + 1;
+                if (stats.nodeUsage[log.nodeName]) {
+                    stats.nodeUsage[log.nodeName].clicks++;
+                    if (log.ip && log.ip !== 'unknown') {
+                        stats.nodeUsage[log.nodeName].uniqueUsers.add(log.ip);
+                    }
+                }
+            }
         }
     });
+    
+    // 準備節點使用情況排序
+    const nodeUsageArray = Object.values(stats.nodeUsage)
+        .map(node => ({
+            ...node,
+            uniqueUsers: node.uniqueUsers.size,
+            totalActivity: node.clicks + node.tests
+        }))
+        .sort((a, b) => b.totalActivity - a.totalActivity);
     
     // 創建日誌模態框
     const modal = document.createElement('div');
@@ -61,7 +130,7 @@ function showUsageLogs() {
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">使用日誌分析</h5>
+                    <h5 class="modal-title">節點使用分析</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -77,25 +146,63 @@ function showUsageLogs() {
                         <div class="col-md-3">
                             <div class="card text-center">
                                 <div class="card-body">
-                                    <h3 class="text-success">${logs.length}</h3>
-                                    <p class="mb-0">總日誌條數</p>
+                                    <h3 class="text-success">${stats.totalClicks}</h3>
+                                    <p class="mb-0">節點點擊次數</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="card text-center">
                                 <div class="card-body">
-                                    <h3 class="text-info">${Object.keys(stats.testsByNode).length}</h3>
-                                    <p class="mb-0">使用過的節點</p>
+                                    <h3 class="text-info">${stats.uniqueIPs.size}</h3>
+                                    <p class="mb-0">不重複用戶</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="card text-center">
                                 <div class="card-body">
-                                    <h3 class="text-warning">${Object.keys(stats.popularTargets).length}</h3>
-                                    <p class="mb-0">測試過的目標</p>
+                                    <h3 class="text-warning">${logs.length}</h3>
+                                    <p class="mb-0">總記錄數</p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-bar-chart me-2"></i>各節點使用情況
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>節點名稱</th>
+                                            <th>位置</th>
+                                            <th>提供者</th>
+                                            <th>點擊次數</th>
+                                            <th>測試次數</th>
+                                            <th>不重複用戶</th>
+                                            <th>總活動</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${nodeUsageArray.map(node => `
+                                            <tr>
+                                                <td class="fw-bold">${node.name}</td>
+                                                <td>${node.location}</td>
+                                                <td>${node.provider}</td>
+                                                <td><span class="badge bg-info">${node.clicks}</span></td>
+                                                <td><span class="badge bg-primary">${node.tests}</span></td>
+                                                <td><span class="badge bg-success">${node.uniqueUsers}</span></td>
+                                                <td><span class="badge bg-warning">${node.totalActivity}</span></td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -107,30 +214,33 @@ function showUsageLogs() {
                                     <h6 class="mb-0">測試類型分布</h6>
                                 </div>
                                 <div class="card-body">
-                                    ${Object.entries(stats.testsByType).map(([type, count]) => `
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span>${type.toUpperCase()}</span>
-                                            <span class="badge bg-primary">${count}</span>
-                                        </div>
-                                    `).join('')}
+                                    ${Object.entries(stats.testsByType).length > 0 ? 
+                                        Object.entries(stats.testsByType).map(([type, count]) => `
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>${type.toUpperCase()}</span>
+                                                <span class="badge bg-primary">${count}</span>
+                                            </div>
+                                        `).join('') : 
+                                        '<div class="text-muted text-center">尚無測試記錄</div>'
+                                    }
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h6 class="mb-0">熱門測試目標</h6>
+                                    <h6 class="mb-0">用戶IP分布</h6>
                                 </div>
                                 <div class="card-body">
-                                    ${Object.entries(stats.popularTargets)
+                                    ${Object.entries(stats.testsByIP)
                                         .sort((a, b) => b[1] - a[1])
                                         .slice(0, 10)
-                                        .map(([target, count]) => `
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-truncate" style="max-width: 200px;" title="${target}">${target}</span>
-                                            <span class="badge bg-success">${count}</span>
-                                        </div>
-                                    `).join('')}
+                                        .map(([ip, count]) => `
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="text-truncate" style="max-width: 150px;" title="${ip}">${ip}</span>
+                                                <span class="badge bg-success">${count} 次測試</span>
+                                            </div>
+                                        `).join('') || '<div class="text-muted text-center">尚無IP記錄</div>'}
                                 </div>
                             </div>
                         </div>
@@ -138,25 +248,29 @@ function showUsageLogs() {
                     
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">最近日誌記錄</h6>
+                            <h6 class="mb-0">最近活動記錄</h6>
                             <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除日誌</button>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm">
                                     <thead>
                                         <tr>
                                             <th>時間</th>
                                             <th>動作</th>
+                                            <th>節點</th>
                                             <th>詳細</th>
+                                            <th>IP</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         ${recentLogs.map(log => `
                                             <tr>
-                                                <td class="text-nowrap">${new Date(log.timestamp).toLocaleString('zh-TW')}</td>
+                                                <td class="text-nowrap small">${new Date(log.timestamp).toLocaleString('zh-TW', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
                                                 <td><span class="badge bg-${getActionColor(log.action)}">${getActionName(log.action)}</span></td>
-                                                <td class="text-truncate" style="max-width: 300px;" title="${JSON.stringify(log.details, null, 2)}">${formatLogDetails(log)}</td>
+                                                <td class="fw-bold">${log.nodeName}</td>
+                                                <td>${log.testType ? `${log.testType.toUpperCase()} → ${log.target || ''}` : log.nodeLocation}</td>
+                                                <td class="small text-muted">${log.ip}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -182,47 +296,21 @@ function showUsageLogs() {
     });
 }
 
-// 格式化日誌詳細信息
-function formatLogDetails(log) {
-    switch (log.action) {
-        case 'test_started':
-        case 'test_completed':
-        case 'test_failed':
-            return `${log.details.testType?.toUpperCase() || 'Unknown'} → ${log.details.target || 'Unknown'} (${log.details.nodeName || 'Unknown'})`;
-        case 'node_clicked':
-            return `${log.details.nodeName || 'Unknown'} (${log.details.nodeLocation || 'Unknown'})`;
-        case 'page_loaded':
-            return `載入 ${log.details.nodesCount || 0} 個節點`;
-        case 'stats_panel_opened':
-            return '開啟統計面板';
-        default:
-            return JSON.stringify(log.details).substring(0, 100);
-    }
-}
 
 // 獲取動作對應的顏色
 function getActionColor(action) {
     const colors = {
-        'test_started': 'info',
-        'test_completed': 'success',
-        'test_failed': 'danger',
-        'node_clicked': 'primary',
-        'page_loaded': 'secondary',
-        'stats_panel_opened': 'warning'
+        'test_started': 'primary',
+        'node_clicked': 'info'
     };
-    return colors[action] || 'light';
+    return colors[action] || 'secondary';
 }
 
 // 獲取動作的中文名稱
 function getActionName(action) {
     const names = {
-        'test_started': '開始測試',
-        'test_completed': '測試完成',
-        'test_failed': '測試失敗',
-        'node_clicked': '點擊節點',
-        'page_loaded': '頁面載入',
-        'stats_panel_opened': '開啟統計',
-        'measurement_created': '創建測量'
+        'test_started': '測試',
+        'node_clicked': '點擊'
     };
     return names[action] || action;
 }
@@ -259,11 +347,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 檢查主畫面節點狀態
         checkMainNodeStatus();
         
-        // 記錄頁面載入
-        logUsage('page_loaded', {
-            nodesCount: nodesData.nodes.length,
-            userAgent: navigator.userAgent.substring(0, 100) // 限制長度
-        });
+        // 獲取用戶IP
+        await getUserIP();
     } catch (error) {
         console.error('無法載入節點數據:', error);
     }
@@ -416,13 +501,6 @@ function showNodeModal(node) {
                 throw new Error('無法獲取測量 ID');
             }
 
-            // 記錄測量創建成功
-            logUsage('measurement_created', {
-                measurementId: measurementData.id,
-                testType: testType,
-                target: target,
-                nodeName: node.name
-            });
 
             // 顯示等待訊息
             const resultContainer = document.createElement('div');
@@ -550,27 +628,10 @@ function showNodeModal(node) {
                 </div>
             `;
 
-            // 記錄測試完成
-            logUsage('test_completed', {
-                measurementId: measurementData.id,
-                testType: testType,
-                target: target,
-                nodeName: node.name,
-                status: result.result.status,
-                protocolUsed: protocolInfo,
-                sourceIP: sourceIP || 'unknown'
-            });
 
         } catch (error) {
             console.error('測試失敗:', error);
             
-            // 記錄測試失敗
-            logUsage('test_failed', {
-                testType: testType,
-                target: target,
-                nodeName: node.name,
-                error: error.message
-            });
             
             alert('測試失敗: ' + error.message);
         } finally {
@@ -741,11 +802,6 @@ function initStatsPanel() {
 
 // 顯示統計模態框
 async function showStatsModal() {
-    // 記錄統計面板開啟
-    logUsage('stats_panel_opened', {
-        timestamp: new Date().toISOString()
-    });
-    
     const modal = document.getElementById('statsModal');
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     modalInstance.show();

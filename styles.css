@@ -1160,4 +1160,27 @@ a:hover {
     }
 }
 
+/* 日誌模態框樣式 */
+#logsModal.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+#logsModal .modal-dialog {
+    margin: 1rem auto;
+    max-width: 90%;
+    width: 100%;
+}
+
+#logsModal .modal-content {
+    width: 100%;
+}
+
+/* 模態框背景模糊效果 */
+.modal-backdrop.show {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
  
