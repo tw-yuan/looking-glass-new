@@ -1165,7 +1165,7 @@ a:hover {
     z-index: 1060;
 }
 
-/* 防止模態框跑版和置中問題 */
+/* 使用情況分析模態框置中顯示（參考統計面板） */
 #logsModal.modal.show {
     display: flex !important;
     align-items: center;
@@ -1175,10 +1175,14 @@ a:hover {
 #logsModal .modal-dialog {
     position: relative;
     width: auto;
-    margin: 0;
+    margin: 1.75rem auto;
     max-width: 45%;
     min-width: 480px;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 3.5rem);
 }
 
 #logsModal.modal.show .modal-dialog {

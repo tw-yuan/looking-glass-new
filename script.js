@@ -27,8 +27,8 @@ async function getUserIP() {
 
 // 記錄使用日誌到伺服器
 async function logUsage(action, details = {}) {
-    // 只記錄重要的節點使用動作
-    if (action !== 'test_started' && action !== 'node_clicked') {
+    // 只記錄實際測試動作，不記錄點擊
+    if (action !== 'test_started') {
         return;
     }
     
@@ -205,16 +205,22 @@ function analyzeTestTypes(logs) {
 function detectTargetType(target) {
     if (!target || target === 'null') return '未知';
     
-    // IP 位址檢測
-    const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-    if (ipRegex.test(target)) {
-        return 'IP';
+    // IPv4 位址檢測
+    const ipv4Regex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+    if (ipv4Regex.test(target)) {
+        return 'IPv4';
+    }
+    
+    // IPv6 位址檢測
+    const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
+    if (ipv6Regex.test(target) || target.includes('::')) {
+        return 'IPv6';
     }
     
     // 域名檢測
     if (target.includes('.')) {
         // 常見公共 DNS
-        const publicDNS = ['8.8.8.8', '1.1.1.1', '208.67.222.222', '9.9.9.9'];
+        const publicDNS = ['8.8.8.8', '1.1.1.1', '208.67.222.222', '9.9.9.9', '2001:4860:4860::8888', '2606:4700:4700::1111'];
         if (publicDNS.includes(target)) return '公共 DNS';
         
         // 常見網站
@@ -225,6 +231,30 @@ function detectTargetType(target) {
     }
     
     return '其他';
+}
+
+// 處理 IP 顯示（支援 IPv4 和 IPv6）
+function formatIPDisplay(ip) {
+    if (!ip || ip === 'unknown') return '未知';
+    
+    // IPv4 處理
+    if (ip.includes('.') && !ip.includes(':')) {
+        const parts = ip.split('.');
+        if (parts.length === 4) {
+            return `${parts[0]}.${parts[1]}.${parts[2]}.xxx`;
+        }
+    }
+    
+    // IPv6 處理
+    if (ip.includes(':')) {
+        const parts = ip.split(':');
+        if (parts.length >= 3) {
+            return `${parts[0]}:${parts[1]}:${parts[2]}:xxxx`;
+        }
+    }
+    
+    // 其他情況
+    return ip.length > 8 ? ip.substring(0, 8) + '...' : ip;
 }
 
 // 顯示使用日誌
@@ -272,25 +302,22 @@ async function showUsageLogs() {
     
     const recentLogs = logs.slice(0, 50); // 最近50條
     
-    // 統計分析
+    // 統計分析 - 只關注實際測試
     const stats = {
         totalTests: 0,
-        totalClicks: 0,
         testsByType: {},
         testsByNode: {},
-        clicksByNode: {},
         uniqueIPs: new Set(),
         testsByIP: {},
         nodeUsage: {}
     };
     
-    // 統計所有節點的使用情況
+    // 統計所有節點的使用情況 - 只記錄實際測試
     nodesData.nodes.forEach(node => {
         stats.nodeUsage[node.name] = {
             name: node.name,
             location: node.location_zh || node.location,
             provider: node.provider,
-            clicks: 0,
             tests: 0,
             uniqueUsers: new Set()
         };
@@ -320,28 +347,17 @@ async function showUsageLogs() {
             }
         }
         
-        if (log.action === 'node_clicked') {
-            stats.totalClicks++;
-            if (log.nodeName) {
-                stats.clicksByNode[log.nodeName] = (stats.clicksByNode[log.nodeName] || 0) + 1;
-                if (stats.nodeUsage[log.nodeName]) {
-                    stats.nodeUsage[log.nodeName].clicks++;
-                    if (log.ip && log.ip !== 'unknown') {
-                        stats.nodeUsage[log.nodeName].uniqueUsers.add(log.ip);
-                    }
-                }
-            }
-        }
+        // 不再記錄點擊行為，只關注實際測試
     });
     
-    // 準備節點使用情況排序
+    // 準備節點使用情況排序 - 只按測試數排序
     const nodeUsageArray = Object.values(stats.nodeUsage)
         .map(node => ({
             ...node,
-            uniqueUsers: node.uniqueUsers.size,
-            totalActivity: node.clicks + node.tests
+            uniqueUsers: node.uniqueUsers.size
         }))
-        .sort((a, b) => b.totalActivity - a.totalActivity);
+        .filter(node => node.tests > 0) // 只顯示有實際測試的節點
+        .sort((a, b) => b.tests - a.tests);
     
     // 更新現有模態框內容
     updateLogsModalContent(stats, nodeUsageArray, recentLogs);
@@ -625,7 +641,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                         }
                                     </td>
                                     <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
-                                        ${log.ip ? log.ip.substring(0, log.ip.lastIndexOf('.')) + '.xxx' : '未知'}
+                                        ${formatIPDisplay(log.ip)}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -648,8 +664,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
 // 獲取動作對應的顏色
 function getActionColor(action) {
     const colors = {
-        'test_started': 'primary',
-        'node_clicked': 'info'
+        'test_started': 'primary'
     };
     return colors[action] || 'secondary';
 }
@@ -657,8 +672,7 @@ function getActionColor(action) {
 // 獲取動作的中文名稱
 function getActionName(action) {
     const names = {
-        'test_started': '測試',
-        'node_clicked': '點擊'
+        'test_started': '測試'
     };
     return names[action] || action;
 }
@@ -678,7 +692,7 @@ function exportLogs(event) {
         // 清理和格式化每個欄位，避免換行符號問題
         return [
             new Date(log.timestamp).toLocaleString('zh-TW').replace(/[\\r\\n]/g, ' '),
-            log.action === 'test_started' ? '測試' : '點擊',
+            log.action === 'test_started' ? '測試' : log.action,
             (log.nodeName || '').replace(/[\\r\\n,]/g, ' '),
             (log.nodeLocation || '').replace(/[\\r\\n,]/g, ' '),
             (log.testType || '').replace(/[\\r\\n,]/g, ' '),
@@ -789,7 +803,7 @@ async function exportServerLogs(event) {
         const csvRows = logs.map(log => {
             return [
                 new Date(log.timestamp).toLocaleString('zh-TW').replace(/[\r\n]/g, ' '),
-                log.action === 'test_started' ? '測試' : '點擊',
+                log.action === 'test_started' ? '測試' : log.action,
                 (log.nodeName || '').replace(/[\r\n,]/g, ' '),
                 (log.nodeLocation || '').replace(/[\r\n,]/g, ' '),
                 (log.testType || '').replace(/[\r\n,]/g, ' '),
@@ -916,12 +930,6 @@ function createNodeCard(node) {
     `;
 
     col.querySelector('.node-card').addEventListener('click', () => {
-        // 記錄節點點擊
-        logUsage('node_clicked', {
-            nodeName: node.name,
-            nodeLocation: node.location
-        });
-        
         showNodeModal(node);
     });
 
