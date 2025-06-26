@@ -59,39 +59,81 @@ async function logUsage(action, details = {}) {
     }
     localStorage.setItem('lookingGlassLogs', JSON.stringify(usageLogs));
     
-    // 發送到伺服器 - 立即發送且確保送達
-    try {
-        const response = await fetch('log-server.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(logEntry)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('日誌已記錄到伺服器:', result);
-        
-    } catch (error) {
-        console.error('無法發送日誌到伺服器:', error);
-        // 嘗試重新發送一次
-        setTimeout(async () => {
-            try {
-                await fetch('log-server.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(logEntry)
-                });
-            } catch (retryError) {
-                console.error('重試發送日誌失敗:', retryError);
+    // 使用 JSONBin.io 記錄
+    if (CONFIG && CONFIG.USE_JSONBIN && CONFIG.JSONBIN_ID && CONFIG.JSONBIN_API_KEY) {
+        try {
+            // 先獲取現有日誌
+            const getResponse = await fetch(`${CONFIG.JSONBIN_BASE_URL}/b/${CONFIG.JSONBIN_ID}/latest`, {
+                headers: {
+                    'X-Master-Key': CONFIG.JSONBIN_API_KEY
+                }
+            });
+            
+            let logsData = { logs: [], totalRecords: 0, lastUpdate: new Date().toISOString() };
+            
+            if (getResponse.ok) {
+                const result = await getResponse.json();
+                if (result.record && result.record.logs) {
+                    logsData = result.record;
+                }
             }
-        }, 1000);
+            
+            // 添加新日誌
+            const serverEntry = {
+                ...localEntry,
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2)
+            };
+            
+            logsData.logs.unshift(serverEntry);
+            logsData.totalRecords = logsData.logs.length;
+            logsData.lastUpdate = new Date().toISOString();
+            
+            // 只保留最近的記錄
+            if (logsData.logs.length > 1000) {
+                logsData.logs = logsData.logs.slice(0, 1000);
+            }
+            
+            // 更新 JSONBin
+            const updateResponse = await fetch(`${CONFIG.JSONBIN_BASE_URL}/b/${CONFIG.JSONBIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': CONFIG.JSONBIN_API_KEY
+                },
+                body: JSON.stringify(logsData)
+            });
+            
+            if (updateResponse.ok) {
+                console.log('日誌已記錄到 JSONBin.io');
+            }
+            
+        } catch (error) {
+            console.error('JSONBin.io 錯誤:', error);
+        }
+    }
+    // 或使用 Cloudflare Worker
+    else if (CONFIG && CONFIG.ENABLE_LOGGING && CONFIG.WORKER_URL) {
+        try {
+            const workerUrl = `${CONFIG.WORKER_URL}/api/logs`;
+            
+            const response = await fetch(workerUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(logEntry)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('日誌已記錄到伺服器:', result);
+            
+        } catch (error) {
+            console.error('無法發送日誌到伺服器:', error);
+        }
     }
 }
 
@@ -103,12 +145,35 @@ async function showUsageLogs() {
     // 從伺服器獲取全域日誌
     let logs = [];
     try {
-        const response = await fetch('log-server.php?limit=200');
-        if (response.ok) {
-            const data = await response.json();
-            logs = data.logs || [];
+        // 使用 JSONBin.io
+        if (CONFIG && CONFIG.USE_JSONBIN && CONFIG.JSONBIN_ID && CONFIG.JSONBIN_API_KEY) {
+            const response = await fetch(`${CONFIG.JSONBIN_BASE_URL}/b/${CONFIG.JSONBIN_ID}/latest`, {
+                headers: {
+                    'X-Master-Key': CONFIG.JSONBIN_API_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.record && result.record.logs) {
+                    logs = result.record.logs || [];
+                }
+            } else {
+                throw new Error('JSONBin.io 回應錯誤');
+            }
+        }
+        // 或使用 Cloudflare Worker
+        else if (CONFIG && CONFIG.WORKER_URL) {
+            const workerUrl = `${CONFIG.WORKER_URL}/api/logs?limit=200`;
+            const response = await fetch(workerUrl);
+            if (response.ok) {
+                const data = await response.json();
+                logs = data.logs || [];
+            } else {
+                throw new Error('Worker 回應錯誤');
+            }
         } else {
-            throw new Error('伺服器回應錯誤');
+            throw new Error('未設定任何日誌服務');
         }
     } catch (error) {
         console.log('無法從伺服器獲取日誌，使用本地日誌:', error);
@@ -468,13 +533,37 @@ function clearLogs() {
 // 匯出伺服器全域日誌
 async function exportServerLogs(event) {
     try {
-        const response = await fetch('log-server.php?limit=1000');
-        if (!response.ok) {
-            throw new Error('無法從伺服器獲取日誌');
-        }
+        let logs = [];
         
-        const data = await response.json();
-        const logs = data.logs || [];
+        // 使用 JSONBin.io
+        if (CONFIG && CONFIG.USE_JSONBIN && CONFIG.JSONBIN_ID && CONFIG.JSONBIN_API_KEY) {
+            const response = await fetch(`${CONFIG.JSONBIN_BASE_URL}/b/${CONFIG.JSONBIN_ID}/latest`, {
+                headers: {
+                    'X-Master-Key': CONFIG.JSONBIN_API_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.record && result.record.logs) {
+                    logs = result.record.logs || [];
+                }
+            } else {
+                throw new Error('無法從 JSONBin.io 獲取日誌');
+            }
+        }
+        // 或使用 Cloudflare Worker
+        else if (CONFIG && CONFIG.WORKER_URL) {
+            const workerUrl = `${CONFIG.WORKER_URL}/api/logs?limit=1000`;
+            const response = await fetch(workerUrl);
+            if (!response.ok) {
+                throw new Error('無法從 Worker 獲取日誌');
+            }
+            const data = await response.json();
+            logs = data.logs || [];
+        } else {
+            throw new Error('未設定任何日誌服務');
+        }
         
         if (logs.length === 0) {
             alert('沒有伺服器日誌資料可以匯出');

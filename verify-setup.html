@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>驗證日誌系統設置</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-pending {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .status-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .icon {
+            font-size: 20px;
+        }
+        button {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .logs-display {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 驗證 Looking Glass 日誌系統</h1>
+        
+        <h2>設置檢查</h2>
+        <div id="checks">
+            <div class="status-item status-pending" id="check-config">
+                <span class="icon">⏳</span>
+                <span>檢查 config.js 設置...</span>
+            </div>
+            <div class="status-item status-pending" id="check-worker">
+                <span class="icon">⏳</span>
+                <span>檢查 Worker 連接...</span>
+            </div>
+            <div class="status-item status-pending" id="check-kv">
+                <span class="icon">⏳</span>
+                <span>檢查 KV 綁定...</span>
+            </div>
+            <div class="status-item status-pending" id="check-write">
+                <span class="icon">⏳</span>
+                <span>測試寫入日誌...</span>
+            </div>
+            <div class="status-item status-pending" id="check-read">
+                <span class="icon">⏳</span>
+                <span>測試讀取日誌...</span>
+            </div>
+        </div>
+        
+        <h2>測試功能</h2>
+        <div>
+            <button onclick="simulateNodeClick()">模擬節點點擊</button>
+            <button onclick="simulateTestStart()">模擬開始測試</button>
+            <button onclick="viewLogs()">查看所有日誌</button>
+            <button onclick="clearDisplay()">清除顯示</button>
+        </div>
+        
+        <div id="logs-display" class="logs-display"></div>
+    </div>
+    
+    <script src="config.js"></script>
+    <script>
+        // 工具函數
+        function updateStatus(id, status, message) {
+            const element = document.getElementById(id);
+            element.className = `status-item status-${status}`;
+            const icon = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
+            element.innerHTML = `<span class="icon">${icon}</span><span>${message}</span>`;
+        }
+        
+        function generateSessionId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        // 開始檢查
+        async function runChecks() {
+            // 1. 檢查配置
+            if (typeof CONFIG !== 'undefined') {
+                const configDetails = `
+                    Worker URL: ${CONFIG.WORKER_URL}
+                    日誌啟用: ${CONFIG.ENABLE_LOGGING}
+                    使用 JSONBin: ${CONFIG.USE_JSONBIN}
+                `;
+                updateStatus('check-config', 'success', `配置載入成功 ${configDetails}`);
+                
+                // 2. 檢查 Worker 連接
+                if (CONFIG.WORKER_URL && CONFIG.ENABLE_LOGGING && !CONFIG.USE_JSONBIN) {
+                    try {
+                        const debugUrl = `${CONFIG.WORKER_URL}/api/debug`;
+                        const response = await fetch(debugUrl);
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            updateStatus('check-worker', 'success', `Worker 連接成功！URL: ${CONFIG.WORKER_URL}`);
+                            
+                            // 3. 檢查 KV 綁定
+                            if (data.has_LOGS) {
+                                updateStatus('check-kv', 'success', 'KV namespace 綁定成功！');
+                            } else {
+                                updateStatus('check-kv', 'error', 'KV namespace 未綁定！請檢查 Worker 設置');
+                                console.error('Debug info:', data);
+                            }
+                        } else {
+                            updateStatus('check-worker', 'error', `Worker 回應錯誤: ${JSON.stringify(data)}`);
+                        }
+                    } catch (error) {
+                        updateStatus('check-worker', 'error', `無法連接 Worker: ${error.message}`);
+                    }
+                    
+                    // 4. 測試寫入
+                    try {
+                        const testLog = {
+                            action: 'test_started',
+                            nodeName: '測試節點',
+                            nodeLocation: '台灣',
+                            testType: 'verify',
+                            target: 'setup-check',
+                            sessionId: generateSessionId()
+                        };
+                        
+                        const response = await fetch(`${CONFIG.WORKER_URL}/api/logs`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(testLog)
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                            updateStatus('check-write', 'success', `寫入測試成功！ID: ${result.id}`);
+                        } else {
+                            updateStatus('check-write', 'error', `寫入失敗: ${result.error}`);
+                        }
+                    } catch (error) {
+                        updateStatus('check-write', 'error', `寫入錯誤: ${error.message}`);
+                    }
+                    
+                    // 5. 測試讀取
+                    try {
+                        const response = await fetch(`${CONFIG.WORKER_URL}/api/logs?limit=10`);
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            updateStatus('check-read', 'success', `讀取成功！找到 ${data.logs.length} 筆日誌`);
+                        } else {
+                            updateStatus('check-read', 'error', `讀取失敗: ${data.error}`);
+                        }
+                    } catch (error) {
+                        updateStatus('check-read', 'error', `讀取錯誤: ${error.message}`);
+                    }
+                } else {
+                    updateStatus('check-worker', 'error', '未設置 Worker URL 或已啟用 JSONBin');
+                }
+            } else {
+                updateStatus('check-config', 'error', '無法載入 config.js');
+            }
+        }
+        
+        // 模擬功能
+        async function simulateNodeClick() {
+            const log = {
+                action: 'node_clicked',
+                nodeName: '香港節點 ' + Math.floor(Math.random() * 10),
+                nodeLocation: '香港',
+                sessionId: generateSessionId()
+            };
+            
+            try {
+                const response = await fetch(`${CONFIG.WORKER_URL}/api/logs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(log)
+                });
+                
+                if (response.ok) {
+                    alert('節點點擊已記錄！');
+                    viewLogs();
+                } else {
+                    alert('記錄失敗！');
+                }
+            } catch (error) {
+                alert('錯誤: ' + error.message);
+            }
+        }
+        
+        async function simulateTestStart() {
+            const log = {
+                action: 'test_started',
+                nodeName: '東京節點',
+                nodeLocation: '日本東京',
+                testType: 'ping',
+                target: '8.8.8.8',
+                sessionId: generateSessionId()
+            };
+            
+            try {
+                const response = await fetch(`${CONFIG.WORKER_URL}/api/logs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(log)
+                });
+                
+                if (response.ok) {
+                    alert('測試開始已記錄！');
+                    viewLogs();
+                } else {
+                    alert('記錄失敗！');
+                }
+            } catch (error) {
+                alert('錯誤: ' + error.message);
+            }
+        }
+        
+        async function viewLogs() {
+            try {
+                const response = await fetch(`${CONFIG.WORKER_URL}/api/logs?limit=50`);
+                const data = await response.json();
+                
+                if (response.ok && data.logs) {
+                    const display = document.getElementById('logs-display');
+                    
+                    if (data.logs.length === 0) {
+                        display.innerHTML = '<p>目前沒有日誌記錄</p>';
+                        return;
+                    }
+                    
+                    const table = `
+                        <h3>最新日誌 (共 ${data.totalRecords} 筆)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>時間</th>
+                                    <th>動作</th>
+                                    <th>節點</th>
+                                    <th>位置</th>
+                                    <th>測試類型</th>
+                                    <th>目標</th>
+                                    <th>IP</th>
+                                    <th>國家</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.logs.map(log => `
+                                    <tr>
+                                        <td>${new Date(log.timestamp).toLocaleString('zh-TW')}</td>
+                                        <td>${log.action === 'node_clicked' ? '點擊' : '測試'}</td>
+                                        <td>${log.nodeName}</td>
+                                        <td>${log.nodeLocation}</td>
+                                        <td>${log.testType || '-'}</td>
+                                        <td>${log.target || '-'}</td>
+                                        <td>${log.ip}</td>
+                                        <td>${log.country}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    
+                    display.innerHTML = table;
+                }
+            } catch (error) {
+                document.getElementById('logs-display').innerHTML = `<p class="status-error">錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        function clearDisplay() {
+            document.getElementById('logs-display').innerHTML = '';
+        }
+        
+        // 頁面載入時執行檢查
+        window.onload = runChecks;
+    </script>
+</body>
+</html>
