@@ -266,8 +266,10 @@ function showLogsModal() {
         modal = document.createElement('div');
         modal.className = 'modal fade';
         modal.id = 'logsModal';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('data-bs-backdrop', 'static');
         modal.innerHTML = `
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">全域日誌分析</h5>
@@ -292,11 +294,36 @@ function showLogsModal() {
         
         // 清理 modal
         modal.addEventListener('hidden.bs.modal', () => {
-            document.body.removeChild(modal);
+            // 延遲移除，避免動畫問題
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    document.body.removeChild(modal);
+                }
+            }, 300);
         });
     }
     
-    const modalInstance = new bootstrap.Modal(modal);
+    // 確保統計面板的模態框層級正確
+    const statsModal = document.getElementById('statsModal');
+    if (statsModal && statsModal.classList.contains('show')) {
+        statsModal.style.zIndex = '1050';
+    }
+    
+    const modalInstance = new bootstrap.Modal(modal, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
+    
+    // 添加事件監聽器
+    modal.addEventListener('shown.bs.modal', () => {
+        // 確保背景模糊效果
+        const backdrop = document.querySelector('.modal-backdrop.show:last-child');
+        if (backdrop) {
+            backdrop.style.zIndex = '1055';
+        }
+    });
+    
     modalInstance.show();
 }
 
@@ -305,7 +332,15 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const modalBody = document.getElementById('logsModalBody');
     if (!modalBody) return;
     
-    modalBody.innerHTML = `
+    // 使用 DocumentFragment 提升性能
+    const fragment = document.createDocumentFragment();
+    const container = document.createElement('div');
+    
+    // 限制顯示數量以提升性能
+    const maxNodeDisplay = 20;
+    const maxLogDisplay = 30;
+    
+    container.innerHTML = `
         <!-- 統計概覽 -->
         <div class="row mb-3">
             <div class="col-3">
@@ -352,7 +387,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${nodeUsageArray.map(node => `
+                            ${nodeUsageArray.slice(0, maxNodeDisplay).map(node => `
                                 <tr>
                                     <td class="py-2 text-center">
                                         <div class="fw-bold">${node.name}</div>
@@ -399,7 +434,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${recentLogs.slice(0, 20).map(log => `
+                            ${recentLogs.slice(0, maxLogDisplay).map(log => `
                                 <tr>
                                     <td class="py-1 text-center small text-muted">
                                         ${new Date(log.timestamp).toLocaleString('zh-TW', {
@@ -428,6 +463,11 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             </div>
         </div>
     `;
+    
+    // 添加到 fragment 並更新 DOM
+    fragment.appendChild(container);
+    modalBody.innerHTML = '';
+    modalBody.appendChild(fragment);
 }
 
 

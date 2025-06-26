@@ -1160,29 +1160,68 @@ a:hover {
     }
 }
 
-/* 日誌模態框樣式 */
-#logsModal.modal.show {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
+/* 日誌模態框樣式優化 */
+#logsModal {
+    z-index: 1060;
 }
 
+/* 防止模態框跑版和置中問題 */
 #logsModal .modal-dialog {
-    margin: 2rem auto;
-    max-width: 85%;
-    max-height: calc(100vh - 4rem);
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 90%;
+    pointer-events: none;
+}
+
+#logsModal.modal.show .modal-dialog {
+    transform: none !important;
 }
 
 #logsModal .modal-content {
-    height: calc(100vh - 4rem);
+    position: relative;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: var(--modal-content-bg);
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: .3rem;
+    outline: 0;
+    max-height: calc(100vh - 3.5rem);
 }
 
 #logsModal .modal-body {
-    flex: 1;
-    overflow-y: auto;
+    position: relative;
+    flex: 1 1 auto;
     padding: 1rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 120px);
+}
+
+/* 修復關閉動畫 */
+#logsModal.fade {
+    transition: opacity .15s linear;
+}
+
+#logsModal.fade .modal-dialog {
+    transition: transform .3s ease-out;
+    transform: translate(0, -50px);
+}
+
+#logsModal.show .modal-dialog {
+    transform: none;
+}
+
+/* 優化性能：減少重繪 */
+#logsModal .table-responsive {
+    will-change: scroll-position;
+}
+
+#logsModal .card-body > div[style*="max-height"] {
+    will-change: scroll-position;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 日誌表格樣式優化 */
