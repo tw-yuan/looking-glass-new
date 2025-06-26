@@ -266,15 +266,30 @@ function isIPAddress(target) {
 // DNS 解析函數
 async function resolveDNS(hostname) {
     try {
-        // 使用 DNS over HTTPS (Google) 進行解析
+        console.log(`開始 DNS 解析: ${hostname}`);
+        
+        // 使用 Cloudflare DNS over HTTPS 進行解析
         const promises = [
-            fetch(`https://dns.google/resolve?name=${hostname}&type=A`),
-            fetch(`https://dns.google/resolve?name=${hostname}&type=AAAA`)
+            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=A`, {
+                headers: { 'Accept': 'application/dns-json' }
+            }),
+            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=AAAA`, {
+                headers: { 'Accept': 'application/dns-json' }
+            })
         ];
         
-        const [ipv4Response, ipv6Response] = await Promise.all(promises);
-        const ipv4Data = await ipv4Response.json();
-        const ipv6Data = await ipv6Response.json();
+        const [ipv4Response, ipv6Response] = await Promise.allSettled(promises);
+        
+        let ipv4Data = { Answer: [] };
+        let ipv6Data = { Answer: [] };
+        
+        if (ipv4Response.status === 'fulfilled' && ipv4Response.value.ok) {
+            ipv4Data = await ipv4Response.value.json();
+        }
+        
+        if (ipv6Response.status === 'fulfilled' && ipv6Response.value.ok) {
+            ipv6Data = await ipv6Response.value.json();
+        }
         
         const result = {
             ips: {
@@ -284,9 +299,12 @@ async function resolveDNS(hostname) {
             asn: null
         };
         
+        console.log(`DNS 解析結果 ${hostname}:`, result.ips);
+        
         // 查詢第一個 IP 的 ASN
         const firstIP = result.ips.v4[0] || result.ips.v6[0];
         if (firstIP) {
+            console.log(`開始查詢 ASN: ${firstIP}`);
             result.asn = await getASNInfo(firstIP);
         }
         
@@ -300,28 +318,65 @@ async function resolveDNS(hostname) {
     }
 }
 
-// 查詢 ASN 資訊
+// 查詢 ASN 資訊 - 使用多個 API 提高成功率
 async function getASNInfo(ip) {
+    // 嘗試 ipinfo.io
     try {
-        // 使用 ip-api.com API (免費且支援 CORS)
-        const response = await fetch(`https://ip-api.com/json/${ip}?fields=status,as,org`);
-        const data = await response.json();
+        console.log(`嘗試 ipinfo.io 查詢 ASN: ${ip}`);
+        const response = await fetch(`https://ipinfo.io/${ip}/json`);
         
-        if (data.status === 'success' && data.as) {
-            const asnMatch = data.as.match(/^AS(\d+)\s+(.+)$/);
-            if (asnMatch) {
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`IPInfo API 回應 ${ip}:`, data);
+            
+            if (data.org) {
+                // ipinfo.io 的 org 格式通常是 "AS12345 Company Name"
+                const asnMatch = data.org.match(/^AS(\d+)\s+(.+)$/);
+                if (asnMatch) {
+                    return {
+                        number: asnMatch[1],
+                        name: asnMatch[2],
+                        source: 'ipinfo.io'
+                    };
+                }
+                // 如果沒有 AS 前綴，直接使用 org 資訊
                 return {
-                    number: asnMatch[1],
-                    name: asnMatch[2]
+                    number: 'N/A',
+                    name: data.org,
+                    source: 'ipinfo.io'
                 };
             }
         }
-        
-        return null;
     } catch (error) {
-        console.log(`ASN 查詢失敗: ${error.message}`);
-        return null;
+        console.log(`ipinfo.io API 失敗: ${error.message}`);
     }
+    
+    // 如果 ipinfo.io 失敗，嘗試 ip-api.com
+    try {
+        console.log(`嘗試 ip-api.com 查詢 ASN: ${ip}`);
+        const response = await fetch(`https://ip-api.com/json/${ip}?fields=status,as,org`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`IP-API 回應 ${ip}:`, data);
+            
+            if (data.status === 'success' && data.as) {
+                const asnMatch = data.as.match(/^AS(\d+)\s+(.+)$/);
+                if (asnMatch) {
+                    return {
+                        number: asnMatch[1],
+                        name: asnMatch[2],
+                        source: 'ip-api.com'
+                    };
+                }
+            }
+        }
+    } catch (error) {
+        console.log(`ip-api.com API 失敗: ${error.message}`);
+    }
+    
+    console.log(`所有 ASN API 都失敗: ${ip}`);
+    return null;
 }
 
 // 格式化目標 IP 位址顯示
