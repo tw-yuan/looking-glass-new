@@ -137,7 +137,7 @@ async function logUsage(action, details = {}) {
     }
 }
 
-// 分析 Target 使用情況
+// 分析 Target 使用情況 - 進階版本
 function analyzeTargetUsage(logs) {
     const targetStats = {};
     
@@ -150,7 +150,7 @@ function analyzeTargetUsage(logs) {
                     count: 0,
                     uniqueUsers: new Set(),
                     testTypes: {},
-                    type: detectTargetType(log.target)
+                    resolvedInfo: null // 將存放 DNS 解析和 ASN 資訊
                 };
             }
             
@@ -164,7 +164,7 @@ function analyzeTargetUsage(logs) {
         }
     });
     
-    return Object.values(targetStats)
+    const result = Object.values(targetStats)
         .map(target => ({
             ...target,
             uniqueUsers: target.uniqueUsers.size,
@@ -172,6 +172,13 @@ function analyzeTargetUsage(logs) {
                 target.testTypes[a] > target.testTypes[b] ? a : b, 'ping')
         }))
         .sort((a, b) => b.count - a.count);
+    
+    // 異步解析 DNS 和 ASN 資訊
+    result.forEach(target => {
+        resolveTargetInfo(target);
+    });
+    
+    return result;
 }
 
 // 分析測試類型使用情況
@@ -201,36 +208,11 @@ function analyzeTestTypes(logs) {
     return typeStats;
 }
 
-// 偵測目標類型
+// 簡化目標類型偵測（保留給最近活動使用）
 function detectTargetType(target) {
     if (!target || target === 'null') return '未知';
-    
-    // IPv4 位址檢測
-    const ipv4Regex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-    if (ipv4Regex.test(target)) {
-        return 'IPv4';
-    }
-    
-    // IPv6 位址檢測
-    const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
-    if (ipv6Regex.test(target) || target.includes('::')) {
-        return 'IPv6';
-    }
-    
-    // 域名檢測
-    if (target.includes('.')) {
-        // 常見公共 DNS
-        const publicDNS = ['8.8.8.8', '1.1.1.1', '208.67.222.222', '9.9.9.9', '2001:4860:4860::8888', '2606:4700:4700::1111'];
-        if (publicDNS.includes(target)) return '公共 DNS';
-        
-        // 常見網站
-        const commonSites = ['google.com', 'facebook.com', 'youtube.com', 'github.com', 'stackoverflow.com'];
-        if (commonSites.some(site => target.includes(site))) return '常見網站';
-        
-        return '域名';
-    }
-    
-    return '其他';
+    if (isIPAddress(target)) return 'IP';
+    return '域名';
 }
 
 // 處理 IP 顯示（支援 IPv4 和 IPv6）
@@ -255,6 +237,144 @@ function formatIPDisplay(ip) {
     
     // 其他情況
     return ip.length > 8 ? ip.substring(0, 8) + '...' : ip;
+}
+
+// DNS 解析和 ASN 查詢
+const targetResolutionCache = new Map();
+
+async function resolveTargetInfo(target) {
+    const targetName = target.name.toLowerCase();
+    
+    // 如果已經是 IP 位址，直接查詢 ASN
+    if (isIPAddress(targetName)) {
+        if (!targetResolutionCache.has(targetName)) {
+            try {
+                const asnInfo = await getASNInfo(targetName);
+                target.resolvedInfo = {
+                    ips: { v4: targetName.includes('.') ? [targetName] : [], v6: targetName.includes(':') ? [targetName] : [] },
+                    asn: asnInfo
+                };
+                targetResolutionCache.set(targetName, target.resolvedInfo);
+            } catch (error) {
+                console.log(`無法查詢 ${targetName} 的 ASN 資訊`);
+            }
+        } else {
+            target.resolvedInfo = targetResolutionCache.get(targetName);
+        }
+        return;
+    }
+    
+    // 如果是域名，進行 DNS 解析
+    if (!targetResolutionCache.has(targetName)) {
+        try {
+            const dnsInfo = await resolveDNS(targetName);
+            target.resolvedInfo = dnsInfo;
+            targetResolutionCache.set(targetName, dnsInfo);
+        } catch (error) {
+            console.log(`無法解析 ${targetName}`);
+        }
+    } else {
+        target.resolvedInfo = targetResolutionCache.get(targetName);
+    }
+}
+
+// 檢查是否為 IP 位址
+function isIPAddress(target) {
+    const ipv4Regex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+    const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
+    return ipv4Regex.test(target) || ipv6Regex.test(target) || target.includes('::');
+}
+
+// DNS 解析函數
+async function resolveDNS(hostname) {
+    try {
+        // 使用 DNS over HTTPS 進行解析
+        const promises = [
+            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=A`, {
+                headers: { 'Accept': 'application/dns-json' }
+            }),
+            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=AAAA`, {
+                headers: { 'Accept': 'application/dns-json' }
+            })
+        ];
+        
+        const [ipv4Response, ipv6Response] = await Promise.all(promises);
+        const ipv4Data = await ipv4Response.json();
+        const ipv6Data = await ipv6Response.json();
+        
+        const result = {
+            ips: {
+                v4: ipv4Data.Answer ? ipv4Data.Answer.map(a => a.data) : [],
+                v6: ipv6Data.Answer ? ipv6Data.Answer.map(a => a.data) : []
+            },
+            asn: null
+        };
+        
+        // 查詢第一個 IP 的 ASN
+        const firstIP = result.ips.v4[0] || result.ips.v6[0];
+        if (firstIP) {
+            result.asn = await getASNInfo(firstIP);
+        }
+        
+        return result;
+    } catch (error) {
+        throw new Error(`DNS 解析失敗: ${error.message}`);
+    }
+}
+
+// 查詢 ASN 資訊
+async function getASNInfo(ip) {
+    try {
+        // 使用 ipinfo.io API
+        const response = await fetch(`https://ipinfo.io/${ip}/json`);
+        const data = await response.json();
+        
+        if (data.org) {
+            const asnMatch = data.org.match(/^AS(\d+)\s+(.+)$/);
+            if (asnMatch) {
+                return {
+                    number: asnMatch[1],
+                    name: asnMatch[2]
+                };
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.log(`ASN 查詢失敗: ${error.message}`);
+        return null;
+    }
+}
+
+// 格式化目標 IP 位址顯示
+function formatTargetIPs(resolvedInfo) {
+    if (!resolvedInfo || !resolvedInfo.ips) {
+        return '<span class="text-muted">解析中...</span>';
+    }
+    
+    const ips = [];
+    if (resolvedInfo.ips.v4 && resolvedInfo.ips.v4.length > 0) {
+        ips.push(`<span class="text-info">${resolvedInfo.ips.v4[0]}</span>`);
+    }
+    if (resolvedInfo.ips.v6 && resolvedInfo.ips.v6.length > 0) {
+        ips.push(`<span class="text-success">${resolvedInfo.ips.v6[0].substring(0, 20)}...</span>`);
+    }
+    
+    if (ips.length === 0) {
+        return '<span class="text-muted">無法解析</span>';
+    }
+    
+    return ips.join('<br>');
+}
+
+// 格式化 ASN 資訊顯示
+function formatASNInfo(resolvedInfo) {
+    if (!resolvedInfo || !resolvedInfo.asn) {
+        return '<span class="text-muted">查詢中...</span>';
+    }
+    
+    const asn = resolvedInfo.asn;
+    return `<div class="fw-bold text-warning">AS${asn.number}</div><small class="text-muted">${asn.name.substring(0, 15)}...</small>`;
 }
 
 // 顯示使用日誌
@@ -526,9 +646,10 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                         <thead>
                             <tr>
                                 <th class="py-1 text-center small">目標</th>
+                                <th class="py-1 text-center small">IP 位址</th>
+                                <th class="py-1 text-center small">ASN</th>
                                 <th class="py-1 text-center small">測試次數</th>
                                 <th class="py-1 text-center small">使用者</th>
-                                <th class="py-1 text-center small">主要類型</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -536,16 +657,19 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                 <tr>
                                     <td class="py-1 text-center">
                                         <div class="fw-bold small text-primary">${target.name}</div>
-                                        <small class="text-muted">${target.type}</small>
+                                        <small class="text-muted">${target.mainTestType.toUpperCase()}</small>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <div class="small">${formatTargetIPs(target.resolvedInfo)}</div>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <div class="small">${formatASNInfo(target.resolvedInfo)}</div>
                                     </td>
                                     <td class="py-1 text-center">
                                         <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
                                     </td>
                                     <td class="py-1 text-center">
                                         <span class="badge bg-info" style="font-size: 0.7rem;">${target.uniqueUsers}</span>
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        <span class="badge bg-success" style="font-size: 0.7rem;">${target.mainTestType}</span>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -600,7 +724,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         <!-- 最近活動 -->
         <div class="card" style="margin-top: 1rem;">
             <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                <small class="mb-0 fw-bold">最近活動 (整體)</small>
+                <small class="mb-0 fw-bold">最近活動</small>
                 <div>
                     <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出整體日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">整體匯出</button>
                     <button class="btn btn-xs btn-outline-info me-1" onclick="exportLogs(event)" title="匯出本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">本地匯出</button>
@@ -620,7 +744,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${recentLogs.slice(0, maxLogDisplay).map(log => `
+                            ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').slice(0, maxLogDisplay).map(log => `
                                 <tr>
                                     <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
                                         ${new Date(log.timestamp).toLocaleString('zh-TW', {
@@ -631,14 +755,15 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                         })}
                                     </td>
                                     <td class="py-0 text-center">
-                                        <span class="badge bg-${getActionColor(log.action)}" style="font-size: 0.6rem;">${getActionName(log.action)}</span>
+                                        <span class="badge bg-primary" style="font-size: 0.6rem;">${(log.testType || 'ping').toUpperCase()}</span>
                                     </td>
-                                    <td class="py-0 text-center fw-bold" style="font-size: 0.65rem;">${log.nodeName}</td>
+                                    <td class="py-0 text-center fw-bold" style="font-size: 0.65rem;">
+                                        <div class="text-primary">${log.target || '未知'}</div>
+                                        <small class="text-muted">${detectTargetType(log.target)}</small>
+                                    </td>
                                     <td class="py-0 text-center" style="font-size: 0.65rem;">
-                                        ${log.testType ? 
-                                            `<span class="text-primary">${log.testType.toUpperCase()}</span><br><span class="text-muted">${log.target || ''}</span>` : 
-                                            `<span class="text-muted">${log.nodeLocation}</span>`
-                                        }
+                                        <div class="fw-bold">${log.nodeName}</div>
+                                        <small class="text-muted">${log.nodeLocation}</small>
                                     </td>
                                     <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
                                         ${formatIPDisplay(log.ip)}
@@ -647,8 +772,8 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             `).join('')}
                         </tbody>
                     </table>
-                    ${recentLogs.filter(log => log.action === 'test_started').length === 0 ? 
-                        '<div class="text-center text-muted p-3"><small>尚無測試記錄</small></div>' : ''}
+                    ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').length === 0 ? 
+                        '<div class="text-center text-muted p-3"><small>尚無有效測試記錄</small></div>' : ''}
                 </div>
             </div>
         </div>
@@ -1748,7 +1873,7 @@ function updateNodeDetailsList(nodeDetails) {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(node => {
             const statusBadge = node.status === 'online' 
-                ? '<span class="badge bg-success me-2">連線</span>'
+                ? '<span class="badge bg-success me-2">上線</span>'
                 : '<span class="badge bg-danger me-2">斷線</span>';
             
             const locationText = node.location_zh 
