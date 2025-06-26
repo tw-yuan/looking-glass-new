@@ -1166,10 +1166,16 @@ a:hover {
 }
 
 /* 防止模態框跑版和置中問題 */
+#logsModal.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
 #logsModal .modal-dialog {
     position: relative;
     width: auto;
-    margin: 1.75rem auto;
+    margin: 0;
     max-width: 45%;
     min-width: 480px;
     pointer-events: none;
@@ -1177,6 +1183,7 @@ a:hover {
 
 #logsModal.modal.show .modal-dialog {
     transform: none !important;
+    margin: 0;
 }
 
 #logsModal .modal-content {

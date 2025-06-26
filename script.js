@@ -137,12 +137,102 @@ async function logUsage(action, details = {}) {
     }
 }
 
+// 分析 Target 使用情況
+function analyzeTargetUsage(logs) {
+    const targetStats = {};
+    
+    logs.forEach(log => {
+        if (log.action === 'test_started' && log.target && log.target !== 'null') {
+            const target = log.target.toLowerCase();
+            if (!targetStats[target]) {
+                targetStats[target] = {
+                    name: log.target,
+                    count: 0,
+                    uniqueUsers: new Set(),
+                    testTypes: {},
+                    type: detectTargetType(log.target)
+                };
+            }
+            
+            targetStats[target].count++;
+            if (log.ip && log.ip !== 'unknown') {
+                targetStats[target].uniqueUsers.add(log.ip);
+            }
+            if (log.testType) {
+                targetStats[target].testTypes[log.testType] = (targetStats[target].testTypes[log.testType] || 0) + 1;
+            }
+        }
+    });
+    
+    return Object.values(targetStats)
+        .map(target => ({
+            ...target,
+            uniqueUsers: target.uniqueUsers.size,
+            mainTestType: Object.keys(target.testTypes).reduce((a, b) => 
+                target.testTypes[a] > target.testTypes[b] ? a : b, 'ping')
+        }))
+        .sort((a, b) => b.count - a.count);
+}
+
+// 分析測試類型使用情況
+function analyzeTestTypes(logs) {
+    const typeStats = {};
+    
+    logs.forEach(log => {
+        if (log.action === 'test_started' && log.testType) {
+            if (!typeStats[log.testType]) {
+                typeStats[log.testType] = {
+                    count: 0,
+                    uniqueUsers: new Set(),
+                    targets: new Set()
+                };
+            }
+            
+            typeStats[log.testType].count++;
+            if (log.ip && log.ip !== 'unknown') {
+                typeStats[log.testType].uniqueUsers.add(log.ip);
+            }
+            if (log.target && log.target !== 'null') {
+                typeStats[log.testType].targets.add(log.target);
+            }
+        }
+    });
+    
+    return typeStats;
+}
+
+// 偵測目標類型
+function detectTargetType(target) {
+    if (!target || target === 'null') return '未知';
+    
+    // IP 位址檢測
+    const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+    if (ipRegex.test(target)) {
+        return 'IP';
+    }
+    
+    // 域名檢測
+    if (target.includes('.')) {
+        // 常見公共 DNS
+        const publicDNS = ['8.8.8.8', '1.1.1.1', '208.67.222.222', '9.9.9.9'];
+        if (publicDNS.includes(target)) return '公共 DNS';
+        
+        // 常見網站
+        const commonSites = ['google.com', 'facebook.com', 'youtube.com', 'github.com', 'stackoverflow.com'];
+        if (commonSites.some(site => target.includes(site))) return '常見網站';
+        
+        return '域名';
+    }
+    
+    return '其他';
+}
+
 // 顯示使用日誌
 async function showUsageLogs() {
     // 先顯示模態框
     showLogsModal();
     
-    // 從伺服器獲取全域日誌
+    // 從伺服器獲取整體日誌
     let logs = [];
     try {
         // 使用 JSONBin.io
@@ -272,7 +362,7 @@ function showLogsModal() {
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">全域日誌分析</h5>
+                        <h5 class="modal-title">使用情況分析</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body" id="logsModalBody">
@@ -363,7 +453,7 @@ function showLogsModal() {
     modalInstance.show();
 }
 
-// 更新日誌模態框內容
+// 更新日誌模態框內容 - Target 分析導向
 function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const modalBody = document.getElementById('logsModalBody');
     if (!modalBody) return;
@@ -373,8 +463,12 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const container = document.createElement('div');
     
     // 限制顯示數量以提升性能
-    const maxNodeDisplay = 20;
-    const maxLogDisplay = 30;
+    const maxTargetDisplay = 15;
+    const maxLogDisplay = 25;
+    
+    // 分析 Target 使用情況
+    const targetAnalysis = analyzeTargetUsage(recentLogs);
+    const testTypeStats = analyzeTestTypes(recentLogs);
     
     container.innerHTML = `
         <!-- 統計概覽 -->
@@ -382,33 +476,73 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             <div class="col-3">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-primary mb-0">${stats.totalTests}</h5>
-                    <small class="text-muted">測試</small>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-success mb-0">${stats.totalClicks}</h5>
-                    <small class="text-muted">點擊</small>
+                    <small class="text-muted">總測試</small>
                 </div>
             </div>
             <div class="col-3">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
-                    <small class="text-muted">用戶</small>
+                    <small class="text-muted">用戶數</small>
                 </div>
             </div>
             <div class="col-3">
                 <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-warning mb-0">${recentLogs.length}</h5>
-                    <small class="text-muted">記錄</small>
+                    <h5 class="text-success mb-0">${targetAnalysis.length}</h5>
+                    <small class="text-muted">目標數</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-warning mb-0">${Object.keys(testTypeStats).length}</h5>
+                    <small class="text-muted">測試類型</small>
                 </div>
             </div>
         </div>
         
-        <!-- 節點使用情況 -->
+        <!-- 熱門目標分析 -->
         <div class="card mb-2" style="margin-top: 1rem;">
             <div class="card-header py-1">
-                <small class="mb-0 fw-bold">各節點使用情況</small>
+                <small class="mb-0 fw-bold">熱門目標分析</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th class="py-1 text-center small">目標</th>
+                                <th class="py-1 text-center small">測試次數</th>
+                                <th class="py-1 text-center small">使用者</th>
+                                <th class="py-1 text-center small">主要類型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${targetAnalysis.slice(0, maxTargetDisplay).map(target => `
+                                <tr>
+                                    <td class="py-1 text-center">
+                                        <div class="fw-bold small text-primary">${target.name}</div>
+                                        <small class="text-muted">${target.type}</small>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <span class="badge bg-info" style="font-size: 0.7rem;">${target.uniqueUsers}</span>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <span class="badge bg-success" style="font-size: 0.7rem;">${target.mainTestType}</span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 節點使用效率 -->
+        <div class="card mb-2" style="margin-top: 1rem;">
+            <div class="card-header py-1">
+                <small class="mb-0 fw-bold">節點使用效率</small>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -417,27 +551,27 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             <tr>
                                 <th class="py-1 text-center small">節點</th>
                                 <th class="py-1 text-center small">提供者</th>
-                                <th class="py-1 text-center small">點擊</th>
-                                <th class="py-1 text-center small">測試</th>
-                                <th class="py-1 text-center small">用戶</th>
+                                <th class="py-1 text-center small">測試數</th>
+                                <th class="py-1 text-center small">使用者</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${nodeUsageArray.slice(0, maxNodeDisplay).map(node => `
+                            ${nodeUsageArray.filter(node => node.tests > 0).slice(0, 15).map(node => `
                                 <tr>
                                     <td class="py-1 text-center">
                                         <div class="fw-bold small">${node.name}</div>
                                         <small class="text-muted" style="font-size: 0.7rem;">${node.location}</small>
                                     </td>
-                                    <td class="py-1 text-center small">${node.provider}</td>
-                                    <td class="py-1 text-center">
-                                        ${node.clicks > 0 ? `<span class="badge bg-info" style="font-size: 0.7rem;">${node.clicks}</span>` : '<span class="text-muted small">-</span>'}
+                                    <td class="py-1 text-center small">
+                                        <a href="${node.providerLink || node['provider-link'] || '#'}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                            ${node.provider}
+                                        </a>
                                     </td>
                                     <td class="py-1 text-center">
-                                        ${node.tests > 0 ? `<span class="badge bg-primary" style="font-size: 0.7rem;">${node.tests}</span>` : '<span class="text-muted small">-</span>'}
+                                        <span class="badge bg-primary" style="font-size: 0.7rem;">${node.tests}</span>
                                     </td>
                                     <td class="py-1 text-center">
-                                        ${node.uniqueUsers > 0 ? `<span class="badge bg-success" style="font-size: 0.7rem;">${node.uniqueUsers}</span>` : '<span class="text-muted small">-</span>'}
+                                        <span class="badge bg-success" style="font-size: 0.7rem;">${node.uniqueUsers}</span>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -450,9 +584,9 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         <!-- 最近活動 -->
         <div class="card" style="margin-top: 1rem;">
             <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                <small class="mb-0 fw-bold">最近活動 (全域)</small>
+                <small class="mb-0 fw-bold">最近活動 (整體)</small>
                 <div>
-                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出全域日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">全域匯出</button>
+                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出整體日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">整體匯出</button>
                     <button class="btn btn-xs btn-outline-info me-1" onclick="exportLogs(event)" title="匯出本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">本地匯出</button>
                     <button class="btn btn-xs btn-outline-danger" onclick="clearLogs()" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">清除本地</button>
                 </div>
@@ -490,11 +624,15 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                             `<span class="text-muted">${log.nodeLocation}</span>`
                                         }
                                     </td>
-                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">${log.ip}</td>
+                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
+                                        ${log.ip ? log.ip.substring(0, log.ip.lastIndexOf('.')) + '.xxx' : '未知'}
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
+                    ${recentLogs.filter(log => log.action === 'test_started').length === 0 ? 
+                        '<div class="text-center text-muted p-3"><small>尚無測試記錄</small></div>' : ''}
                 </div>
             </div>
         </div>
@@ -1602,8 +1740,8 @@ function updateNodeDetailsList(nodeDetails) {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(node => {
             const statusBadge = node.status === 'online' 
-                ? '<span class="badge bg-success me-2">在線</span>'
-                : '<span class="badge bg-danger me-2">離線</span>';
+                ? '<span class="badge bg-success me-2">連線</span>'
+                : '<span class="badge bg-danger me-2">斷線</span>';
             
             const locationText = node.location_zh 
                 ? `${node.location_zh}<br><small class="text-muted">${node.location}</small>`
