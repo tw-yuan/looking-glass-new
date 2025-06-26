@@ -1,0 +1,20 @@
+# 開發檔案
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE 設定
+.vscode/
+.claude/
+.idea/
+
+# 測試檔案（可選）
+test-worker.html
+verify-setup.html
+
+# Worker 檔案（不需要部署到 Pages）
+worker.js
+
+# Cloudflare 相關
+wrangler.toml

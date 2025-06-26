@@ -1,0 +1,17 @@
+{
+  "name": "looking-glass",
+  "version": "1.0.0",
+  "description": "Looking Glass Network Monitoring Tool",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step required for static site'",
+    "start": "echo 'Static site - no start command needed'"
+  },
+  "keywords": ["looking-glass", "network", "monitoring", "bgp"],
+  "author": "Zhuyuan, CH, Yuan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Zhuyuan0907/looking-glass-new"
+  }
+}

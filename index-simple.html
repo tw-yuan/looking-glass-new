@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looking Glass 測試</title>
+</head>
+<body>
+    <h1>Looking Glass 部署測試</h1>
+    <p>如果你看到這個頁面，表示 Cloudflare Pages 部署成功。</p>
+    <p>時間：<span id="time"></span></p>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString('zh-TW');
+    </script>
+</body>
+</html>
