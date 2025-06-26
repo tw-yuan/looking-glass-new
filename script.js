@@ -1516,13 +1516,9 @@ async function loadStats() {
     try {
         // 獲取 probes 數據
         const probes = await fetchProbesData();
-        if (!probes) {
-            showStatsError('無法獲取節點數據');
-            return;
-        }
         
-        // 計算統計數據
-        const stats = calculateStats(probes);
+        // 計算統計數據 - 現在使用實際測試檢查節點狀態
+        const stats = await calculateStats(probes);
         
         // 更新 UI
         updateStatsUI(stats);
@@ -1534,7 +1530,7 @@ async function loadStats() {
 }
 
 // 計算統計數據
-function calculateStats(probes) {
+async function calculateStats(probes) {
     const stats = {
         total: 0,
         online: 0,
@@ -1544,84 +1540,126 @@ function calculateStats(probes) {
         nodeDetails: []
     };
     
-    // 為每個節點檢查是否在線
-    for (const node of nodesData.nodes) {
+    // 為每個節點檢查是否在線 - 使用實際測試請求檢查
+    const statusChecks = nodesData.nodes.map(async (node) => {
         stats.total++;
         
-        // 在 probes 中查找匹配的節點
-        const matchingProbes = probes.filter(probe => {
-            if (!probe.tags || !Array.isArray(probe.tags)) return false;
-            
-            // 檢查是否有匹配的 tags
-            return probe.tags.some(tag => {
-                if (typeof node.tags === 'string') {
-                    return node.tags.includes(tag);
-                } else if (Array.isArray(node.tags)) {
-                    return node.tags.includes(tag);
-                }
-                return false;
+        let isOnline = false;
+        let matchingProbes = [];
+        
+        try {
+            // 發送快速測試請求檢查節點是否線上（與主頁面邏輯一致）
+            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'ping',
+                    target: '8.8.8.8',
+                    limit: 1,
+                    locations: [{
+                        magic: node.tags
+                    }]
+                })
             });
-        });
-        
-        // 判斷節點狀態
-        const isOnline = matchingProbes.length > 0 && matchingProbes.some(probe => probe.version);
-        
-        if (isOnline) {
-            stats.online++;
-        } else {
-            stats.offline++;
+            
+            const data = await testResponse.json();
+            isOnline = !!data.id; // 如果成功創建測量，節點就是線上的
+            
+        } catch (error) {
+            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+            isOnline = false;
         }
         
-        // 使用第一個匹配的 probe 來獲取詳細信息
-        const primaryProbe = matchingProbes.find(probe => probe.version) || matchingProbes[0];
+        // 同時查找匹配的 probes 來獲取詳細信息
+        if (probes) {
+            matchingProbes = probes.filter(probe => {
+                if (!probe.tags || !Array.isArray(probe.tags)) return false;
+                
+                return probe.tags.some(tag => {
+                    if (typeof node.tags === 'string') {
+                        return node.tags.includes(tag);
+                    } else if (Array.isArray(node.tags)) {
+                        return node.tags.includes(tag);
+                    }
+                    return false;
+                });
+            });
+        }
         
-        if (primaryProbe) {
-            // 地區統計
-            const region = primaryProbe.location?.continent || 'Unknown';
-            stats.byRegion[region] = (stats.byRegion[region] || 0) + 1;
+        return { node, isOnline, matchingProbes };
+    });
+    
+    // 等待所有狀態檢查完成
+    const results = await Promise.allSettled(statusChecks);
+    
+    // 處理檢查結果
+    for (const result of results) {
+        if (result.status === 'fulfilled') {
+            const { node, isOnline, matchingProbes } = result.value;
             
-            // 檢測支援的協議和網路類型
-            const supportedProtocols = detectSupportedProtocols(primaryProbe);
-            const networkType = getNodeNetworkType(node, primaryProbe);
+            if (isOnline) {
+                stats.online++;
+            } else {
+                stats.offline++;
+            }
             
-            // 網路類型統計
-            stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
+            // 使用第一個匹配的 probe 來獲取詳細信息
+            const primaryProbe = matchingProbes.find(probe => probe.version) || matchingProbes[0];
             
-            // 節點詳細信息
-            stats.nodeDetails.push({
-                name: node.name,
-                name_zh: node.name_zh,
-                location: node.location,
-                location_zh: node.location_zh,
-                provider: node.provider,
-                providerLink: node['provider-link'],
-                status: isOnline ? 'online' : 'offline',
-                version: node.version || primaryProbe.version || 'N/A',
-                network: primaryProbe.location?.network || 'N/A',
-                asn: node.asn || primaryProbe.location?.asn || 'N/A',
-                networkType: networkType,
-                protocols: supportedProtocols,
-                continent: node.continent, // 確保傳遞大陸資訊
-                probeData: primaryProbe
-            });
-        } else {
-            // 沒有找到匹配的 probe，標記為離線
-            stats.nodeDetails.push({
-                name: node.name,
-                name_zh: node.name_zh,
-                location: node.location,
-                location_zh: node.location_zh,
-                provider: node.provider,
-                providerLink: node['provider-link'],
-                status: 'offline',
-                version: node.version || 'N/A',
-                network: 'N/A',
-                asn: node.asn || 'N/A',
-                networkType: getNodeNetworkType(node, null),
-                protocols: ['未知'],
-                continent: node.continent, // 確保傳遞大陸資訊
-                probeData: null
-            });
+            if (primaryProbe) {
+                // 地區統計
+                const region = primaryProbe.location?.continent || 'Unknown';
+                stats.byRegion[region] = (stats.byRegion[region] || 0) + 1;
+                
+                // 檢測支援的協議和網路類型
+                const supportedProtocols = detectSupportedProtocols(primaryProbe);
+                const networkType = getNodeNetworkType(node, primaryProbe);
+                
+                // 網路類型統計
+                stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
+                
+                // 節點詳細信息
+                stats.nodeDetails.push({
+                    name: node.name,
+                    name_zh: node.name_zh,
+                    location: node.location,
+                    location_zh: node.location_zh,
+                    provider: node.provider,
+                    providerLink: node['provider-link'],
+                    status: isOnline ? 'online' : 'offline',
+                    version: node.version || primaryProbe.version || 'N/A',
+                    network: primaryProbe.location?.network || 'N/A',
+                    asn: node.asn || primaryProbe.location?.asn || 'N/A',
+                    networkType: networkType,
+                    protocols: supportedProtocols,
+                    continent: node.continent,
+                    probeData: primaryProbe
+                });
+            } else {
+                // 沒有找到匹配的 probe，使用節點自身資訊
+                const networkType = getNodeNetworkType(node, null);
+                stats.byNetwork[networkType] = (stats.byNetwork[networkType] || 0) + 1;
+                
+                stats.nodeDetails.push({
+                    name: node.name,
+                    name_zh: node.name_zh,
+                    location: node.location,
+                    location_zh: node.location_zh,
+                    provider: node.provider,
+                    providerLink: node['provider-link'],
+                    status: isOnline ? 'online' : 'offline',
+                    version: node.version || 'N/A',
+                    network: 'N/A',
+                    asn: node.asn || 'N/A',
+                    networkType: networkType,
+                    protocols: ['未知'],
+                    continent: node.continent,
+                    probeData: null
+                });
+            }
         }
     }
     
