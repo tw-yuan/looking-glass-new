@@ -294,23 +294,38 @@ function showLogsModal() {
         
         // 清理 modal
         modal.addEventListener('hidden.bs.modal', () => {
-            // 重置統計面板的層級
+            // 檢查統計面板是否還開啟
             const statsModal = document.getElementById('statsModal');
-            if (statsModal && statsModal.classList.contains('show')) {
+            const isStatsModalOpen = statsModal && statsModal.classList.contains('show');
+            
+            // 重置統計面板的層級
+            if (isStatsModalOpen) {
                 statsModal.style.zIndex = '';
             }
             
-            // 確保移除所有背景和重置 body 狀態
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-            
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => {
-                if (backdrop.parentNode) {
-                    backdrop.parentNode.removeChild(backdrop);
+            // 只移除日誌相關的背景，保留統計面板的背景
+            const logsBackdrop = document.querySelector('.modal-backdrop[data-logs-backdrop="true"]');
+            if (isStatsModalOpen && logsBackdrop) {
+                // 如果統計面板還開啟，只移除日誌的背景
+                if (logsBackdrop.parentNode) {
+                    logsBackdrop.parentNode.removeChild(logsBackdrop);
                 }
-            });
+            } else if (!isStatsModalOpen) {
+                // 如果統計面板已關閉，清除所有背景和重置 body
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                const allBackdrops = document.querySelectorAll('.modal-backdrop');
+                allBackdrops.forEach(backdrop => {
+                    if (backdrop.parentNode) {
+                        backdrop.parentNode.removeChild(backdrop);
+                    }
+                });
+            } else {
+                // 如果統計面板還開啟，確保 body 狀態正確
+                document.body.classList.add('modal-open');
+            }
             
             // 延遲移除，避免動畫問題
             setTimeout(() => {
@@ -335,10 +350,13 @@ function showLogsModal() {
     
     // 添加事件監聽器
     modal.addEventListener('shown.bs.modal', () => {
-        // 確保背景模糊效果
-        const backdrop = document.querySelector('.modal-backdrop.show:last-child');
-        if (backdrop) {
-            backdrop.style.zIndex = '1055';
+        // 確保背景模糊效果和層級
+        const backdrops = document.querySelectorAll('.modal-backdrop.show');
+        if (backdrops.length > 0) {
+            const lastBackdrop = backdrops[backdrops.length - 1];
+            lastBackdrop.style.zIndex = '1055';
+            // 為日誌背景添加標識
+            lastBackdrop.setAttribute('data-logs-backdrop', 'true');
         }
     });
     
@@ -360,66 +378,66 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     
     container.innerHTML = `
         <!-- 統計概覽 -->
-        <div class="row mb-2 g-2">
+        <div class="row mb-2 g-1">
             <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-primary mb-0">${stats.totalTests}</h5>
-                    <small class="text-muted">測試</small>
+                <div class="text-center p-1 bg-light rounded">
+                    <h6 class="text-primary mb-0">${stats.totalTests}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">測試</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-success mb-0">${stats.totalClicks}</h5>
-                    <small class="text-muted">點擊</small>
+                <div class="text-center p-1 bg-light rounded">
+                    <h6 class="text-success mb-0">${stats.totalClicks}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">點擊</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
-                    <small class="text-muted">用戶</small>
+                <div class="text-center p-1 bg-light rounded">
+                    <h6 class="text-info mb-0">${stats.uniqueIPs.size}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">用戶</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-warning mb-0">${recentLogs.length}</h5>
-                    <small class="text-muted">記錄</small>
+                <div class="text-center p-1 bg-light rounded">
+                    <h6 class="text-warning mb-0">${recentLogs.length}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">記錄</small>
                 </div>
             </div>
         </div>
         
         <!-- 節點使用情況 -->
         <div class="card mb-2">
-            <div class="card-header py-2">
-                <h6 class="mb-0">各節點使用情況</h6>
+            <div class="card-header py-1">
+                <small class="mb-0 fw-bold">各節點使用情況</small>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr>
-                                <th class="py-1 text-center">節點</th>
-                                <th class="py-1 text-center">提供者</th>
-                                <th class="py-1 text-center">點擊</th>
-                                <th class="py-1 text-center">測試</th>
-                                <th class="py-1 text-center">用戶</th>
+                                <th class="py-1 text-center small">節點</th>
+                                <th class="py-1 text-center small">提供者</th>
+                                <th class="py-1 text-center small">點擊</th>
+                                <th class="py-1 text-center small">測試</th>
+                                <th class="py-1 text-center small">用戶</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${nodeUsageArray.slice(0, maxNodeDisplay).map(node => `
                                 <tr>
                                     <td class="py-1 text-center">
-                                        <div class="fw-bold">${node.name}</div>
-                                        <small class="text-muted">${node.location}</small>
+                                        <div class="fw-bold small">${node.name}</div>
+                                        <small class="text-muted" style="font-size: 0.7rem;">${node.location}</small>
                                     </td>
-                                    <td class="py-1 text-center">${node.provider}</td>
+                                    <td class="py-1 text-center small">${node.provider}</td>
                                     <td class="py-1 text-center">
-                                        ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '<span class="text-muted">-</span>'}
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '<span class="text-muted">-</span>'}
+                                        ${node.clicks > 0 ? `<span class="badge bg-info" style="font-size: 0.7rem;">${node.clicks}</span>` : '<span class="text-muted small">-</span>'}
                                     </td>
                                     <td class="py-1 text-center">
-                                        ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '<span class="text-muted">-</span>'}
+                                        ${node.tests > 0 ? `<span class="badge bg-primary" style="font-size: 0.7rem;">${node.tests}</span>` : '<span class="text-muted small">-</span>'}
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        ${node.uniqueUsers > 0 ? `<span class="badge bg-success" style="font-size: 0.7rem;">${node.uniqueUsers}</span>` : '<span class="text-muted small">-</span>'}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -431,30 +449,30 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         
         <!-- 最近活動 -->
         <div class="card">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">最近活動 (全域)</h6>
+            <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                <small class="mb-0 fw-bold">最近活動 (全域)</small>
                 <div>
-                    <button class="btn btn-sm btn-outline-success me-2" onclick="exportServerLogs(event)" title="匯出全域日誌">全域匯出</button>
-                    <button class="btn btn-sm btn-outline-info me-2" onclick="exportLogs(event)" title="匯出本地日誌">本地匯出</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除本地</button>
+                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出全域日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">全域匯出</button>
+                    <button class="btn btn-xs btn-outline-info me-1" onclick="exportLogs(event)" title="匯出本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">本地匯出</button>
+                    <button class="btn btn-xs btn-outline-danger" onclick="clearLogs()" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">清除本地</button>
                 </div>
             </div>
             <div class="card-body p-0">
-                <div style="max-height: 200px; overflow-y: auto;">
+                <div style="max-height: 180px; overflow-y: auto;">
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr>
-                                <th class="py-1 text-center small">時間</th>
-                                <th class="py-1 text-center small">動作</th>
-                                <th class="py-1 text-center small">節點</th>
-                                <th class="py-1 text-center small">詳細</th>
-                                <th class="py-1 text-center small">IP</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">時間</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">動作</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">節點</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">詳細</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">IP</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${recentLogs.slice(0, maxLogDisplay).map(log => `
                                 <tr>
-                                    <td class="py-1 text-center small text-muted">
+                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
                                         ${new Date(log.timestamp).toLocaleString('zh-TW', {
                                             month: 'numeric', 
                                             day: 'numeric', 
@@ -462,17 +480,17 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                             minute: '2-digit'
                                         })}
                                     </td>
-                                    <td class="py-1 text-center">
-                                        <span class="badge bg-${getActionColor(log.action)} small">${getActionName(log.action)}</span>
+                                    <td class="py-0 text-center">
+                                        <span class="badge bg-${getActionColor(log.action)}" style="font-size: 0.6rem;">${getActionName(log.action)}</span>
                                     </td>
-                                    <td class="py-1 text-center fw-bold small">${log.nodeName}</td>
-                                    <td class="py-1 text-center small">
+                                    <td class="py-0 text-center fw-bold" style="font-size: 0.65rem;">${log.nodeName}</td>
+                                    <td class="py-0 text-center" style="font-size: 0.65rem;">
                                         ${log.testType ? 
                                             `<span class="text-primary">${log.testType.toUpperCase()}</span><br><span class="text-muted">${log.target || ''}</span>` : 
                                             `<span class="text-muted">${log.nodeLocation}</span>`
                                         }
                                     </td>
-                                    <td class="py-1 text-center small text-muted">${log.ip}</td>
+                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">${log.ip}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1166,6 +1184,15 @@ function initStatsPanel() {
 async function showStatsModal() {
     const modal = document.getElementById('statsModal');
     const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+    
+    // 添加事件監聽器為統計面板背景添加標識
+    modal.addEventListener('shown.bs.modal', () => {
+        const backdrop = document.querySelector('.modal-backdrop.show');
+        if (backdrop) {
+            backdrop.setAttribute('data-stats-backdrop', 'true');
+        }
+    }, { once: true });
+    
     modalInstance.show();
     
     // 載入統計數據

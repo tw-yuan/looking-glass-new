@@ -1170,8 +1170,8 @@ a:hover {
     position: relative;
     width: auto;
     margin: 1.75rem auto;
-    max-width: 75%;
-    min-width: 650px;
+    max-width: 60%;
+    min-width: 600px;
     pointer-events: none;
 }
 
@@ -1196,9 +1196,9 @@ a:hover {
 #logsModal .modal-body {
     position: relative;
     flex: 1 1 auto;
-    padding: 0.75rem;
+    padding: 0.5rem;
     overflow-y: auto;
-    max-height: calc(90vh - 120px);
+    max-height: calc(85vh - 100px);
 }
 
 /* 修復關閉動畫 */
@@ -1223,6 +1223,35 @@ a:hover {
 #logsModal .card-body > div[style*="max-height"] {
     will-change: scroll-position;
     -webkit-overflow-scrolling: touch;
+}
+
+/* 進一步壓縮日誌介面空間 */
+#logsModal .table {
+    margin-bottom: 0 !important;
+}
+
+#logsModal .table td,
+#logsModal .table th {
+    padding: 0.2rem 0.3rem !important;
+    line-height: 1.2 !important;
+}
+
+#logsModal .card-header {
+    padding: 0.3rem 0.5rem !important;
+}
+
+#logsModal .badge {
+    padding: 0.1rem 0.3rem !important;
+}
+
+/* 緊湊模式下的間距調整 */
+#logsModal .row {
+    margin: 0 !important;
+}
+
+#logsModal .row > * {
+    padding-left: 0.2rem !important;
+    padding-right: 0.2rem !important;
 }
 
 /* 日誌表格樣式優化 */
