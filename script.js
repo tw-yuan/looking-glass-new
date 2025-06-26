@@ -380,27 +380,27 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         <!-- 統計概覽 -->
         <div class="row mb-2 g-1">
             <div class="col-3">
-                <div class="text-center p-1 bg-light rounded">
-                    <h6 class="text-primary mb-0">${stats.totalTests}</h6>
-                    <small class="text-muted" style="font-size: 0.7rem;">測試</small>
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-primary mb-0">${stats.totalTests}</h5>
+                    <small class="text-muted">測試</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-1 bg-light rounded">
-                    <h6 class="text-success mb-0">${stats.totalClicks}</h6>
-                    <small class="text-muted" style="font-size: 0.7rem;">點擊</small>
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-success mb-0">${stats.totalClicks}</h5>
+                    <small class="text-muted">點擊</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-1 bg-light rounded">
-                    <h6 class="text-info mb-0">${stats.uniqueIPs.size}</h6>
-                    <small class="text-muted" style="font-size: 0.7rem;">用戶</small>
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
+                    <small class="text-muted">用戶</small>
                 </div>
             </div>
             <div class="col-3">
-                <div class="text-center p-1 bg-light rounded">
-                    <h6 class="text-warning mb-0">${recentLogs.length}</h6>
-                    <small class="text-muted" style="font-size: 0.7rem;">記錄</small>
+                <div class="text-center p-2 bg-light rounded">
+                    <h5 class="text-warning mb-0">${recentLogs.length}</h5>
+                    <small class="text-muted">記錄</small>
                 </div>
             </div>
         </div>
