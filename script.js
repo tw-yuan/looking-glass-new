@@ -181,7 +181,7 @@ async function analyzeTargetUsage(logs) {
 
 // 移除了 analyzeTestTypes 函數，因為測試類型統計不實用
 
-// 簡化目標類型偵測（保留給最近活動使用）
+// 簡化目標類型偵測（保留給最近測試使用）
 function detectTargetType(target) {
     if (!target || target === 'null') return '未知';
     if (isIPAddress(target)) return 'IP';
@@ -654,13 +654,13 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             <div class="col-6">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-primary mb-0">${stats.totalTests}</h5>
-                    <small class="text-muted">總測試</small>
+                    <small class="text-muted">次測試</small>
                 </div>
             </div>
             <div class="col-6">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-success mb-0">${targetAnalysis.length}</h5>
-                    <small class="text-muted">目標數</small>
+                    <small class="text-muted">根目標</small>
                 </div>
             </div>
         </div>
@@ -675,7 +675,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr>
-                                <th class="py-1 text-center small">目標</th>
+                                <th class="py-1 text-center small">目標與類型</th>
                                 <th class="py-1 text-center small">IP 位址</th>
                                 <th class="py-1 text-center small">ASN</th>
                                 <th class="py-1 text-center small">測試次數</th>
@@ -708,7 +708,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         <!-- 節點使用效率 -->
         <div class="card mb-2" style="margin-top: 1rem;">
             <div class="card-header py-1">
-                <small class="mb-0 fw-bold">節點使用效率</small>
+                <small class="mb-0 fw-bold">節點使用率</small>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -743,13 +743,12 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             </div>
         </div>
         
-        <!-- 最近活動 -->
+        <!-- 最近測試 -->
         <div class="card" style="margin-top: 1rem;">
             <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                <small class="mb-0 fw-bold">最近活動</small>
+                <small class="mb-0 fw-bold">最近測試</small>
                 <div>
-                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出整體日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">匯出日誌</button>
-                    <button class="btn btn-xs btn-outline-danger" onclick="clearLogs()" title="清除本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">清除本地</button>
+                    <button class="btn btn-xs btn-outline-success" onclick="exportServerLogs(event)" title="匯出日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">匯出日誌</button>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -758,10 +757,10 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                         <thead>
                             <tr>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">時間</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">動作</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">類型</th>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">目標</th>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">節點</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">IP</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">使用者IP</th>
                             </tr>
                         </thead>
                         <tbody>
