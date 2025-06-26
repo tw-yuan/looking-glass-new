@@ -1251,35 +1251,29 @@ a:hover {
     max-width: 150px;
 }
 
-/* 為不同欄位設定合適寬度 */
+/* 為不同欄位設定合適寬度 - 4欄版本 */
 #logsModal .table th:nth-child(1),
 #logsModal .table td:nth-child(1) {
-    min-width: 120px;
-    max-width: 140px;
+    min-width: 140px;
+    max-width: 160px;
 }
 
 #logsModal .table th:nth-child(2),
 #logsModal .table td:nth-child(2) {
-    min-width: 100px;
-    max-width: 120px;
+    min-width: 120px;
+    max-width: 140px;
 }
 
 #logsModal .table th:nth-child(3),
 #logsModal .table td:nth-child(3) {
-    min-width: 80px;
-    max-width: 100px;
+    min-width: 100px;
+    max-width: 120px;
 }
 
 #logsModal .table th:nth-child(4),
 #logsModal .table td:nth-child(4) {
-    min-width: 60px;
-    max-width: 80px;
-}
-
-#logsModal .table th:nth-child(5),
-#logsModal .table td:nth-child(5) {
-    min-width: 60px;
-    max-width: 80px;
+    min-width: 80px;
+    max-width: 100px;
 }
 
 /* Tooltip 效果 */

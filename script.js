@@ -414,8 +414,10 @@ function formatASNInfo(resolvedInfo) {
     const asn = resolvedInfo.asn;
     const fullName = asn.name || 'Unknown';
     const displayName = fullName.length > 12 ? fullName.substring(0, 12) + '...' : fullName;
+    const asnNumber = asn.number;
+    const bgpToolsUrl = `https://bgp.tools/as/${asnNumber}`;
     
-    return `<div class="fw-bold text-warning" title="AS${asn.number} ${fullName}">AS${asn.number}</div><small class="text-muted" title="${fullName}">${displayName}</small>`;
+    return `<div class="fw-bold"><a href="${bgpToolsUrl}" target="_blank" rel="noopener noreferrer" class="text-warning text-decoration-none" title="AS${asnNumber} ${fullName}">AS${asnNumber}</a></div><small class="text-muted" title="${fullName}">${displayName}</small>`;
 }
 
 // 顯示使用日誌
@@ -649,19 +651,13 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     container.innerHTML = `
         <!-- 統計概覽 -->
         <div class="row mb-2 g-1">
-            <div class="col-4">
+            <div class="col-6">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-primary mb-0">${stats.totalTests}</h5>
                     <small class="text-muted">總測試</small>
                 </div>
             </div>
-            <div class="col-4">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
-                    <small class="text-muted">用戶數</small>
-                </div>
-            </div>
-            <div class="col-4">
+            <div class="col-6">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-success mb-0">${targetAnalysis.length}</h5>
                     <small class="text-muted">目標數</small>
@@ -683,7 +679,6 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                 <th class="py-1 text-center small">IP 位址</th>
                                 <th class="py-1 text-center small">ASN</th>
                                 <th class="py-1 text-center small">測試次數</th>
-                                <th class="py-1 text-center small">使用者</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -701,9 +696,6 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                     </td>
                                     <td class="py-1 text-center">
                                         <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        <span class="badge bg-info" style="font-size: 0.7rem;">${target.uniqueUsers}</span>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -726,7 +718,6 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                 <th class="py-1 text-center small">節點</th>
                                 <th class="py-1 text-center small">提供者</th>
                                 <th class="py-1 text-center small">測試數</th>
-                                <th class="py-1 text-center small">使用者</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -744,9 +735,6 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                     <td class="py-1 text-center">
                                         <span class="badge bg-primary" style="font-size: 0.7rem;">${node.tests}</span>
                                     </td>
-                                    <td class="py-1 text-center">
-                                        <span class="badge bg-success" style="font-size: 0.7rem;">${node.uniqueUsers}</span>
-                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -760,9 +748,8 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             <div class="card-header py-1 d-flex justify-content-between align-items-center">
                 <small class="mb-0 fw-bold">最近活動</small>
                 <div>
-                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出整體日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">整體匯出</button>
-                    <button class="btn btn-xs btn-outline-info me-1" onclick="exportLogs(event)" title="匯出本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">本地匯出</button>
-                    <button class="btn btn-xs btn-outline-danger" onclick="clearLogs()" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">清除本地</button>
+                    <button class="btn btn-xs btn-outline-success me-1" onclick="exportServerLogs(event)" title="匯出整體日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">匯出日誌</button>
+                    <button class="btn btn-xs btn-outline-danger" onclick="clearLogs()" title="清除本地日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">清除本地</button>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -1907,8 +1894,8 @@ function updateNodeDetailsList(nodeDetails) {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(node => {
             const statusBadge = node.status === 'online' 
-                ? '<span class="badge bg-success me-2">上線</span>'
-                : '<span class="badge bg-danger me-2">斷線</span>';
+                ? '<span class="badge bg-success me-2">線上</span>'
+                : '<span class="badge bg-danger me-2">下線</span>';
             
             const locationText = node.location_zh 
                 ? `${node.location_zh}<br><small class="text-muted">${node.location}</small>`
