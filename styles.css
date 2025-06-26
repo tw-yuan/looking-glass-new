@@ -1245,6 +1245,60 @@ a:hover {
 #logsModal .table th {
     padding: 0.375rem 0.5rem !important;
     line-height: 1.5 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* 為不同欄位設定合適寬度 */
+#logsModal .table th:nth-child(1),
+#logsModal .table td:nth-child(1) {
+    min-width: 120px;
+    max-width: 140px;
+}
+
+#logsModal .table th:nth-child(2),
+#logsModal .table td:nth-child(2) {
+    min-width: 100px;
+    max-width: 120px;
+}
+
+#logsModal .table th:nth-child(3),
+#logsModal .table td:nth-child(3) {
+    min-width: 80px;
+    max-width: 100px;
+}
+
+#logsModal .table th:nth-child(4),
+#logsModal .table td:nth-child(4) {
+    min-width: 60px;
+    max-width: 80px;
+}
+
+#logsModal .table th:nth-child(5),
+#logsModal .table td:nth-child(5) {
+    min-width: 60px;
+    max-width: 80px;
+}
+
+/* Tooltip 效果 */
+#logsModal [title] {
+    cursor: help;
+    position: relative;
+}
+
+#logsModal [title]:hover {
+    background-color: var(--light-bg);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+/* 確保文字不會被截斷時顯示省略號 */
+#logsModal .text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #logsModal .card-header {

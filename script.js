@@ -387,13 +387,15 @@ function formatTargetIPs(resolvedInfo) {
     
     const ips = [];
     if (resolvedInfo.ips.v4 && resolvedInfo.ips.v4.length > 0) {
-        ips.push(`<span class="text-info">${resolvedInfo.ips.v4[0]}</span>`);
+        const fullIP = resolvedInfo.ips.v4[0];
+        ips.push(`<span class="text-info" title="${fullIP}">${fullIP}</span>`);
     }
     if (resolvedInfo.ips.v6 && resolvedInfo.ips.v6.length > 0) {
-        const ipv6Display = resolvedInfo.ips.v6[0].length > 20 ? 
-            resolvedInfo.ips.v6[0].substring(0, 20) + '...' : 
-            resolvedInfo.ips.v6[0];
-        ips.push(`<span class="text-success">${ipv6Display}</span>`);
+        const fullIPv6 = resolvedInfo.ips.v6[0];
+        const ipv6Display = fullIPv6.length > 16 ? 
+            fullIPv6.substring(0, 16) + '...' : 
+            fullIPv6;
+        ips.push(`<span class="text-success" title="${fullIPv6}">${ipv6Display}</span>`);
     }
     
     if (ips.length === 0) {
@@ -410,8 +412,10 @@ function formatASNInfo(resolvedInfo) {
     }
     
     const asn = resolvedInfo.asn;
-    const asnName = asn.name ? asn.name.substring(0, 15) + (asn.name.length > 15 ? '...' : '') : 'Unknown';
-    return `<div class="fw-bold text-warning">AS${asn.number}</div><small class="text-muted">${asnName}</small>`;
+    const fullName = asn.name || 'Unknown';
+    const displayName = fullName.length > 12 ? fullName.substring(0, 12) + '...' : fullName;
+    
+    return `<div class="fw-bold text-warning" title="AS${asn.number} ${fullName}">AS${asn.number}</div><small class="text-muted" title="${fullName}">${displayName}</small>`;
 }
 
 // 顯示使用日誌
