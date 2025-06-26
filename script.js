@@ -138,7 +138,7 @@ async function logUsage(action, details = {}) {
 }
 
 // 分析 Target 使用情況 - 進階版本
-function analyzeTargetUsage(logs) {
+async function analyzeTargetUsage(logs) {
     const targetStats = {};
     
     logs.forEach(log => {
@@ -173,40 +173,13 @@ function analyzeTargetUsage(logs) {
         }))
         .sort((a, b) => b.count - a.count);
     
-    // 異步解析 DNS 和 ASN 資訊
-    result.forEach(target => {
-        resolveTargetInfo(target);
-    });
+    // 同步等待所有 DNS 和 ASN 查詢完成
+    await Promise.all(result.map(target => resolveTargetInfo(target)));
     
     return result;
 }
 
-// 分析測試類型使用情況
-function analyzeTestTypes(logs) {
-    const typeStats = {};
-    
-    logs.forEach(log => {
-        if (log.action === 'test_started' && log.testType) {
-            if (!typeStats[log.testType]) {
-                typeStats[log.testType] = {
-                    count: 0,
-                    uniqueUsers: new Set(),
-                    targets: new Set()
-                };
-            }
-            
-            typeStats[log.testType].count++;
-            if (log.ip && log.ip !== 'unknown') {
-                typeStats[log.testType].uniqueUsers.add(log.ip);
-            }
-            if (log.target && log.target !== 'null') {
-                typeStats[log.testType].targets.add(log.target);
-            }
-        }
-    });
-    
-    return typeStats;
-}
+// 移除了 analyzeTestTypes 函數，因為測試類型統計不實用
 
 // 簡化目標類型偵測（保留給最近活動使用）
 function detectTargetType(target) {
@@ -255,8 +228,10 @@ async function resolveTargetInfo(target) {
                     asn: asnInfo
                 };
                 targetResolutionCache.set(targetName, target.resolvedInfo);
+                console.log(`解析完成 IP: ${targetName}`, target.resolvedInfo);
             } catch (error) {
                 console.log(`無法查詢 ${targetName} 的 ASN 資訊`);
+                target.resolvedInfo = { ips: { v4: [], v6: [] }, asn: null };
             }
         } else {
             target.resolvedInfo = targetResolutionCache.get(targetName);
@@ -267,11 +242,14 @@ async function resolveTargetInfo(target) {
     // 如果是域名，進行 DNS 解析
     if (!targetResolutionCache.has(targetName)) {
         try {
+            console.log(`開始解析域名: ${targetName}`);
             const dnsInfo = await resolveDNS(targetName);
             target.resolvedInfo = dnsInfo;
             targetResolutionCache.set(targetName, dnsInfo);
+            console.log(`解析完成域名: ${targetName}`, dnsInfo);
         } catch (error) {
-            console.log(`無法解析 ${targetName}`);
+            console.log(`無法解析 ${targetName}`, error);
+            target.resolvedInfo = { ips: { v4: [], v6: [] }, asn: null };
         }
     } else {
         target.resolvedInfo = targetResolutionCache.get(targetName);
@@ -288,14 +266,10 @@ function isIPAddress(target) {
 // DNS 解析函數
 async function resolveDNS(hostname) {
     try {
-        // 使用 DNS over HTTPS 進行解析
+        // 使用 DNS over HTTPS (Google) 進行解析
         const promises = [
-            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=A`, {
-                headers: { 'Accept': 'application/dns-json' }
-            }),
-            fetch(`https://cloudflare-dns.com/dns-query?name=${hostname}&type=AAAA`, {
-                headers: { 'Accept': 'application/dns-json' }
-            })
+            fetch(`https://dns.google/resolve?name=${hostname}&type=A`),
+            fetch(`https://dns.google/resolve?name=${hostname}&type=AAAA`)
         ];
         
         const [ipv4Response, ipv6Response] = await Promise.all(promises);
@@ -304,8 +278,8 @@ async function resolveDNS(hostname) {
         
         const result = {
             ips: {
-                v4: ipv4Data.Answer ? ipv4Data.Answer.map(a => a.data) : [],
-                v6: ipv6Data.Answer ? ipv6Data.Answer.map(a => a.data) : []
+                v4: ipv4Data.Answer ? ipv4Data.Answer.filter(a => a.type === 1).map(a => a.data) : [],
+                v6: ipv6Data.Answer ? ipv6Data.Answer.filter(a => a.type === 28).map(a => a.data) : []
             },
             asn: null
         };
@@ -318,19 +292,23 @@ async function resolveDNS(hostname) {
         
         return result;
     } catch (error) {
-        throw new Error(`DNS 解析失敗: ${error.message}`);
+        console.log(`DNS 解析失敗: ${error.message}`);
+        return {
+            ips: { v4: [], v6: [] },
+            asn: null
+        };
     }
 }
 
 // 查詢 ASN 資訊
 async function getASNInfo(ip) {
     try {
-        // 使用 ipinfo.io API
-        const response = await fetch(`https://ipinfo.io/${ip}/json`);
+        // 使用 ip-api.com API (免費且支援 CORS)
+        const response = await fetch(`https://ip-api.com/json/${ip}?fields=status,as,org`);
         const data = await response.json();
         
-        if (data.org) {
-            const asnMatch = data.org.match(/^AS(\d+)\s+(.+)$/);
+        if (data.status === 'success' && data.as) {
+            const asnMatch = data.as.match(/^AS(\d+)\s+(.+)$/);
             if (asnMatch) {
                 return {
                     number: asnMatch[1],
@@ -357,7 +335,10 @@ function formatTargetIPs(resolvedInfo) {
         ips.push(`<span class="text-info">${resolvedInfo.ips.v4[0]}</span>`);
     }
     if (resolvedInfo.ips.v6 && resolvedInfo.ips.v6.length > 0) {
-        ips.push(`<span class="text-success">${resolvedInfo.ips.v6[0].substring(0, 20)}...</span>`);
+        const ipv6Display = resolvedInfo.ips.v6[0].length > 20 ? 
+            resolvedInfo.ips.v6[0].substring(0, 20) + '...' : 
+            resolvedInfo.ips.v6[0];
+        ips.push(`<span class="text-success">${ipv6Display}</span>`);
     }
     
     if (ips.length === 0) {
@@ -374,7 +355,8 @@ function formatASNInfo(resolvedInfo) {
     }
     
     const asn = resolvedInfo.asn;
-    return `<div class="fw-bold text-warning">AS${asn.number}</div><small class="text-muted">${asn.name.substring(0, 15)}...</small>`;
+    const asnName = asn.name ? asn.name.substring(0, 15) + (asn.name.length > 15 ? '...' : '') : 'Unknown';
+    return `<div class="fw-bold text-warning">AS${asn.number}</div><small class="text-muted">${asnName}</small>`;
 }
 
 // 顯示使用日誌
@@ -480,7 +462,7 @@ async function showUsageLogs() {
         .sort((a, b) => b.tests - a.tests);
     
     // 更新現有模態框內容
-    updateLogsModalContent(stats, nodeUsageArray, recentLogs);
+    await updateLogsModalContent(stats, nodeUsageArray, recentLogs);
 }
 
 // 顯示日誌模態框
@@ -590,7 +572,7 @@ function showLogsModal() {
 }
 
 // 更新日誌模態框內容 - Target 分析導向
-function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
+async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const modalBody = document.getElementById('logsModalBody');
     if (!modalBody) return;
     
@@ -603,34 +585,27 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const maxLogDisplay = 25;
     
     // 分析 Target 使用情況
-    const targetAnalysis = analyzeTargetUsage(recentLogs);
-    const testTypeStats = analyzeTestTypes(recentLogs);
+    const targetAnalysis = await analyzeTargetUsage(recentLogs);
     
     container.innerHTML = `
         <!-- 統計概覽 -->
         <div class="row mb-2 g-1">
-            <div class="col-3">
+            <div class="col-4">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-primary mb-0">${stats.totalTests}</h5>
                     <small class="text-muted">總測試</small>
                 </div>
             </div>
-            <div class="col-3">
+            <div class="col-4">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-info mb-0">${stats.uniqueIPs.size}</h5>
                     <small class="text-muted">用戶數</small>
                 </div>
             </div>
-            <div class="col-3">
+            <div class="col-4">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-success mb-0">${targetAnalysis.length}</h5>
                     <small class="text-muted">目標數</small>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="text-center p-2 bg-light rounded">
-                    <h5 class="text-warning mb-0">${Object.keys(testTypeStats).length}</h5>
-                    <small class="text-muted">測試類型</small>
                 </div>
             </div>
         </div>
