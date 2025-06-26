@@ -660,7 +660,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             <div class="col-6">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-success mb-0">${targetAnalysis.length}</h5>
-                    <small class="text-muted">根目標</small>
+                    <small class="text-muted">種目標</small>
                 </div>
             </div>
         </div>
