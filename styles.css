@@ -1295,6 +1295,34 @@ a:hover {
     text-overflow: ellipsis;
 }
 
+/* 統計面板進度條對齊優化 */
+#regionStats .progress,
+#networkStats .progress {
+    border-radius: 4px;
+    background-color: var(--light-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#regionStats .progress-bar,
+#networkStats .progress-bar {
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* 統計項目對齊 */
+#regionStats .d-flex,
+#networkStats .d-flex {
+    min-height: 24px;
+}
+
+/* 文字長度統一 */
+#regionStats .text-muted,
+#networkStats .text-muted {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+}
+
 #logsModal .card-header {
     padding: 0.5rem 0.75rem !important;
 }

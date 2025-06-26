@@ -759,8 +759,8 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                             <tr>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">時間</th>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">動作</th>
+                                <th class="py-0 text-center" style="font-size: 0.7rem;">目標</th>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">節點</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">詳細</th>
                                 <th class="py-0 text-center" style="font-size: 0.7rem;">IP</th>
                             </tr>
                         </thead>
@@ -1846,13 +1846,17 @@ function updateRegionStats(regionData) {
             const percentage = Math.round((count / total) * 100);
             const regionName = regionNames[region] || region;
             return `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>${regionName}</span>
-                    <div class="d-flex align-items-center">
-                        <div class="progress me-2" style="width: 100px; height: 6px;">
-                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-fill" style="min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-truncate" style="max-width: 80px;">${regionName}</span>
+                            <div class="d-flex align-items-center ms-2">
+                                <div class="progress me-2" style="width: 100px; height: 8px;">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-muted" style="min-width: 60px; text-align: right;">${count} (${percentage}%)</span>
+                            </div>
                         </div>
-                        <span class="text-muted">${count} (${percentage}%)</span>
                     </div>
                 </div>
             `;
@@ -1871,13 +1875,17 @@ function updateNetworkStats(networkData) {
         .map(([network, count]) => {
             const percentage = Math.round((count / total) * 100);
             return `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>${network}</span>
-                    <div class="d-flex align-items-center">
-                        <div class="progress me-2" style="width: 100px; height: 6px;">
-                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-fill" style="min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-truncate" style="max-width: 80px;">${network}</span>
+                            <div class="d-flex align-items-center ms-2">
+                                <div class="progress me-2" style="width: 100px; height: 8px;">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-muted" style="min-width: 60px; text-align: right;">${count} (${percentage}%)</span>
+                            </div>
                         </div>
-                        <span class="text-muted">${count} (${percentage}%)</span>
                     </div>
                 </div>
             `;
@@ -1894,7 +1902,7 @@ function updateNodeDetailsList(nodeDetails) {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(node => {
             const statusBadge = node.status === 'online' 
-                ? '<span class="badge bg-success me-2">線上</span>'
+                ? '<span class="badge bg-success me-2">上線</span>'
                 : '<span class="badge bg-danger me-2">下線</span>';
             
             const locationText = node.location_zh 
