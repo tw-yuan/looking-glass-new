@@ -181,64 +181,6 @@ async function analyzeTargetUsage(logs) {
 
 // 移除了 analyzeTestTypes 函數，因為測試類型統計不實用
 
-// 測試功能 - 添加一些示例數據
-function addTestData() {
-    const testLogs = [
-        {
-            action: 'test_started',
-            target: 'google.com',
-            testType: 'ping',
-            nodeName: 'HK-1',
-            nodeLocation: 'Hong Kong',
-            ip: '1.2.3.4',
-            timestamp: new Date().toISOString(),
-            sessionId: 'test-session-1'
-        },
-        {
-            action: 'test_started',
-            target: '8.8.8.8',
-            testType: 'mtr',
-            nodeName: 'US-1',
-            nodeLocation: 'Los Angeles',
-            ip: '1.2.3.4',
-            timestamp: new Date().toISOString(),
-            sessionId: 'test-session-1'
-        },
-        {
-            action: 'test_started',
-            target: 'github.com',
-            testType: 'traceroute',
-            nodeName: 'JP-1',
-            nodeLocation: 'Tokyo',
-            ip: '5.6.7.8',
-            timestamp: new Date().toISOString(),
-            sessionId: 'test-session-2'
-        }
-    ];
-    
-    // 添加到本地存儲
-    const existingLogs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
-    const newLogs = [...existingLogs, ...testLogs];
-    localStorage.setItem('lookingGlassLogs', JSON.stringify(newLogs));
-    
-    console.log('測試數據已添加！現在可以打開使用情況分析查看新功能。');
-    alert('測試數據已添加！現在可以打開使用情況分析查看新功能。');
-}
-
-// 在網頁加載後自動添加測試按鈕
-window.addEventListener('load', function() {
-    // 添加一個隱藏的測試按鈕
-    const testBtn = document.createElement('button');
-    testBtn.innerHTML = '測試新功能';
-    testBtn.className = 'btn btn-warning btn-sm';
-    testBtn.style.position = 'fixed';
-    testBtn.style.top = '20px';
-    testBtn.style.left = '20px';
-    testBtn.style.zIndex = '9999';
-    testBtn.onclick = addTestData;
-    document.body.appendChild(testBtn);
-});
-
 // 簡化目標類型偵測（保留給最近活動使用）
 function detectTargetType(target) {
     if (!target || target === 'null') return '未知';
@@ -705,7 +647,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                         <span class="badge bg-info" style="font-size: 0.7rem;">${target.uniqueUsers}</span>
                                     </td>
                                 </tr>
-                            `).join('') : '<tr><td colspan="5" class="text-center text-muted p-3"><small>尚無測試記錄，點擊左上角「測試新功能」按鈕添加示例數據</small></td></tr>'}
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
