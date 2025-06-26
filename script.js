@@ -406,7 +406,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         </div>
         
         <!-- 節點使用情況 -->
-        <div class="card mb-2">
+        <div class="card mb-2" style="margin-top: 1rem;">
             <div class="card-header py-1">
                 <small class="mb-0 fw-bold">各節點使用情況</small>
             </div>
@@ -448,7 +448,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         </div>
         
         <!-- 最近活動 -->
-        <div class="card">
+        <div class="card" style="margin-top: 1rem;">
             <div class="card-header py-1 d-flex justify-content-between align-items-center">
                 <small class="mb-0 fw-bold">最近活動 (全域)</small>
                 <div>

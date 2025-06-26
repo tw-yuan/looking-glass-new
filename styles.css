@@ -1170,8 +1170,8 @@ a:hover {
     position: relative;
     width: auto;
     margin: 1.75rem auto;
-    max-width: 60%;
-    min-width: 600px;
+    max-width: 45%;
+    min-width: 480px;
     pointer-events: none;
 }
 
@@ -1252,6 +1252,21 @@ a:hover {
 #logsModal .row > * {
     padding-left: 0.2rem !important;
     padding-right: 0.2rem !important;
+}
+
+/* 防止內容太擠 */
+#logsModal .table-responsive {
+    font-size: 0.85rem !important;
+}
+
+#logsModal .card {
+    overflow: hidden;
+}
+
+/* 確保按鈕不會太小 */
+#logsModal .btn {
+    min-width: auto !important;
+    white-space: nowrap;
 }
 
 /* 日誌表格樣式優化 */
@@ -1406,7 +1421,7 @@ a:hover {
     
     /* 手機版日誌模態框 */
     #logsModal .modal-dialog {
-        max-width: 95% !important;
+        max-width: 90% !important;
         min-width: auto !important;
         margin: 0.5rem auto !important;
     }
