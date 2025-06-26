@@ -267,9 +267,9 @@ function showLogsModal() {
         modal.className = 'modal fade';
         modal.id = 'logsModal';
         modal.setAttribute('tabindex', '-1');
-        modal.setAttribute('data-bs-backdrop', 'static');
+        modal.setAttribute('data-bs-backdrop', 'true');
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">全域日誌分析</h5>
@@ -294,6 +294,24 @@ function showLogsModal() {
         
         // 清理 modal
         modal.addEventListener('hidden.bs.modal', () => {
+            // 重置統計面板的層級
+            const statsModal = document.getElementById('statsModal');
+            if (statsModal && statsModal.classList.contains('show')) {
+                statsModal.style.zIndex = '';
+            }
+            
+            // 確保移除所有背景和重置 body 狀態
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                if (backdrop.parentNode) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+            });
+            
             // 延遲移除，避免動畫問題
             setTimeout(() => {
                 if (modal.parentNode) {
@@ -342,7 +360,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     
     container.innerHTML = `
         <!-- 統計概覽 -->
-        <div class="row mb-3">
+        <div class="row mb-2 g-2">
             <div class="col-3">
                 <div class="text-center p-2 bg-light rounded">
                     <h5 class="text-primary mb-0">${stats.totalTests}</h5>
@@ -370,7 +388,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
         </div>
         
         <!-- 節點使用情況 -->
-        <div class="card mb-3">
+        <div class="card mb-2">
             <div class="card-header py-2">
                 <h6 class="mb-0">各節點使用情況</h6>
             </div>
@@ -379,28 +397,28 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr>
-                                <th class="py-2 text-center">節點</th>
-                                <th class="py-2 text-center">提供者</th>
-                                <th class="py-2 text-center">點擊</th>
-                                <th class="py-2 text-center">測試</th>
-                                <th class="py-2 text-center">用戶</th>
+                                <th class="py-1 text-center">節點</th>
+                                <th class="py-1 text-center">提供者</th>
+                                <th class="py-1 text-center">點擊</th>
+                                <th class="py-1 text-center">測試</th>
+                                <th class="py-1 text-center">用戶</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${nodeUsageArray.slice(0, maxNodeDisplay).map(node => `
                                 <tr>
-                                    <td class="py-2 text-center">
+                                    <td class="py-1 text-center">
                                         <div class="fw-bold">${node.name}</div>
                                         <small class="text-muted">${node.location}</small>
                                     </td>
-                                    <td class="py-2 text-center">${node.provider}</td>
-                                    <td class="py-2 text-center">
+                                    <td class="py-1 text-center">${node.provider}</td>
+                                    <td class="py-1 text-center">
                                         ${node.clicks > 0 ? `<span class="badge bg-info">${node.clicks}</span>` : '<span class="text-muted">-</span>'}
                                     </td>
-                                    <td class="py-2 text-center">
+                                    <td class="py-1 text-center">
                                         ${node.tests > 0 ? `<span class="badge bg-primary">${node.tests}</span>` : '<span class="text-muted">-</span>'}
                                     </td>
-                                    <td class="py-2 text-center">
+                                    <td class="py-1 text-center">
                                         ${node.uniqueUsers > 0 ? `<span class="badge bg-success">${node.uniqueUsers}</span>` : '<span class="text-muted">-</span>'}
                                     </td>
                                 </tr>
@@ -422,7 +440,7 @@ function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                 </div>
             </div>
             <div class="card-body p-0">
-                <div style="max-height: 250px; overflow-y: auto;">
+                <div style="max-height: 200px; overflow-y: auto;">
                     <table class="table table-sm mb-0">
                         <thead>
                             <tr>

@@ -1170,7 +1170,8 @@ a:hover {
     position: relative;
     width: auto;
     margin: 1.75rem auto;
-    max-width: 90%;
+    max-width: 75%;
+    min-width: 650px;
     pointer-events: none;
 }
 
@@ -1195,7 +1196,7 @@ a:hover {
 #logsModal .modal-body {
     position: relative;
     flex: 1 1 auto;
-    padding: 1rem;
+    padding: 0.75rem;
     overflow-y: auto;
     max-height: calc(90vh - 120px);
 }
@@ -1371,7 +1372,26 @@ a:hover {
     
     /* 滾動區域優化 */
     #logsModal .card-body > div[style*="max-height"] {
-        max-height: 200px !important;
+        max-height: 150px !important;
+    }
+    
+    /* 手機版日誌模態框 */
+    #logsModal .modal-dialog {
+        max-width: 95% !important;
+        min-width: auto !important;
+        margin: 0.5rem auto !important;
+    }
+    
+    #logsModal .modal-body {
+        padding: 0.5rem !important;
+    }
+    
+    #logsModal .row .col-3 {
+        padding: 0.25rem !important;
+    }
+    
+    #logsModal .card {
+        margin-bottom: 0.5rem !important;
     }
 }
 
