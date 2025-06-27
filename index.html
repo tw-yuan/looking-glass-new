@@ -119,14 +119,72 @@
     </button>
     
     <main class="container py-5">
-        <div class="text-center mb-4">
+        <!-- 電腦版標題區域 -->
+        <div class="text-center mb-4 desktop-only">
             <h1 class="mb-2">Looking Glass</h1>
             <p class="text-muted mb-0">由一群 BGP Player 維護的開源網路監控專案</p>
         </div>
         
-        <section class="row justify-content-center g-4" id="nodesContainer" aria-label="網路節點列表">
+        <!-- 電腦版節點容器 -->
+        <section class="row justify-content-center g-4 desktop-only" id="nodesContainer" aria-label="網路節點列表">
             <!-- 節點卡片將由 JavaScript 動態生成 -->
         </section>
+
+        <!-- 手機版專用界面 -->
+        <div class="mobile-only d-none">
+            <!-- 手機版頂部導航欄 -->
+            <div class="mobile-header">
+                <h1>Looking Glass</h1>
+                <div class="header-actions">
+                    <button class="btn" id="mobileThemeToggle" aria-label="切換深色模式">
+                        <i class="bi bi-moon-fill"></i>
+                    </button>
+                    <button class="btn" id="mobileStatsBtn" aria-label="節點統計">
+                        <i class="bi bi-graph-up"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 手機版節點選擇區域 -->
+            <div class="mobile-node-selector">
+                <div class="node-selector-title">選擇測試節點</div>
+                <div class="mobile-nodes-list" id="mobileNodesList">
+                    <!-- 手機版節點列表將由 JavaScript 動態生成 -->
+                </div>
+            </div>
+
+            <!-- 手機版測試區域 -->
+            <div class="mobile-test-area">
+                <div class="mobile-test-form">
+                    <div class="mb-3">
+                        <label for="mobileTargetHost" class="form-label">目標主機</label>
+                        <input type="text" class="form-control" id="mobileTargetHost" placeholder="輸入 IP 或域名">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mobileTestType" class="form-label">測試類型</label>
+                        <select class="form-select" id="mobileTestType">
+                            <option value="ping">Ping</option>
+                            <option value="traceroute">Traceroute</option>
+                            <option value="mtr">MTR</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="mobileStartTest" disabled>請先選擇節點</button>
+                </div>
+
+                <!-- 手機版測試結果區域 -->
+                <div class="mobile-test-results d-none" id="mobileTestResults">
+                    <div class="result-header">
+                        <span id="mobileResultTitle">測試結果</span>
+                        <button class="btn btn-sm" id="mobileCopyResult" style="background: rgba(255,255,255,0.2); border: none; color: white;">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <div class="result-content" id="mobileResultContent">
+                        <!-- 測試結果將顯示在這裡 -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
 
         <!-- 模態框 -->

@@ -2377,5 +2377,303 @@ async function checkMainNodeStatus() {
     await Promise.allSettled(statusChecks);
 }
 
+// === 手機版專用功能 ===
+
+// 手機版變數
+let mobileSelectedNode = null;
+let mobileCurrentTest = null;
+
+// 手機版初始化
+function initMobileVersion() {
+    if (window.innerWidth <= 768) {
+        renderMobileNodes();
+        setupMobileEventListeners();
+    }
+}
+
+// 渲染手機版節點列表
+function renderMobileNodes() {
+    const container = document.getElementById('mobileNodesList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    nodesData.nodes.forEach((node, index) => {
+        const nodeItem = document.createElement('div');
+        nodeItem.className = 'mobile-node-item';
+        nodeItem.dataset.nodeIndex = index;
+        
+        nodeItem.innerHTML = `
+            <div class="node-info">
+                <div class="node-name">${node.name_zh || node.name}</div>
+                <div class="node-location">${node.location_zh || node.location}</div>
+                <div class="node-provider">${node.provider}</div>
+            </div>
+            <div class="node-status">
+                <div class="status-indicator offline" id="mobile_status_${index}"></div>
+            </div>
+        `;
+        
+        // 添加點擊事件
+        nodeItem.addEventListener('click', () => selectMobileNode(node, index));
+        
+        container.appendChild(nodeItem);
+    });
+    
+    // 檢查節點狀態
+    checkMobileNodeStatus();
+}
+
+// 檢查手機版節點狀態
+async function checkMobileNodeStatus() {
+    const statusChecks = nodesData.nodes.map(async (node, index) => {
+        const statusIndicator = document.getElementById(`mobile_status_${index}`);
+        
+        try {
+            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'ping',
+                    target: '8.8.8.8',
+                    limit: 1,
+                    locations: [{ magic: node.tags }]
+                })
+            });
+            
+            const data = await testResponse.json();
+            
+            if (data.id) {
+                statusIndicator.className = 'status-indicator online';
+            } else {
+                statusIndicator.className = 'status-indicator offline';
+            }
+        } catch (error) {
+            statusIndicator.className = 'status-indicator offline';
+        }
+    });
+    
+    await Promise.allSettled(statusChecks);
+}
+
+// 選擇手機版節點
+function selectMobileNode(node, index) {
+    // 清除之前的選擇
+    document.querySelectorAll('.mobile-node-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // 選中當前節點
+    const selectedItem = document.querySelector(`[data-node-index="${index}"]`);
+    selectedItem.classList.add('selected');
+    
+    mobileSelectedNode = { ...node, index };
+    
+    // 更新測試按鈕
+    const testButton = document.getElementById('mobileStartTest');
+    testButton.disabled = false;
+    testButton.textContent = '開始測試';
+}
+
+// 設置手機版事件監聽器
+function setupMobileEventListeners() {
+    // 主題切換按鈕
+    const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+    if (mobileThemeToggle) {
+        mobileThemeToggle.addEventListener('click', () => {
+            toggleTheme();
+            updateMobileThemeIcon();
+        });
+    }
+    
+    // 統計按鈕
+    const mobileStatsBtn = document.getElementById('mobileStatsBtn');
+    if (mobileStatsBtn) {
+        mobileStatsBtn.addEventListener('click', showStatsModal);
+    }
+    
+    // 開始測試按鈕
+    const mobileStartTest = document.getElementById('mobileStartTest');
+    if (mobileStartTest) {
+        mobileStartTest.addEventListener('click', startMobileTest);
+    }
+    
+    // 複製結果按鈕
+    const mobileCopyResult = document.getElementById('mobileCopyResult');
+    if (mobileCopyResult) {
+        mobileCopyResult.addEventListener('click', copyMobileResult);
+    }
+}
+
+// 開始手機版測試
+async function startMobileTest() {
+    if (!mobileSelectedNode) return;
+    
+    const targetHost = document.getElementById('mobileTargetHost').value.trim();
+    const testType = document.getElementById('mobileTestType').value;
+    
+    if (!targetHost) {
+        alert('請輸入目標主機');
+        return;
+    }
+    
+    const testButton = document.getElementById('mobileStartTest');
+    const resultsContainer = document.getElementById('mobileTestResults');
+    const resultTitle = document.getElementById('mobileResultTitle');
+    const resultContent = document.getElementById('mobileResultContent');
+    
+    // 更新UI狀態
+    testButton.disabled = true;
+    testButton.textContent = '測試中...';
+    resultsContainer.classList.remove('d-none');
+    resultTitle.textContent = `${mobileSelectedNode.name_zh || mobileSelectedNode.name} - ${testType.toUpperCase()}`;
+    resultContent.textContent = '正在執行測試，請稍候...';
+    
+    try {
+        // 記錄使用日誌
+        await logUsage('test_started', {
+            nodeName: mobileSelectedNode.name,
+            nodeLocation: mobileSelectedNode.location,
+            testType: testType,
+            target: targetHost
+        });
+        
+        // 發送測試請求
+        const response = await fetch('https://api.globalping.io/v1/measurements', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: testType,
+                target: targetHost,
+                limit: 1,
+                locations: [{
+                    magic: mobileSelectedNode.tags
+                }]
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.id) {
+            mobileCurrentTest = data.id;
+            // 輪詢測試結果
+            pollMobileTestResult(data.id);
+        } else {
+            throw new Error('測試創建失敗');
+        }
+        
+    } catch (error) {
+        resultContent.textContent = `測試失敗: ${error.message}`;
+        testButton.disabled = false;
+        testButton.textContent = '重新測試';
+    }
+}
+
+// 輪詢手機版測試結果
+async function pollMobileTestResult(testId) {
+    const resultContent = document.getElementById('mobileResultContent');
+    const testButton = document.getElementById('mobileStartTest');
+    
+    try {
+        const response = await fetch(`https://api.globalping.io/v1/measurements/${testId}`);
+        const data = await response.json();
+        
+        if (data.status === 'finished') {
+            // 測試完成，顯示結果
+            if (data.results && data.results.length > 0) {
+                const result = data.results[0];
+                resultContent.textContent = result.result.output || result.result.rawOutput || '測試完成，但無輸出內容';
+            } else {
+                resultContent.textContent = '測試完成，但沒有結果';
+            }
+            
+            testButton.disabled = false;
+            testButton.textContent = '重新測試';
+            
+        } else if (data.status === 'in-progress') {
+            // 繼續輪詢
+            setTimeout(() => pollMobileTestResult(testId), 2000);
+            
+        } else {
+            // 測試失敗
+            resultContent.textContent = `測試狀態異常: ${data.status}`;
+            testButton.disabled = false;
+            testButton.textContent = '重新測試';
+        }
+        
+    } catch (error) {
+        resultContent.textContent = `獲取結果失敗: ${error.message}`;
+        testButton.disabled = false;
+        testButton.textContent = '重新測試';
+    }
+}
+
+// 複製手機版測試結果
+async function copyMobileResult() {
+    const resultContent = document.getElementById('mobileResultContent');
+    const text = resultContent.textContent;
+    
+    try {
+        await navigator.clipboard.writeText(text);
+        
+        const copyBtn = document.getElementById('mobileCopyResult');
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+        }, 2000);
+        
+    } catch (err) {
+        // 降級方案
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        alert('結果已複製到剪貼簿');
+    }
+}
+
+// 更新手機版主題圖標
+function updateMobileThemeIcon() {
+    const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+    if (!mobileThemeToggle) return;
+    
+    const icon = mobileThemeToggle.querySelector('i');
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    
+    if (currentTheme === 'dark') {
+        icon.className = 'bi bi-sun-fill';
+    } else {
+        icon.className = 'bi bi-moon-fill';
+    }
+}
+
+// 響應式檢測和初始化
+function handleResponsiveChanges() {
+    if (window.innerWidth <= 768) {
+        // 切換到手機版
+        initMobileVersion();
+    }
+}
+
+// 在原有的初始化代碼中添加手機版初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 響應式初始化
+    handleResponsiveChanges();
+    
+    // 監聽窗口大小變化
+    window.addEventListener('resize', handleResponsiveChanges);
+});
+
 
  
