@@ -6,11 +6,335 @@ let usageLogs = JSON.parse(localStorage.getItem('lookingGlassLogs') || '[]');
 let userIP = 'unknown';
 let sessionId = localStorage.getItem('sessionId') || generateSessionId();
 
+// === API 請求管理和緩存系統 ===
+
+// 節點狀態緩存 - 使用localStorage持久化
+let nodeStatusCache = new Map();
+let lastStatusCheck = 0;
+const STATUS_CACHE_TIME = 2 * 60 * 1000; // 縮短到2分鐘緩存
+const CRITICAL_RECHECK_TIME = 30 * 1000; // 30秒內的失敗節點會更頻繁檢查
+
+// API 請求限制管理 - 使用localStorage跨頁面持久化
+const API_RESET_INTERVAL = 60 * 1000; // 每分鐘重置計數
+const MAX_API_REQUESTS_PER_MINUTE = 20; // 降低到每分鐘最多20個請求
+
+// 初始化API計數（從localStorage讀取）
+function initApiTracking() {
+    const saved = localStorage.getItem('apiTracking');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            const now = Date.now();
+            
+            // 如果超過重置間隔，重置計數
+            if (now - data.lastReset > API_RESET_INTERVAL) {
+                data.count = 0;
+                data.lastReset = now;
+            }
+            
+            return data;
+        } catch (e) {
+            console.warn('無法解析API追蹤數據');
+        }
+    }
+    
+    // 預設值
+    return {
+        count: 0,
+        lastReset: Date.now()
+    };
+}
+
+// 保存API計數到localStorage
+function saveApiTracking(count, lastReset) {
+    localStorage.setItem('apiTracking', JSON.stringify({
+        count: count,
+        lastReset: lastReset
+    }));
+}
+
+// 初始化
+let apiTrackingData = initApiTracking();
+let apiRequestCount = apiTrackingData.count;
+let lastApiReset = apiTrackingData.lastReset;
+
+// API 請求隊列
+let apiRequestQueue = [];
+let isProcessingQueue = false;
+
+// 背景監控定時器
+let backgroundMonitorTimer = null;
+
 // 生成會話ID
 function generateSessionId() {
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
     localStorage.setItem('sessionId', id);
     return id;
+}
+
+// === API 請求管理函數 ===
+
+// 檢查API請求限制
+function checkApiLimit() {
+    const now = Date.now();
+    
+    // 重置計數器（每分鐘）
+    if (now - lastApiReset > API_RESET_INTERVAL) {
+        apiRequestCount = 0;
+        lastApiReset = now;
+        saveApiTracking(apiRequestCount, lastApiReset);
+    }
+    
+    // 如果接近限制，啟用降級模式
+    if (apiRequestCount >= MAX_API_REQUESTS_PER_MINUTE * 0.8) {
+        enableFallbackMode();
+    }
+    
+    return apiRequestCount < MAX_API_REQUESTS_PER_MINUTE;
+}
+
+// 增加API請求計數
+function incrementApiCount() {
+    apiRequestCount++;
+    console.log(`API請求計數: ${apiRequestCount}/${MAX_API_REQUESTS_PER_MINUTE}`);
+    
+    // 保存到localStorage
+    saveApiTracking(apiRequestCount, lastApiReset);
+    
+    // 更新UI中的API使用狀態指示器（如果存在）
+    updateApiUsageIndicator();
+}
+
+// 更新API使用狀態指示器
+function updateApiUsageIndicator() {
+    const indicator = document.getElementById('apiUsageIndicator');
+    if (!indicator) return;
+    
+    const percentage = (apiRequestCount / MAX_API_REQUESTS_PER_MINUTE) * 100;
+    const progressBar = indicator.querySelector('.progress-bar');
+    
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+        
+        if (percentage > 80) {
+            progressBar.className = 'progress-bar bg-danger';
+        } else if (percentage > 60) {
+            progressBar.className = 'progress-bar bg-warning';
+        } else {
+            progressBar.className = 'progress-bar bg-success';
+        }
+    }
+}
+
+// 顯示API使用狀況
+function showApiUsageStatus() {
+    console.log(`🔄 API使用狀況: ${apiRequestCount}/${MAX_API_REQUESTS_PER_MINUTE} 請求/分鐘`);
+    
+    if (apiRequestCount > 0) {
+        const remainingTime = Math.max(0, API_RESET_INTERVAL - (Date.now() - lastApiReset));
+        const remainingMinutes = Math.ceil(remainingTime / 60000);
+        
+        console.log(`⏱️  剩餘重置時間: ${remainingMinutes} 分鐘`);
+        
+        if (apiRequestCount >= MAX_API_REQUESTS_PER_MINUTE * 0.7) {
+            console.warn(`⚠️  API使用率較高，建議減少頁面重新整理頻率`);
+        }
+    }
+}
+
+// 安全的API請求包裝器
+async function safeApiRequest(url, options = {}) {
+    if (!checkApiLimit()) {
+        console.warn('API請求限制已達上限，延遲請求');
+        // 顯示API限制提示給用戶
+        showApiLimitWarning();
+        throw new Error('API請求限制已達上限，請稍後再試');
+    }
+    
+    incrementApiCount();
+    
+    try {
+        const response = await fetch(url, options);
+        
+        // 檢查響應狀態
+        if (!response.ok) {
+            if (response.status === 429) {
+                console.warn('API速率限制觸發');
+                showApiLimitWarning();
+                throw new Error('API請求過於頻繁，請稍後再試');
+            } else if (response.status >= 500) {
+                throw new Error('伺服器錯誤，請稍後再試');
+            }
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('API請求失敗:', error);
+        
+        // 如果是網路錯誤，提供更友好的提示
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('網路連接失敗，請檢查網路連線');
+        }
+        
+        throw error;
+    }
+}
+
+// 顯示API限制警告
+function showApiLimitWarning() {
+    // 避免重複顯示警告
+    if (document.getElementById('apiLimitWarning')) return;
+    
+    const warning = document.createElement('div');
+    warning.id = 'apiLimitWarning';
+    warning.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+    warning.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    warning.innerHTML = `
+        <strong>API使用限制</strong><br>
+        請求過於頻繁，請稍後再試。建議減少頁面重新整理的頻率。
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(warning);
+    
+    // 5秒後自動移除
+    setTimeout(() => {
+        if (warning.parentNode) {
+            warning.parentNode.removeChild(warning);
+        }
+    }, 5000);
+}
+
+// 檢查節點狀態緩存
+function getNodeStatusFromCache(nodeKey) {
+    const now = Date.now();
+    
+    // 從localStorage讀取緩存數據
+    const savedCache = localStorage.getItem('nodeStatusCache');
+    const savedTime = localStorage.getItem('lastStatusCheck');
+    
+    if (savedCache && savedTime) {
+        try {
+            const cacheData = JSON.parse(savedCache);
+            const nodeData = cacheData[nodeKey];
+            
+            if (nodeData) {
+                const age = now - nodeData.timestamp;
+                
+                // 智能緩存策略：
+                // 1. 正常在線節點：使用完整緩存時間 (2分鐘)
+                // 2. 離線節點：只緩存30秒，更快偵測恢復
+                // 3. 新失敗的節點：立即重新檢查
+                
+                let cacheValidTime = STATUS_CACHE_TIME;
+                
+                if (nodeData.status === 'offline' || nodeData.status === 'error') {
+                    cacheValidTime = CRITICAL_RECHECK_TIME; // 30秒
+                    console.log(`🔍 離線節點 ${nodeKey} 使用短緩存時間: ${cacheValidTime/1000}秒`);
+                }
+                
+                if (age < cacheValidTime) {
+                    return nodeData;
+                } else {
+                    console.log(`⏰ 節點 ${nodeKey} 緩存已過期 (${Math.round(age/1000)}秒), 需要重新檢查`);
+                }
+            }
+        } catch (e) {
+            console.warn('無法解析節點狀態緩存');
+            localStorage.removeItem('nodeStatusCache');
+            localStorage.removeItem('lastStatusCheck');
+        }
+    }
+    
+    return null;
+}
+
+// 降級模式：當API限制達到時的備用方案
+function enableFallbackMode() {
+    console.log('啟用降級模式：減少API調用');
+    
+    // 顯示降級模式提示
+    const fallbackNotice = document.createElement('div');
+    fallbackNotice.id = 'fallbackModeNotice';
+    fallbackNotice.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    fallbackNotice.style.cssText = 'top: 70px; right: 20px; z-index: 9998; max-width: 400px;';
+    fallbackNotice.innerHTML = `
+        <strong>節能模式</strong><br>
+        為避免API限制，已啟用節能模式。部分功能可能響應較慢。
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(fallbackNotice);
+    
+    // 延長緩存時間
+    STATUS_CACHE_TIME = 10 * 60 * 1000; // 延長到10分鐘
+    
+    setTimeout(() => {
+        if (fallbackNotice.parentNode) {
+            fallbackNotice.parentNode.removeChild(fallbackNotice);
+        }
+    }, 8000);
+}
+
+// 設置節點狀態緩存
+function setNodeStatusCache(nodeKey, status) {
+    const now = Date.now();
+    
+    // 更新記憶體緩存
+    nodeStatusCache.set(nodeKey, {
+        status: status,
+        timestamp: now
+    });
+    
+    // 更新localStorage緩存
+    const savedCache = localStorage.getItem('nodeStatusCache');
+    let cacheData = {};
+    
+    if (savedCache) {
+        try {
+            cacheData = JSON.parse(savedCache);
+        } catch (e) {
+            console.warn('無法解析現有緩存數據');
+        }
+    }
+    
+    cacheData[nodeKey] = {
+        status: status,
+        timestamp: now
+    };
+    
+    localStorage.setItem('nodeStatusCache', JSON.stringify(cacheData));
+    localStorage.setItem('lastStatusCheck', now.toString());
+    
+    // 如果狀態改變了，記錄日誌
+    const oldData = cacheData[nodeKey];
+    if (oldData && oldData.status !== status) {
+        console.log(`🔄 節點狀態變更: ${nodeKey} ${oldData.status} → ${status}`);
+    }
+}
+
+// 強制刷新節點狀態（清除緩存）
+function forceRefreshNodeStatus(nodeKey = null) {
+    if (nodeKey) {
+        // 刷新特定節點
+        const savedCache = localStorage.getItem('nodeStatusCache');
+        if (savedCache) {
+            try {
+                const cacheData = JSON.parse(savedCache);
+                delete cacheData[nodeKey];
+                localStorage.setItem('nodeStatusCache', JSON.stringify(cacheData));
+                console.log(`🔄 已清除節點 ${nodeKey} 的緩存`);
+            } catch (e) {
+                console.warn('無法更新緩存');
+            }
+        }
+    } else {
+        // 刷新所有節點
+        localStorage.removeItem('nodeStatusCache');
+        localStorage.removeItem('lastStatusCheck');
+        nodeStatusCache.clear();
+        console.log('🔄 已清除所有節點狀態緩存');
+    }
 }
 
 // 獲取用戶IP
@@ -1008,6 +1332,9 @@ async function exportServerLogs(event) {
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // 顯示目前API使用狀況
+        showApiUsageStatus();
+        
         // 初始化主題
         initTheme();
         
@@ -1033,6 +1360,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 獲取用戶IP
         await getUserIP();
+        
+        // 啟動背景監控
+        startBackgroundMonitoring();
         
         // 測試日誌功能（可選，用於除錯）
         console.log('用戶IP:', userIP, '會話ID:', sessionId);
@@ -1158,7 +1488,7 @@ function showNodeModal(node) {
             newTestButton.textContent = '測試中...';
 
             // 發送測量請求
-            const measurementResponse = await fetch('https://api.globalping.io/v1/measurements', {
+            const measurementResponse = await safeApiRequest('https://api.globalping.io/v1/measurements', {
                 method: 'POST',
                 headers: {
                     'accept': 'application/json',
@@ -1209,7 +1539,7 @@ function showNodeModal(node) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 try {
-                    const resultResponse = await fetch(`https://api.globalping.io/v1/measurements/${measurementData.id}`, {
+                    const resultResponse = await safeApiRequest(`https://api.globalping.io/v1/measurements/${measurementData.id}`, {
                         method: 'GET',
                         headers: {
                             'accept': 'application/json'
@@ -1508,7 +1838,7 @@ async function fetchProbesData() {
     }
     
     try {
-        const response = await fetch('https://api.globalping.io/v1/probes');
+        const response = await safeApiRequest('https://api.globalping.io/v1/probes');
         const data = await response.json();
         probesData = data;
         lastProbesUpdate = now;
@@ -1548,37 +1878,65 @@ async function calculateStats(probes) {
         nodeDetails: []
     };
     
-    // 為每個節點檢查是否在線 - 使用實際測試請求檢查
+    // 為每個節點檢查是否在線 - 優先使用緩存，減少API請求
     const statusChecks = nodesData.nodes.map(async (node) => {
         stats.total++;
         
         let isOnline = false;
         let matchingProbes = [];
         
-        try {
-            // 發送快速測試請求檢查節點是否線上（與主頁面邏輯一致）
-            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: 'ping',
-                    target: '8.8.8.8',
-                    limit: 1,
-                    locations: [{
-                        magic: node.tags
-                    }]
-                })
-            });
-            
-            const data = await testResponse.json();
-            isOnline = !!data.id; // 如果成功創建測量，節點就是線上的
-            
-        } catch (error) {
-            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
-            isOnline = false;
+        // 檢查緩存
+        const cacheKey = node.tags;
+        const cachedResult = nodeStatusCache.get(cacheKey);
+        
+        if (isCacheValid(cachedResult)) {
+            // 使用緩存結果
+            isOnline = cachedResult.status === 'online';
+            console.log(`使用緩存結果: ${node.name} = ${cachedResult.status}`);
+        } else {
+            // 檢查API限制
+            if (!checkApiLimit()) {
+                console.warn(`API限制已達上限，${node.name} 默認為離線`);
+                isOnline = false;
+            } else {
+                try {
+                    // 使用安全的API請求檢查節點狀態
+                    const testResponse = await safeApiRequest('https://api.globalping.io/v1/measurements', {
+                        method: 'POST',
+                        headers: {
+                            'accept': 'application/json',
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'ping',
+                            target: '8.8.8.8',
+                            limit: 1,
+                            locations: [{
+                                magic: node.tags
+                            }]
+                        })
+                    });
+                    
+                    const data = await testResponse.json();
+                    isOnline = !!data.id;
+                    
+                    // 更新緩存
+                    nodeStatusCache.set(cacheKey, {
+                        status: isOnline ? 'online' : 'offline',
+                        timestamp: Date.now()
+                    });
+                    
+                } catch (error) {
+                    console.warn(`節點 ${node.name} 狀態檢查失敗:`, error.message);
+                    isOnline = false;
+                    
+                    // 緩存錯誤狀態
+                    nodeStatusCache.set(cacheKey, {
+                        status: 'offline',
+                        timestamp: Date.now()
+                    });
+                }
+            }
         }
         
         // 同時查找匹配的 probes 來獲取詳細信息
@@ -2276,7 +2634,7 @@ async function testNodesResponseTime(nodes) {
             }
             
             // 發送簡單的測試請求
-            const response = await fetch('https://api.globalping.io/v1/measurements', {
+            const response = await safeApiRequest('https://api.globalping.io/v1/measurements', {
                 method: 'POST',
                 headers: {
                     'accept': 'application/json',
@@ -2343,47 +2701,134 @@ function determineBestNode(onlineNodes) {
 
 
 // 檢查主畫面節點狀態
-async function checkMainNodeStatus() {
-    const statusChecks = nodesData.nodes.map(async (node, index) => {
-        const statusIndicator = document.getElementById(`main_status_${index}`);
-        
-        try {
-            // 發送快速測試請求檢查節點是否線上
-            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: 'ping',
-                    target: '8.8.8.8',
-                    limit: 1,
-                    locations: [{
-                        magic: node.tags
-                    }]
-                })
-            });
-            
-            const data = await testResponse.json();
-            
-            if (data.id) {
-                // 節點線上
-                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-success" title="線上"></i>';
-            } else {
-                // 節點可能離線
-                statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
-            }
-        } catch (error) {
-            // 檢查失敗，顯示警告
+// 使用全局的緩存系統
+const CACHE_DURATION = 5 * 60 * 1000; // 5分鐘緩存
+const API_DELAY = 200; // API請求間隔（毫秒）
+
+// 檢查緩存是否有效
+function isCacheValid(cacheEntry) {
+    if (!cacheEntry) return false;
+    return Date.now() - cacheEntry.timestamp < CACHE_DURATION;
+}
+
+// 更新狀態指示器
+function updateStatusIndicator(index, status) {
+    const statusIndicator = document.getElementById(`main_status_${index}`);
+    if (!statusIndicator) return;
+    
+    switch (status) {
+        case 'online':
+            statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-success" title="線上"></i>';
+            break;
+        case 'offline':
+            statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-danger" title="離線"></i>';
+            break;
+        case 'unknown':
+        default:
             statusIndicator.innerHTML = '<i class="bi bi-circle-fill text-warning" title="狀態未知"></i>';
-            console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+            break;
+    }
+}
+
+// 檢查單個節點狀態
+async function checkSingleNodeStatus(node, index) {
+    const cacheKey = node.tags;
+    const cachedResult = nodeStatusCache.get(cacheKey);
+    
+    // 如果緩存有效，直接使用緩存結果
+    if (isCacheValid(cachedResult)) {
+        updateStatusIndicator(index, cachedResult.status);
+        return cachedResult.status;
+    }
+    
+    try {
+        // 使用安全的API請求包裝器
+        const testResponse = await safeApiRequest('https://api.globalping.io/v1/measurements', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: 'ping',
+                target: '8.8.8.8',
+                limit: 1,
+                locations: [{
+                    magic: node.tags
+                }]
+            })
+        });
+        
+        const data = await testResponse.json();
+        const status = data.id ? 'online' : 'offline';
+        
+        // 更新緩存
+        nodeStatusCache.set(cacheKey, {
+            status: status,
+            timestamp: Date.now()
+        });
+        
+        // 更新UI
+        updateStatusIndicator(index, status);
+        
+        return status;
+    } catch (error) {
+        // 檢查失敗，緩存未知狀態
+        nodeStatusCache.set(cacheKey, {
+            status: 'unknown',
+            timestamp: Date.now()
+        });
+        
+        updateStatusIndicator(index, 'unknown');
+        console.warn(`節點 ${node.name} 狀態檢查失敗:`, error);
+        return 'unknown';
+    }
+}
+
+// 優化的主畫面節點狀態檢查函數
+async function checkMainNodeStatus() {
+    if (!nodesData || !nodesData.nodes || nodesData.nodes.length === 0) {
+        console.warn('沒有可用的節點數據');
+        return;
+    }
+    
+    const statusChecks = [];
+    
+    // 分批處理節點，避免同時發送太多請求
+    for (let i = 0; i < nodesData.nodes.length; i++) {
+        const node = nodesData.nodes[i];
+        
+        // 添加延遲避免API速率限制
+        if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, API_DELAY));
         }
-    });
+        
+        statusChecks.push(checkSingleNodeStatus(node, i));
+    }
     
     // 等待所有狀態檢查完成
-    await Promise.allSettled(statusChecks);
+    const results = await Promise.allSettled(statusChecks);
+    
+    // 統計結果
+    const online = results.filter(r => r.status === 'fulfilled' && r.value === 'online').length;
+    const offline = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
+    const unknown = results.filter(r => r.status === 'fulfilled' && r.value === 'unknown').length;
+    
+    console.log(`節點狀態檢查完成: ${online} 線上, ${offline} 離線, ${unknown} 未知`);
 }
+
+// 清理過期緩存
+function cleanupCache() {
+    const now = Date.now();
+    for (const [key, value] of nodeStatusCache.entries()) {
+        if (now - value.timestamp >= CACHE_DURATION) {
+            nodeStatusCache.delete(key);
+        }
+    }
+}
+
+// 定期清理緩存
+setInterval(cleanupCache, CACHE_DURATION);
 
 // === 手機版專用功能 ===
 
@@ -2439,11 +2884,34 @@ function renderMobileNodes() {
 
 // 檢查手機版節點狀態
 async function checkMobileNodeStatus() {
-    const statusChecks = nodesData.nodes.map(async (node, index) => {
+    console.log('開始檢查手機版節點狀態...');
+    
+    // 順序檢查節點，避免同時發送大量請求
+    for (let index = 0; index < nodesData.nodes.length; index++) {
+        const node = nodesData.nodes[index];
         const statusIndicator = document.getElementById(`mobile_status_${index}`);
         
+        if (!statusIndicator) continue;
+        
+        const cacheKey = node.tags;
+        const cachedResult = nodeStatusCache.get(cacheKey);
+        
+        // 如果緩存有效，使用緩存結果
+        if (isCacheValid(cachedResult)) {
+            const statusClass = cachedResult.status === 'online' ? 'status-indicator online' : 'status-indicator offline';
+            statusIndicator.className = statusClass;
+            continue;
+        }
+        
+        // 檢查API限制
+        if (!checkApiLimit()) {
+            console.warn(`API限制已達上限，跳過節點 ${node.name}`);
+            statusIndicator.className = 'status-indicator offline';
+            continue;
+        }
+        
         try {
-            const testResponse = await fetch('https://api.globalping.io/v1/measurements', {
+            const testResponse = await safeApiRequest('https://api.globalping.io/v1/measurements', {
                 method: 'POST',
                 headers: {
                     'accept': 'application/json',
@@ -2458,18 +2926,37 @@ async function checkMobileNodeStatus() {
             });
             
             const data = await testResponse.json();
+            const status = data.id ? 'online' : 'offline';
             
-            if (data.id) {
-                statusIndicator.className = 'status-indicator online';
-            } else {
-                statusIndicator.className = 'status-indicator offline';
-            }
+            // 更新緩存
+            nodeStatusCache.set(cacheKey, {
+                status: status,
+                timestamp: Date.now()
+            });
+            
+            // 更新UI
+            const statusClass = status === 'online' ? 'status-indicator online' : 'status-indicator offline';
+            statusIndicator.className = statusClass;
+            
         } catch (error) {
+            console.warn(`檢查節點 ${node.name} 狀態失敗:`, error.message);
+            
+            // 緩存錯誤狀態
+            nodeStatusCache.set(cacheKey, {
+                status: 'offline',
+                timestamp: Date.now()
+            });
+            
             statusIndicator.className = 'status-indicator offline';
         }
-    });
+        
+        // 在請求之間添加延遲
+        if (index < nodesData.nodes.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, API_DELAY));
+        }
+    }
     
-    await Promise.allSettled(statusChecks);
+    console.log('手機版節點狀態檢查完成');
 }
 
 // 選擇手機版節點
@@ -2563,7 +3050,7 @@ async function startMobileTest() {
         });
         
         // 發送測試請求
-        const response = await fetch('https://api.globalping.io/v1/measurements', {
+        const response = await safeApiRequest('https://api.globalping.io/v1/measurements', {
             method: 'POST',
             headers: {
                 'accept': 'application/json',
@@ -2602,7 +3089,7 @@ async function pollMobileTestResult(testId) {
     const testButton = document.getElementById('mobileStartTest');
     
     try {
-        const response = await fetch(`https://api.globalping.io/v1/measurements/${testId}`);
+        const response = await safeApiRequest(`https://api.globalping.io/v1/measurements/${testId}`);
         const data = await response.json();
         
         if (data.status === 'finished') {
@@ -3154,5 +3641,85 @@ function formatMobilePingResult(container, output) {
     }
 }
 
+// === 背景監控系統 ===
 
- 
+// 背景監控：定期檢查離線節點
+function startBackgroundMonitoring() {
+    // 清除現有定時器
+    if (backgroundMonitorTimer) {
+        clearInterval(backgroundMonitorTimer);
+    }
+    
+    // 每60秒檢查一次離線節點
+    backgroundMonitorTimer = setInterval(async () => {
+        console.log('🔍 背景監控：檢查離線節點...');
+        
+        // 檢查API使用量，如果太高就跳過這次檢查
+        if (apiRequestCount >= MAX_API_REQUESTS_PER_MINUTE * 0.9) {
+            console.log('⏭️ API使用量過高，跳過背景檢查');
+            return;
+        }
+        
+        await checkOfflineNodesInBackground();
+    }, 60000); // 每分鐘檢查一次
+    
+    console.log('✅ 背景監控已啟動');
+}
+
+// 背景檢查離線節點
+async function checkOfflineNodesInBackground() {
+    const savedCache = localStorage.getItem('nodeStatusCache');
+    if (!savedCache) return;
+    
+    try {
+        const cacheData = JSON.parse(savedCache);
+        const offlineNodes = [];
+        
+        // 找出所有離線節點
+        for (const [nodeKey, nodeData] of Object.entries(cacheData)) {
+            if (nodeData.status === 'offline' || nodeData.status === 'error') {
+                offlineNodes.push(nodeKey);
+            }
+        }
+        
+        if (offlineNodes.length === 0) {
+            console.log('📱 沒有離線節點需要檢查');
+            return;
+        }
+        
+        console.log(`🔄 背景檢查 ${offlineNodes.length} 個離線節點: ${offlineNodes.join(', ')}`);
+        
+        // 檢查前2個離線節點（避免太多API請求）
+        const nodesToCheck = offlineNodes.slice(0, 2);
+        
+        for (const nodeKey of nodesToCheck) {
+            try {
+                // 強制刷新這個節點的緩存
+                forceRefreshNodeStatus(nodeKey);
+                
+                // 重新檢查節點狀態
+                const node = nodesData.nodes.find(n => n.tags === nodeKey);
+                if (node) {
+                    await checkSingleNodeStatus(node, true); // 強制檢查
+                    console.log(`✅ 已重新檢查節點: ${nodeKey}`);
+                }
+                
+                // 避免太快發送請求
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+                console.error(`❌ 背景檢查節點 ${nodeKey} 失敗:`, error);
+            }
+        }
+    } catch (error) {
+        console.error('❌ 背景監控錯誤:', error);
+    }
+}
+
+// 停止背景監控
+function stopBackgroundMonitoring() {
+    if (backgroundMonitorTimer) {
+        clearInterval(backgroundMonitorTimer);
+        backgroundMonitorTimer = null;
+        console.log('⏹️ 背景監控已停止');
+    }
+}
