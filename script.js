@@ -2607,7 +2607,11 @@ async function pollMobileTestResult(testId) {
             // 測試完成，顯示結果
             if (data.results && data.results.length > 0) {
                 const result = data.results[0];
-                resultContent.textContent = result.result.output || result.result.rawOutput || '測試完成，但無輸出內容';
+                const output = result.result.output || result.result.rawOutput || '測試完成，但無輸出內容';
+                
+                // 格式化結果以適應手機顯示
+                const testType = document.getElementById('mobileTestType').value;
+                formatMobileTestResult(resultContent, output, testType);
             } else {
                 resultContent.textContent = '測試完成，但沒有結果';
             }
@@ -2636,7 +2640,15 @@ async function pollMobileTestResult(testId) {
 // 複製手機版測試結果
 async function copyMobileResult() {
     const resultContent = document.getElementById('mobileResultContent');
-    const text = resultContent.textContent;
+    let text;
+    
+    // 如果內容已格式化，獲取純文本版本
+    if (resultContent.classList.contains('formatted')) {
+        // 從格式化的HTML中提取純文本
+        text = extractPlainTextFromFormatted(resultContent);
+    } else {
+        text = resultContent.textContent;
+    }
     
     try {
         await navigator.clipboard.writeText(text);
@@ -2660,6 +2672,35 @@ async function copyMobileResult() {
         
         alert('結果已複製到剪貼簿');
     }
+}
+
+// 從格式化的HTML內容中提取純文本
+function extractPlainTextFromFormatted(container) {
+    let text = '';
+    
+    // 遍歷所有子元素
+    const elements = container.querySelectorAll('.hop-line, .ping-line');
+    
+    if (elements.length > 0) {
+        elements.forEach(element => {
+            const hopNumber = element.querySelector('.hop-number');
+            const hopIP = element.querySelector('.hop-ip');
+            const hopTime = element.querySelector('.hop-time');
+            
+            if (hopNumber && hopIP && hopTime) {
+                // Traceroute/MTR 格式
+                text += `${hopNumber.textContent} ${hopIP.textContent} ${hopTime.textContent}\n`;
+            } else {
+                // Ping 或其他格式
+                text += element.textContent + '\n';
+            }
+        });
+    } else {
+        // 如果沒有找到格式化元素，使用原始文本
+        text = container.textContent;
+    }
+    
+    return text;
 }
 
 // 更新手機版主題圖標
@@ -2950,7 +2991,7 @@ function renderMobileLogs(logs) {
                             </div>
                         </div>
                         <div style="font-size: 0.7rem; color: var(--text-muted);">
-                            ${formatIPAddress(log.ip)}
+                            ${log.ip || 'N/A'}
                         </div>
                     </div>
                 `).join('')}
@@ -2996,6 +3037,118 @@ function formatTime(timestamp) {
         return date.toLocaleDateString('zh-TW');
     } catch (error) {
         return 'N/A';
+    }
+}
+
+// 格式化手機版測試結果
+function formatMobileTestResult(container, output, testType) {
+    if (!output || typeof output !== 'string') {
+        container.textContent = '測試完成，但無輸出內容';
+        return;
+    }
+    
+    // 根據測試類型進行不同的格式化
+    switch (testType) {
+        case 'traceroute':
+        case 'mtr':
+            formatMobileTracerouteResult(container, output);
+            break;
+        case 'ping':
+            formatMobilePingResult(container, output);
+            break;
+        default:
+            container.textContent = output;
+            break;
+    }
+}
+
+// 格式化手機版 Traceroute/MTR 結果
+function formatMobileTracerouteResult(container, output) {
+    container.className = 'result-content formatted';
+    container.innerHTML = '';
+    
+    const lines = output.split('\n');
+    let formattedHTML = '';
+    
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+        
+        // 檢測跳躍行（通常包含數字開頭）
+        const hopMatch = trimmedLine.match(/^\s*(\d+)\s+(.+)/);
+        if (hopMatch) {
+            const hopNumber = hopMatch[1];
+            const hopData = hopMatch[2];
+            
+            // 提取IP地址和時間
+            const ipMatch = hopData.match(/(\d+\.\d+\.\d+\.\d+|\[?[0-9a-fA-F:]+\]?)/);
+            const timeMatch = hopData.match(/(\d+\.?\d*)\s*ms/g);
+            
+            let hopIP = 'Unknown';
+            let hopTimes = '';
+            
+            if (ipMatch) {
+                hopIP = ipMatch[1];
+            }
+            
+            if (timeMatch) {
+                hopTimes = timeMatch.join(' ');
+            }
+            
+            formattedHTML += `
+                <div class="hop-line">
+                    <span class="hop-number">${hopNumber}</span>
+                    <span class="hop-ip">${hopIP}</span>
+                    <span class="hop-time">${hopTimes}</span>
+                </div>
+            `;
+        } else if (trimmedLine.includes('ms') || trimmedLine.includes('timeout') || trimmedLine.includes('*')) {
+            // 處理其他包含時間信息的行
+            formattedHTML += `<div class="hop-line">${trimmedLine}</div>`;
+        } else {
+            // 其他信息行
+            formattedHTML += `<div style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9em;">${trimmedLine}</div>`;
+        }
+    }
+    
+    if (formattedHTML) {
+        container.innerHTML = formattedHTML;
+    } else {
+        // 如果格式化失敗，顯示原始輸出
+        container.className = 'result-content';
+        container.textContent = output;
+    }
+}
+
+// 格式化手機版 Ping 結果
+function formatMobilePingResult(container, output) {
+    container.className = 'result-content formatted';
+    container.innerHTML = '';
+    
+    const lines = output.split('\n');
+    let formattedHTML = '';
+    
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+        
+        // 檢測ping回應行
+        if (trimmedLine.includes('bytes from') && trimmedLine.includes('time=')) {
+            formattedHTML += `<div class="ping-line">${trimmedLine}</div>`;
+        } else if (trimmedLine.includes('PING') || trimmedLine.includes('ping statistics') || 
+                   trimmedLine.includes('packets transmitted') || trimmedLine.includes('min/avg/max')) {
+            formattedHTML += `<div style="margin: 0.5rem 0; font-weight: 500; color: var(--text-color);">${trimmedLine}</div>`;
+        } else {
+            formattedHTML += `<div style="margin-bottom: 0.25rem; color: var(--text-muted);">${trimmedLine}</div>`;
+        }
+    }
+    
+    if (formattedHTML) {
+        container.innerHTML = formattedHTML;
+    } else {
+        // 如果格式化失敗，顯示原始輸出
+        container.className = 'result-content';
+        container.textContent = output;
     }
 }
 
