@@ -2481,7 +2481,9 @@ function selectMobileNode(node, index) {
     
     // 選中當前節點
     const selectedItem = document.querySelector(`[data-node-index="${index}"]`);
-    selectedItem.classList.add('selected');
+    if (selectedItem) {
+        selectedItem.classList.add('selected');
+    }
     
     mobileSelectedNode = { ...node, index };
     

@@ -263,20 +263,22 @@ a:hover {
         top: 0;
         left: 0;
         right: 0;
-        background: var(--primary-color);
-        color: white;
+        background: var(--bg-color);
+        color: var(--text-color);
         padding: 1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         z-index: 1000;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid var(--card-border);
     }
     
     .mobile-header h1 {
         font-size: 1.2rem;
         margin: 0;
         font-weight: 600;
+        color: var(--text-color);
     }
     
     .mobile-header .header-actions {
@@ -285,9 +287,9 @@ a:hover {
     }
     
     .mobile-header .btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        color: var(--text-color);
         width: 36px;
         height: 36px;
         border-radius: 8px;
@@ -295,11 +297,13 @@ a:hover {
         align-items: center;
         justify-content: center;
         padding: 0;
+        transition: all 0.2s ease;
     }
     
     .mobile-header .btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
+        background: var(--light-bg);
+        color: var(--text-color);
+        border-color: var(--primary-color);
     }
     
     /* 手機版節點選擇區域 */
@@ -340,9 +344,35 @@ a:hover {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     
+    /* 點擊時的瞬間反饋 */
     .mobile-node-item:active {
         transform: scale(0.98);
-        background: var(--primary-color);
+    }
+    
+    /* 選中狀態（持續顯示） */
+    .mobile-node-item.selected {
+        background: var(--primary-color) !important;
+        color: white !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
+        position: relative;
+    }
+    
+    /* 選中狀態的視覺標識 */
+    .mobile-node-item.selected::before {
+        content: '✓';
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
         color: white;
     }
     
@@ -357,8 +387,8 @@ a:hover {
         color: var(--text-color);
     }
     
-    .mobile-node-item:active .node-name {
-        color: white;
+    .mobile-node-item.selected .node-name {
+        color: white !important;
     }
     
     .mobile-node-item .node-location {
@@ -367,8 +397,8 @@ a:hover {
         margin-bottom: 0.25rem;
     }
     
-    .mobile-node-item:active .node-location {
-        color: rgba(255, 255, 255, 0.8);
+    .mobile-node-item.selected .node-location {
+        color: rgba(255, 255, 255, 0.8) !important;
     }
     
     .mobile-node-item .node-provider {
@@ -376,8 +406,8 @@ a:hover {
         color: var(--text-muted);
     }
     
-    .mobile-node-item:active .node-provider {
-        color: rgba(255, 255, 255, 0.7);
+    .mobile-node-item.selected .node-provider {
+        color: rgba(255, 255, 255, 0.7) !important;
     }
     
     .mobile-node-item .node-status {
@@ -403,18 +433,6 @@ a:hover {
         box-shadow: 0 0 6px rgba(220, 53, 69, 0.4);
     }
     
-    /* 手機版節點選中狀態 */
-    .mobile-node-item.selected {
-        background: var(--primary-color) !important;
-        color: white !important;
-        border-color: var(--primary-color) !important;
-    }
-    
-    .mobile-node-item.selected .node-name,
-    .mobile-node-item.selected .node-location,
-    .mobile-node-item.selected .node-provider {
-        color: white !important;
-    }
     
     /* 手機版測試區域 */
     .mobile-test-area {
@@ -563,6 +581,13 @@ a:hover {
         background: rgba(255, 255, 255, 0.02);
     }
     
+    /* 深色模式下的節點選中狀態 */
+    [data-theme="dark"] .mobile-node-item.selected {
+        background: var(--primary-light) !important;
+        border-color: var(--primary-light) !important;
+        box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3) !important;
+    }
+    
     /* 隱藏原有的電腦版元素 */
     .desktop-only,
     footer {
@@ -588,14 +613,20 @@ a:hover {
     
     #mobileStatsModal .modal-header,
     #mobileLogsModal .modal-header {
-        background: var(--primary-color);
-        color: white;
-        border-bottom: none;
+        background: var(--bg-color);
+        color: var(--text-color);
+        border-bottom: 1px solid var(--card-border);
         padding: 1rem;
     }
     
     #mobileStatsModal .modal-header .btn-close,
     #mobileLogsModal .modal-header .btn-close {
+        filter: none;
+    }
+    
+    /* 深色模式下的關閉按鈕 */
+    [data-theme="dark"] #mobileStatsModal .modal-header .btn-close,
+    [data-theme="dark"] #mobileLogsModal .modal-header .btn-close {
         filter: brightness(0) invert(1);
     }
     
