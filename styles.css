@@ -519,6 +519,129 @@ a:hover {
     #batchTestBtn {
         display: none !important;
     }
+    
+    /* 手機版模態框樣式 */
+    #mobileStatsModal .modal-content,
+    #mobileLogsModal .modal-content {
+        border-radius: 0;
+        height: 100vh;
+    }
+    
+    #mobileStatsModal .modal-header,
+    #mobileLogsModal .modal-header {
+        background: var(--primary-color);
+        color: white;
+        border-bottom: none;
+        padding: 1rem;
+    }
+    
+    #mobileStatsModal .modal-header .btn-close,
+    #mobileLogsModal .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    
+    #mobileStatsModal .modal-body,
+    #mobileLogsModal .modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+        height: calc(100vh - 70px);
+    }
+    
+    /* 手機版統計卡片 */
+    .mobile-stats-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--card-border);
+    }
+    
+    .mobile-stats-card h6 {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-color);
+        font-size: 0.9rem;
+    }
+    
+    .mobile-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-stat-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: var(--light-bg);
+        border-radius: 8px;
+    }
+    
+    .mobile-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .mobile-stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    
+    /* 手機版節點狀態列表 */
+    .mobile-node-status-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .mobile-node-status-item {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mobile-node-status-item .node-info {
+        flex: 1;
+    }
+    
+    .mobile-node-status-item .node-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-color);
+    }
+    
+    .mobile-node-status-item .node-location {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .mobile-node-status-item .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .mobile-node-status-item .status-badge.online {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .mobile-node-status-item .status-badge.offline {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
 }
 
 [data-theme="dark"] .top-button,

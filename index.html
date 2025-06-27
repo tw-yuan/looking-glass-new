@@ -136,6 +136,9 @@
             <div class="mobile-header">
                 <h1>Looking Glass</h1>
                 <div class="header-actions">
+                    <button class="btn" id="mobileLogsBtn" aria-label="使用日誌">
+                        <i class="bi bi-journal-text"></i>
+                    </button>
                     <button class="btn" id="mobileThemeToggle" aria-label="切換深色模式">
                         <i class="bi bi-moon-fill"></i>
                     </button>
@@ -417,6 +420,44 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版統計模態框 -->
+        <div class="modal fade" id="mobileStatsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">節點統計</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileStatsContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">載入中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版日誌模態框 -->
+        <div class="modal fade" id="mobileLogsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">使用日誌</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileLogsContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">載入中...</span>
                             </div>
                         </div>
                     </div>

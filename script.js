@@ -1023,6 +1023,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 檢查主畫面節點狀態
         checkMainNodeStatus();
         
+        // 初始化手機版（在節點數據載入後）
+        console.log('節點數據載入完成，準備初始化手機版');
+        console.log('節點數量:', nodesData.nodes.length);
+        console.log('螢幕寬度:', window.innerWidth);
+        
+        // 總是初始化手機版功能，讓CSS來控制顯示
+        initMobileVersion();
+        
         // 獲取用戶IP
         await getUserIP();
         
@@ -2385,17 +2393,22 @@ let mobileCurrentTest = null;
 
 // 手機版初始化
 function initMobileVersion() {
-    if (window.innerWidth <= 768) {
-        renderMobileNodes();
-        setupMobileEventListeners();
-    }
+    console.log('正在初始化手機版...');
+    renderMobileNodes();
+    setupMobileEventListeners();
 }
 
 // 渲染手機版節點列表
 function renderMobileNodes() {
+    console.log('開始渲染手機版節點列表...');
     const container = document.getElementById('mobileNodesList');
-    if (!container) return;
     
+    if (!container) {
+        console.error('找不到手機版節點容器 #mobileNodesList');
+        return;
+    }
+    
+    console.log('找到節點容器，準備渲染', nodesData.nodes.length, '個節點');
     container.innerHTML = '';
     
     nodesData.nodes.forEach((node, index) => {
@@ -2492,7 +2505,13 @@ function setupMobileEventListeners() {
     // 統計按鈕
     const mobileStatsBtn = document.getElementById('mobileStatsBtn');
     if (mobileStatsBtn) {
-        mobileStatsBtn.addEventListener('click', showStatsModal);
+        mobileStatsBtn.addEventListener('click', showMobileStatsModal);
+    }
+    
+    // 日誌按鈕
+    const mobileLogsBtn = document.getElementById('mobileLogsBtn');
+    if (mobileLogsBtn) {
+        mobileLogsBtn.addEventListener('click', showMobileLogsModal);
     }
     
     // 開始測試按鈕
@@ -2662,18 +2681,323 @@ function updateMobileThemeIcon() {
 function handleResponsiveChanges() {
     if (window.innerWidth <= 768) {
         // 切換到手機版
-        initMobileVersion();
+        if (nodesData && nodesData.nodes && nodesData.nodes.length > 0) {
+            initMobileVersion();
+        }
     }
 }
 
-// 在原有的初始化代碼中添加手機版初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 響應式初始化
-    handleResponsiveChanges();
+// 監聽窗口大小變化
+window.addEventListener('resize', handleResponsiveChanges);
+
+// === 手機版統計功能 ===
+
+// 顯示手機版統計模態框
+async function showMobileStatsModal() {
+    const modal = document.getElementById('mobileStatsModal');
+    const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
     
-    // 監聽窗口大小變化
-    window.addEventListener('resize', handleResponsiveChanges);
-});
+    modalInstance.show();
+    
+    // 載入統計數據
+    await loadMobileStats();
+}
+
+// 載入手機版統計數據
+async function loadMobileStats() {
+    const container = document.getElementById('mobileStatsContent');
+    
+    try {
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+            </div>
+        `;
+        
+        // 獲取統計數據
+        const probes = await fetchProbesData();
+        const stats = await calculateStats(probes);
+        
+        // 渲染手機版統計UI
+        renderMobileStats(stats);
+        
+    } catch (error) {
+        console.error('載入手機版統計失敗:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                載入統計數據失敗：${error.message}
+            </div>
+        `;
+    }
+}
+
+// 渲染手機版統計數據
+function renderMobileStats(stats) {
+    const container = document.getElementById('mobileStatsContent');
+    
+    // 計算百分比
+    const onlinePercentage = stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0;
+    
+    // 計算地區分佈
+    const continentStats = {
+        asia: 0,
+        europe: 0,
+        northAmerica: 0,
+        southAmerica: 0,
+        oceania: 0,
+        africa: 0
+    };
+    
+    stats.nodeDetails.forEach(node => {
+        const continent = getNodeContinent(node);
+        if (continentStats.hasOwnProperty(continent)) {
+            continentStats[continent]++;
+        }
+    });
+    
+    container.innerHTML = `
+        <!-- 總體統計 -->
+        <div class="mobile-stats-card">
+            <h6>節點概況</h6>
+            <div class="mobile-stats-grid">
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${stats.total}</div>
+                    <div class="mobile-stat-label">總節點數</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${stats.online}</div>
+                    <div class="mobile-stat-label">線上節點</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${stats.offline}</div>
+                    <div class="mobile-stat-label">下線節點</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${onlinePercentage}%</div>
+                    <div class="mobile-stat-label">上線率</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 地區分佈 -->
+        <div class="mobile-stats-card">
+            <h6>地區分佈</h6>
+            <div class="mobile-stats-grid">
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${continentStats.asia}</div>
+                    <div class="mobile-stat-label">亞洲</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${continentStats.europe}</div>
+                    <div class="mobile-stat-label">歐洲</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${continentStats.northAmerica}</div>
+                    <div class="mobile-stat-label">北美洲</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${continentStats.southAmerica}</div>
+                    <div class="mobile-stat-label">南美洲</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 節點狀態詳情 -->
+        <div class="mobile-stats-card">
+            <h6>節點狀態</h6>
+            <div class="mobile-node-status-list">
+                ${stats.nodeDetails.map(node => `
+                    <div class="mobile-node-status-item">
+                        <div class="node-info">
+                            <div class="node-name">${node.name_zh || node.name}</div>
+                            <div class="node-location">${node.location_zh || node.location}</div>
+                        </div>
+                        <span class="status-badge ${node.status}">
+                            ${node.status === 'online' ? '線上' : '下線'}
+                        </span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// === 手機版日誌功能 ===
+
+// 顯示手機版日誌模態框
+async function showMobileLogsModal() {
+    const modal = document.getElementById('mobileLogsModal');
+    const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+    
+    modalInstance.show();
+    
+    // 載入日誌數據
+    await loadMobileLogs();
+}
+
+// 載入手機版日誌數據
+async function loadMobileLogs() {
+    const container = document.getElementById('mobileLogsContent');
+    
+    try {
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+            </div>
+        `;
+        
+        // 獲取日誌數據
+        let logs = [];
+        
+        // 優先從伺服器獲取
+        if (CONFIG && CONFIG.USE_JSONBIN && CONFIG.JSONBIN_ID && CONFIG.JSONBIN_API_KEY) {
+            try {
+                const response = await fetch(`${CONFIG.JSONBIN_BASE_URL}/b/${CONFIG.JSONBIN_ID}/latest`, {
+                    headers: {
+                        'X-Master-Key': CONFIG.JSONBIN_API_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.record && result.record.logs) {
+                        logs = result.record.logs.slice(0, 50); // 只顯示最近50條
+                    }
+                }
+            } catch (error) {
+                console.log('從伺服器獲取日誌失敗，使用本地日誌');
+            }
+        }
+        
+        // 如果伺服器沒有數據，使用本地數據
+        if (logs.length === 0) {
+            logs = usageLogs.slice(-50).reverse(); // 最近50條，倒序顯示
+        }
+        
+        // 渲染手機版日誌UI
+        renderMobileLogs(logs);
+        
+    } catch (error) {
+        console.error('載入手機版日誌失敗:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                載入日誌數據失敗：${error.message}
+            </div>
+        `;
+    }
+}
+
+// 渲染手機版日誌數據
+function renderMobileLogs(logs) {
+    const container = document.getElementById('mobileLogsContent');
+    
+    if (logs.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                暫無使用記錄
+            </div>
+        `;
+        return;
+    }
+    
+    // 分析統計數據
+    const analysis = analyzeLogs(logs);
+    
+    container.innerHTML = `
+        <!-- 使用統計 -->
+        <div class="mobile-stats-card">
+            <h6>使用統計</h6>
+            <div class="mobile-stats-grid">
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${analysis.totalTests}</div>
+                    <div class="mobile-stat-label">次測試</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${analysis.uniqueTargets}</div>
+                    <div class="mobile-stat-label">根目標</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${analysis.uniqueUsers}</div>
+                    <div class="mobile-stat-label">使用者IP</div>
+                </div>
+                <div class="mobile-stat-item">
+                    <div class="mobile-stat-value">${analysis.nodeUsageEfficiency}%</div>
+                    <div class="mobile-stat-label">節點使用率</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最近測試 -->
+        <div class="mobile-stats-card">
+            <h6>最近測試</h6>
+            <div class="mobile-node-status-list">
+                ${logs.slice(0, 20).map(log => `
+                    <div class="mobile-node-status-item">
+                        <div class="node-info">
+                            <div class="node-name">
+                                ${log.target || 'N/A'} 
+                                <span style="font-size: 0.8em; color: var(--text-muted);">
+                                    (${log.testType ? log.testType.toUpperCase() : 'N/A'})
+                                </span>
+                            </div>
+                            <div class="node-location">
+                                ${log.nodeName || 'N/A'} • ${formatTime(log.timestamp)}
+                            </div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">
+                            ${formatIPAddress(log.ip)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// 分析日誌數據
+function analyzeLogs(logs) {
+    const analysis = {
+        totalTests: logs.length,
+        uniqueTargets: new Set(logs.map(log => log.target).filter(Boolean)).size,
+        uniqueUsers: new Set(logs.map(log => log.ip).filter(Boolean)).size,
+        nodeUsageEfficiency: 0
+    };
+    
+    // 計算節點使用率
+    const usedNodes = new Set(logs.map(log => log.nodeName).filter(Boolean));
+    const totalNodes = nodesData ? nodesData.nodes.length : 0;
+    analysis.nodeUsageEfficiency = totalNodes > 0 ? Math.round((usedNodes.size / totalNodes) * 100) : 0;
+    
+    return analysis;
+}
+
+// 格式化時間（手機版簡化版本）
+function formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return '剛剛';
+        if (diffMins < 60) return `${diffMins}分鐘前`;
+        if (diffHours < 24) return `${diffHours}小時前`;
+        if (diffDays < 7) return `${diffDays}天前`;
+        
+        return date.toLocaleDateString('zh-TW');
+    } catch (error) {
+        return 'N/A';
+    }
+}
 
 
  
