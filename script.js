@@ -16,7 +16,9 @@ const CRITICAL_RECHECK_TIME = 30 * 1000; // 30秒內的失敗節點會更頻繁�
 
 // API 請求限制管理 - 使用localStorage跨頁面持久化
 const API_RESET_INTERVAL = 60 * 1000; // 每分鐘重置計數
-const MAX_API_REQUESTS_PER_MINUTE = 20; // 降低到每分鐘最多20個請求
+const MAX_API_REQUESTS_PER_MINUTE = 60; // 提高到每分鐘60個請求
+const API_REQUEST_INTERVAL = 1200; // 請求間隔時間（毫秒）
+const CONCURRENT_API_LIMIT = 3; // 同時進行的最大請求數
 
 // 初始化API計數（從localStorage讀取）
 function initApiTracking() {
@@ -58,9 +60,125 @@ let apiTrackingData = initApiTracking();
 let apiRequestCount = apiTrackingData.count;
 let lastApiReset = apiTrackingData.lastReset;
 
-// API 請求隊列
+// API 請求隊列管理
 let apiRequestQueue = [];
 let isProcessingQueue = false;
+let activeRequests = 0;
+let lastRequestTime = 0;
+
+// 智能請求隊列系統
+class APIRequestQueue {
+    constructor() {
+        this.queue = [];
+        this.processing = false;
+        this.activeRequests = 0;
+        this.lastRequestTime = 0;
+        this.priorityTypes = {
+            'initialization': 1,  // 初始化時的請求
+            'userAction': 2,      // 用戶操作觸發的請求
+            'background': 3,      // 背景監控的請求
+            'retry': 4            // 重試請求
+        };
+    }
+    
+    // 添加請求到隊列
+    enqueue(request, priority = 'background') {
+        const item = {
+            request,
+            priority: this.priorityTypes[priority] || 3,
+            timestamp: Date.now(),
+            retries: 0
+        };
+        
+        // 插入到適當的位置（優先級排序）
+        const insertIndex = this.queue.findIndex(item => item.priority > this.priorityTypes[priority]);
+        if (insertIndex === -1) {
+            this.queue.push(item);
+        } else {
+            this.queue.splice(insertIndex, 0, item);
+        }
+        
+        // 開始處理隊列
+        this.processQueue();
+    }
+    
+    // 處理隊列
+    async processQueue() {
+        if (this.processing || this.queue.length === 0) return;
+        
+        this.processing = true;
+        
+        while (this.queue.length > 0 && this.activeRequests < CONCURRENT_API_LIMIT) {
+            // 檢查是否需要等待
+            const now = Date.now();
+            const timeSinceLastRequest = now - this.lastRequestTime;
+            
+            if (timeSinceLastRequest < API_REQUEST_INTERVAL) {
+                await new Promise(resolve => setTimeout(resolve, API_REQUEST_INTERVAL - timeSinceLastRequest));
+            }
+            
+            // 檢查API限制
+            if (!checkApiLimit()) {
+                console.log('API限制已達，暫停隊列處理');
+                this.processing = false;
+                // 設置延遲重試
+                setTimeout(() => this.processQueue(), 10000);
+                return;
+            }
+            
+            const item = this.queue.shift();
+            this.activeRequests++;
+            this.lastRequestTime = Date.now();
+            
+            // 執行請求
+            this.executeRequest(item).finally(() => {
+                this.activeRequests--;
+                if (this.queue.length > 0) {
+                    setTimeout(() => this.processQueue(), 100);
+                }
+            });
+        }
+        
+        this.processing = false;
+    }
+    
+    // 執行單個請求
+    async executeRequest(item) {
+        try {
+            const result = await item.request();
+            return result;
+        } catch (error) {
+            console.error('API請求失敗:', error);
+            
+            // 重試邏輯
+            if (item.retries < 3 && !error.message.includes('API請求限制')) {
+                item.retries++;
+                console.log(`重試請求 (第${item.retries}次)`);
+                // 添加回隊列，但降低優先級
+                this.enqueue(item.request, 'retry');
+            }
+            
+            throw error;
+        }
+    }
+    
+    // 清空隊列
+    clear() {
+        this.queue = [];
+    }
+    
+    // 獲取隊列狀態
+    getStatus() {
+        return {
+            queueLength: this.queue.length,
+            activeRequests: this.activeRequests,
+            isProcessing: this.processing
+        };
+    }
+}
+
+// 創建全局API隊列實例
+const apiQueue = new APIRequestQueue();
 
 // 背景監控定時器
 let backgroundMonitorTimer = null;
@@ -143,41 +261,45 @@ function showApiUsageStatus() {
 }
 
 // 安全的API請求包裝器
-async function safeApiRequest(url, options = {}) {
-    if (!checkApiLimit()) {
-        console.warn('API請求限制已達上限，延遲請求');
-        // 顯示API限制提示給用戶
-        showApiLimitWarning();
-        throw new Error('API請求限制已達上限，請稍後再試');
-    }
-    
-    incrementApiCount();
-    
-    try {
-        const response = await fetch(url, options);
-        
-        // 檢查響應狀態
-        if (!response.ok) {
-            if (response.status === 429) {
-                console.warn('API速率限制觸發');
-                showApiLimitWarning();
-                throw new Error('API請求過於頻繁，請稍後再試');
-            } else if (response.status >= 500) {
-                throw new Error('伺服器錯誤，請稍後再試');
+async function safeApiRequest(url, options = {}, priority = 'background') {
+    // 創建一個Promise，將請求添加到隊列
+    return new Promise((resolve, reject) => {
+        const requestFunction = async () => {
+            incrementApiCount();
+            
+            try {
+                const response = await fetch(url, options);
+                
+                // 檢查響應狀態
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        console.warn('API速率限制觸發');
+                        showApiLimitWarning();
+                        throw new Error('API請求過於頻繁，請稍後再試');
+                    } else if (response.status >= 500) {
+                        throw new Error('伺服器錯誤，請稍後再試');
+                    }
+                }
+                
+                resolve(response);
+                return response;
+            } catch (error) {
+                console.error('API請求失敗:', error);
+                
+                // 如果是網路錯誤，提供更友好的提示
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    reject(new Error('網路連接失敗，請檢查網路連線'));
+                } else {
+                    reject(error);
+                }
+                
+                throw error;
             }
-        }
+        };
         
-        return response;
-    } catch (error) {
-        console.error('API請求失敗:', error);
-        
-        // 如果是網路錯誤，提供更友好的提示
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('網路連接失敗，請檢查網路連線');
-        }
-        
-        throw error;
-    }
+        // 將請求添加到隊列
+        apiQueue.enqueue(requestFunction, priority);
+    });
 }
 
 // 顯示API限制警告
@@ -187,20 +309,74 @@ function showApiLimitWarning() {
     
     const warning = document.createElement('div');
     warning.id = 'apiLimitWarning';
-    warning.className = 'alert alert-warning alert-dismissible fade show position-fixed';
-    warning.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-    warning.innerHTML = `
-        <strong>API使用限制</strong><br>
-        請求過於頻繁，請稍後再試。建議減少頁面重新整理的頻率。
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    warning.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 380px;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffeaa7;
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        animation: slideIn 0.3s ease-out;
     `;
+    
+    warning.innerHTML = `
+        <div style="display: flex; align-items: start; gap: 12px;">
+            <div style="flex-shrink: 0; width: 24px; height: 24px; background: #f39c12; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="14" height="14" fill="white" viewBox="0 0 16 16">
+                    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                </svg>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 16px; color: #856404; margin-bottom: 4px;">API使用限制</div>
+                <div style="font-size: 14px; color: #856404; line-height: 1.4;">請求過於頻繁，請稍後再試。建議減少頁面重新整理的頻率。</div>
+            </div>
+            <button style="
+                background: none;
+                border: none;
+                padding: 4px;
+                cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.2s;
+                flex-shrink: 0;
+            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" onclick="this.parentElement.parentElement.remove()">
+                <svg width="16" height="16" fill="#856404" viewBox="0 0 16 16">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    // 添加CSS動畫
+    if (!document.getElementById('notificationStyles')) {
+        const style = document.createElement('style');
+        style.id = 'notificationStyles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     document.body.appendChild(warning);
     
     // 5秒後自動移除
     setTimeout(() => {
         if (warning.parentNode) {
-            warning.parentNode.removeChild(warning);
+            warning.style.animation = 'slideIn 0.3s ease-out reverse';
+            setTimeout(() => warning.remove(), 300);
         }
     }, 5000);
 }
@@ -253,15 +429,59 @@ function getNodeStatusFromCache(nodeKey) {
 function enableFallbackMode() {
     console.log('啟用降級模式：減少API調用');
     
+    // 避免重複顯示
+    if (document.getElementById('fallbackModeNotice')) return;
+    
     // 顯示降級模式提示
     const fallbackNotice = document.createElement('div');
     fallbackNotice.id = 'fallbackModeNotice';
-    fallbackNotice.className = 'alert alert-info alert-dismissible fade show position-fixed';
-    fallbackNotice.style.cssText = 'top: 70px; right: 20px; z-index: 9998; max-width: 400px;';
+    fallbackNotice.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9998;
+        max-width: 380px;
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border: 1px solid #bee5eb;
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
     fallbackNotice.innerHTML = `
-        <strong>節能模式</strong><br>
-        為避免API限制，已啟用節能模式。部分功能可能響應較慢。
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div style="display: flex; align-items: start; gap: 12px;">
+            <div style="flex-shrink: 0; width: 24px; height: 24px; background: #17a2b8; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="14" height="14" fill="white" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 16px; color: #0c5460; margin-bottom: 4px;">節能模式已啟用</div>
+                <div style="font-size: 14px; color: #0c5460; line-height: 1.4;">為避免API限制，已啟用節能模式。部分功能可能響應較慢。</div>
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 12px; color: #0c5460;">緩存時間已延長至10分鐘</div>
+                    <svg width="16" height="16" fill="#17a2b8" viewBox="0 0 16 16">
+                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <button style="
+                background: none;
+                border: none;
+                padding: 4px;
+                cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.2s;
+                flex-shrink: 0;
+            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" onclick="this.parentElement.parentElement.remove()">
+                <svg width="16" height="16" fill="#0c5460" viewBox="0 0 16 16">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                </svg>
+            </button>
+        </div>
     `;
     
     document.body.appendChild(fallbackNotice);
@@ -269,9 +489,11 @@ function enableFallbackMode() {
     // 延長緩存時間
     STATUS_CACHE_TIME = 10 * 60 * 1000; // 延長到10分鐘
     
+    // 8秒後自動移除
     setTimeout(() => {
         if (fallbackNotice.parentNode) {
-            fallbackNotice.parentNode.removeChild(fallbackNotice);
+            fallbackNotice.style.animation = 'slideIn 0.3s ease-out reverse';
+            setTimeout(() => fallbackNotice.remove(), 300);
         }
     }, 8000);
 }
@@ -1347,16 +1569,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 初始化統計面板
         initStatsPanel();
         
-        // 檢查主畫面節點狀態
-        checkMainNodeStatus();
+        // 統一節點狀態檢查
+        // 不再分別調用桌面版和手機版的檢查，避免重複API請求
+        checkAllNodesStatus();
         
-        // 初始化手機版（在節點數據載入後）
+        // 初始化手機版UI（但不再重複檢查節點）
         console.log('節點數據載入完成，準備初始化手機版');
         console.log('節點數量:', nodesData.nodes.length);
         console.log('螢幕寬度:', window.innerWidth);
         
-        // 總是初始化手機版功能，讓CSS來控制顯示
-        initMobileVersion();
+        // 初始化手機版UI，但不重複檢查節點狀態
+        initMobileVersionUI();
         
         // 獲取用戶IP
         await getUserIP();
@@ -2785,6 +3008,114 @@ async function checkSingleNodeStatus(node, index) {
     }
 }
 
+// 統一的節點狀態檢查函數
+// 同時更新桌面版和手機版的狀態顯示
+async function checkAllNodesStatus() {
+    if (!nodesData || !nodesData.nodes || nodesData.nodes.length === 0) {
+        console.warn('沒有可用的節點數據');
+        return;
+    }
+    
+    console.log('開始統一檢查所有節點狀態...');
+    
+    // 使用優先級隊列處理所有節點
+    const promises = [];
+    
+    for (let i = 0; i < nodesData.nodes.length; i++) {
+        const node = nodesData.nodes[i];
+        const index = i;
+        
+        // 創建一個Promise來處理每個節點
+        const checkPromise = new Promise(async (resolve, reject) => {
+            const cacheKey = node.tags;
+            const cachedResult = nodeStatusCache.get(cacheKey);
+            
+            // 如果緩存有效，使用緩存結果
+            if (isCacheValid(cachedResult)) {
+                const status = cachedResult.status;
+                
+                // 更新桌面版UI
+                updateStatusIndicator(index, status);
+                
+                // 更新手機版UI
+                const mobileStatusIndicator = document.getElementById(`mobile_status_${index}`);
+                if (mobileStatusIndicator) {
+                    const statusClass = status === 'online' ? 'status-indicator online' : 'status-indicator offline';
+                    mobileStatusIndicator.className = statusClass;
+                }
+                
+                resolve(status);
+                return;
+            }
+            
+            try {
+                const testResponse = await safeApiRequest('https://api.globalping.io/v1/measurements', {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'ping',
+                        target: '8.8.8.8',
+                        limit: 1,
+                        locations: [{ magic: node.tags }]
+                    })
+                }, 'initialization'); // 使用初始化優先級
+                
+                const data = await testResponse.json();
+                const status = data.id ? 'online' : 'offline';
+                
+                // 更新緩存
+                nodeStatusCache.set(cacheKey, {
+                    status: status,
+                    timestamp: Date.now()
+                });
+                
+                // 更新桌面版UI
+                updateStatusIndicator(index, status);
+                
+                // 更新手機版UI
+                const mobileStatusIndicator = document.getElementById(`mobile_status_${index}`);
+                if (mobileStatusIndicator) {
+                    const statusClass = status === 'online' ? 'status-indicator online' : 'status-indicator offline';
+                    mobileStatusIndicator.className = statusClass;
+                }
+                
+                resolve(status);
+            } catch (error) {
+                console.warn(`節點 ${node.name} 狀態檢查失敗:`, error.message);
+                
+                // 緩存錯誤狀態
+                nodeStatusCache.set(cacheKey, {
+                    status: 'offline',
+                    timestamp: Date.now()
+                });
+                
+                // 更新兩個版本的UI
+                updateStatusIndicator(index, 'offline');
+                const mobileStatusIndicator = document.getElementById(`mobile_status_${index}`);
+                if (mobileStatusIndicator) {
+                    mobileStatusIndicator.className = 'status-indicator offline';
+                }
+                
+                resolve('offline');
+            }
+        });
+        
+        promises.push(checkPromise);
+    }
+    
+    // 等待所有檢查完成
+    const results = await Promise.allSettled(promises);
+    
+    // 統計結果
+    const online = results.filter(r => r.status === 'fulfilled' && r.value === 'online').length;
+    const offline = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
+    
+    console.log(`節點狀態檢查完成: ${online} 線上, ${offline} 離線`);
+}
+
 // 優化的主畫面節點狀態檢查函數
 async function checkMainNodeStatus() {
     if (!nodesData || !nodesData.nodes || nodesData.nodes.length === 0) {
@@ -2843,6 +3174,13 @@ function initMobileVersion() {
     setupMobileEventListeners();
 }
 
+// 手機版UI初始化（不包含節點狀態檢查）
+function initMobileVersionUI() {
+    console.log('正在初始化手機版UI...');
+    renderMobileNodesUI();
+    setupMobileEventListeners();
+}
+
 // 渲染手機版節點列表
 function renderMobileNodes() {
     console.log('開始渲染手機版節點列表...');
@@ -2880,6 +3218,45 @@ function renderMobileNodes() {
     
     // 檢查節點狀態
     checkMobileNodeStatus();
+}
+
+// 渲染手機版節點列表UI（不包含狀態檢查）
+function renderMobileNodesUI() {
+    console.log('開始渲染手機版節點UI...');
+    const container = document.getElementById('mobileNodesList');
+    
+    if (!container) {
+        console.error('找不到手機版節點容器 #mobileNodesList');
+        return;
+    }
+    
+    console.log('找到節點容器，準備渲染', nodesData.nodes.length, '個節點');
+    container.innerHTML = '';
+    
+    nodesData.nodes.forEach((node, index) => {
+        const nodeItem = document.createElement('div');
+        nodeItem.className = 'mobile-node-item';
+        nodeItem.dataset.nodeIndex = index;
+        
+        nodeItem.innerHTML = `
+            <div class="node-info">
+                <div class="node-name">${node.name_zh || node.name}</div>
+                <div class="node-location">${node.location_zh || node.location}</div>
+                <div class="node-provider">${node.provider}</div>
+            </div>
+            <div class="node-status">
+                <div class="status-indicator offline" id="mobile_status_${index}"></div>
+            </div>
+        `;
+        
+        // 添加點擊事件
+        nodeItem.addEventListener('click', () => selectMobileNode(node, index));
+        
+        container.appendChild(nodeItem);
+    });
+    
+    // 不再在這裡檢查節點狀態，狀態檢查由checkAllNodesStatus統一處理
+    console.log('手機版UI渲染完成，狀態將由統一函數更新');
 }
 
 // 檢查手機版節點狀態
