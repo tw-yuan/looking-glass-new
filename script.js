@@ -14,15 +14,13 @@ let lastStatusCheck = 0;
 const STATUS_CACHE_TIME = 2 * 60 * 1000; // 縮短到2分鐘緩存
 const CRITICAL_RECHECK_TIME = 30 * 1000; // 30秒內的失敗節點會更頻繁檢查
 
-// API 請求限制管理 - 使用localStorage跨頁面持久化
-const API_RESET_INTERVAL = 60 * 1000; // 每分鐘重置計數
-const MAX_API_REQUESTS_PER_MINUTE = 60; // 提高到每分鐘60個請求
-const API_REQUEST_INTERVAL = 1200; // 請求間隔時間（毫秒）
-const CONCURRENT_API_LIMIT = 3; // 同時進行的最大請求數
+// Globalping API 限制管理 - 使用localStorage跨頁面持久化
+const API_RESET_INTERVAL = 60 * 60 * 1000; // 每小時重置計數
+const GLOBALPING_HOURLY_LIMIT = 250; // Globalping每小時250次測試（未認證用戶）
 
 // 初始化API計數（從localStorage讀取）
 function initApiTracking() {
-    const saved = localStorage.getItem('apiTracking');
+    const saved = localStorage.getItem('globalpingTracking');
     if (saved) {
         try {
             const data = JSON.parse(saved);
@@ -49,10 +47,25 @@ function initApiTracking() {
 
 // 保存API計數到localStorage
 function saveApiTracking(count, lastReset) {
-    localStorage.setItem('apiTracking', JSON.stringify({
+    localStorage.setItem('globalpingTracking', JSON.stringify({
         count: count,
         lastReset: lastReset
     }));
+}
+
+// 計算剩餘時間
+function getRemainingTime() {
+    const now = Date.now();
+    const timeSinceReset = now - lastApiReset;
+    const remainingTime = API_RESET_INTERVAL - timeSinceReset;
+    return Math.max(0, remainingTime);
+}
+
+// 格式化時間顯示
+function formatTime(milliseconds) {
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = Math.floor((milliseconds % 60000) / 1000);
+    return minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
 }
 
 // 初始化
@@ -60,125 +73,6 @@ let apiTrackingData = initApiTracking();
 let apiRequestCount = apiTrackingData.count;
 let lastApiReset = apiTrackingData.lastReset;
 
-// API 請求隊列管理
-let apiRequestQueue = [];
-let isProcessingQueue = false;
-let activeRequests = 0;
-let lastRequestTime = 0;
-
-// 智能請求隊列系統
-class APIRequestQueue {
-    constructor() {
-        this.queue = [];
-        this.processing = false;
-        this.activeRequests = 0;
-        this.lastRequestTime = 0;
-        this.priorityTypes = {
-            'initialization': 1,  // 初始化時的請求
-            'userAction': 2,      // 用戶操作觸發的請求
-            'background': 3,      // 背景監控的請求
-            'retry': 4            // 重試請求
-        };
-    }
-    
-    // 添加請求到隊列
-    enqueue(request, priority = 'background') {
-        const item = {
-            request,
-            priority: this.priorityTypes[priority] || 3,
-            timestamp: Date.now(),
-            retries: 0
-        };
-        
-        // 插入到適當的位置（優先級排序）
-        const insertIndex = this.queue.findIndex(item => item.priority > this.priorityTypes[priority]);
-        if (insertIndex === -1) {
-            this.queue.push(item);
-        } else {
-            this.queue.splice(insertIndex, 0, item);
-        }
-        
-        // 開始處理隊列
-        this.processQueue();
-    }
-    
-    // 處理隊列
-    async processQueue() {
-        if (this.processing || this.queue.length === 0) return;
-        
-        this.processing = true;
-        
-        while (this.queue.length > 0 && this.activeRequests < CONCURRENT_API_LIMIT) {
-            // 檢查是否需要等待
-            const now = Date.now();
-            const timeSinceLastRequest = now - this.lastRequestTime;
-            
-            if (timeSinceLastRequest < API_REQUEST_INTERVAL) {
-                await new Promise(resolve => setTimeout(resolve, API_REQUEST_INTERVAL - timeSinceLastRequest));
-            }
-            
-            // 檢查API限制
-            if (!checkApiLimit()) {
-                console.log('API限制已達，暫停隊列處理');
-                this.processing = false;
-                // 設置延遲重試
-                setTimeout(() => this.processQueue(), 10000);
-                return;
-            }
-            
-            const item = this.queue.shift();
-            this.activeRequests++;
-            this.lastRequestTime = Date.now();
-            
-            // 執行請求
-            this.executeRequest(item).finally(() => {
-                this.activeRequests--;
-                if (this.queue.length > 0) {
-                    setTimeout(() => this.processQueue(), 100);
-                }
-            });
-        }
-        
-        this.processing = false;
-    }
-    
-    // 執行單個請求
-    async executeRequest(item) {
-        try {
-            const result = await item.request();
-            return result;
-        } catch (error) {
-            console.error('API請求失敗:', error);
-            
-            // 重試邏輯
-            if (item.retries < 3 && !error.message.includes('API請求限制')) {
-                item.retries++;
-                console.log(`重試請求 (第${item.retries}次)`);
-                // 添加回隊列，但降低優先級
-                this.enqueue(item.request, 'retry');
-            }
-            
-            throw error;
-        }
-    }
-    
-    // 清空隊列
-    clear() {
-        this.queue = [];
-    }
-    
-    // 獲取隊列狀態
-    getStatus() {
-        return {
-            queueLength: this.queue.length,
-            activeRequests: this.activeRequests,
-            isProcessing: this.processing
-        };
-    }
-}
-
-// 創建全局API隊列實例
-const apiQueue = new APIRequestQueue();
 
 // 背景監控定時器
 let backgroundMonitorTimer = null;
@@ -192,29 +86,24 @@ function generateSessionId() {
 
 // === API 請求管理函數 ===
 
-// 檢查API請求限制
+// 檢查Globalping API限制
 function checkApiLimit() {
     const now = Date.now();
     
-    // 重置計數器（每分鐘）
+    // 重置計數器（每小時）
     if (now - lastApiReset > API_RESET_INTERVAL) {
         apiRequestCount = 0;
         lastApiReset = now;
         saveApiTracking(apiRequestCount, lastApiReset);
     }
     
-    // 如果接近限制，啟用降級模式
-    if (apiRequestCount >= MAX_API_REQUESTS_PER_MINUTE * 0.8) {
-        enableFallbackMode();
-    }
-    
-    return apiRequestCount < MAX_API_REQUESTS_PER_MINUTE;
+    return apiRequestCount < GLOBALPING_HOURLY_LIMIT;
 }
 
 // 增加API請求計數
 function incrementApiCount() {
     apiRequestCount++;
-    console.log(`API請求計數: ${apiRequestCount}/${MAX_API_REQUESTS_PER_MINUTE}`);
+    console.log(`Globalping API使用: ${apiRequestCount}/${GLOBALPING_HOURLY_LIMIT}`);
     
     // 保存到localStorage
     saveApiTracking(apiRequestCount, lastApiReset);
@@ -228,7 +117,7 @@ function updateApiUsageIndicator() {
     const indicator = document.getElementById('apiUsageIndicator');
     if (!indicator) return;
     
-    const percentage = (apiRequestCount / MAX_API_REQUESTS_PER_MINUTE) * 100;
+    const percentage = (apiRequestCount / GLOBALPING_HOURLY_LIMIT) * 100;
     const progressBar = indicator.querySelector('.progress-bar');
     
     if (progressBar) {
@@ -261,90 +150,101 @@ function showApiUsageStatus() {
 }
 
 // 安全的API請求包裝器
-async function safeApiRequest(url, options = {}, priority = 'background') {
-    // 創建一個Promise，將請求添加到隊列
-    return new Promise((resolve, reject) => {
-        const requestFunction = async () => {
-            incrementApiCount();
-            
-            try {
-                const response = await fetch(url, options);
-                
-                // 檢查響應狀態
-                if (!response.ok) {
-                    if (response.status === 429) {
-                        console.warn('API速率限制觸發');
-                        showApiLimitWarning();
-                        throw new Error('API請求過於頻繁，請稍後再試');
-                    } else if (response.status >= 500) {
-                        throw new Error('伺服器錯誤，請稍後再試');
-                    }
-                }
-                
-                resolve(response);
-                return response;
-            } catch (error) {
-                console.error('API請求失敗:', error);
-                
-                // 如果是網路錯誤，提供更友好的提示
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    reject(new Error('網路連接失敗，請檢查網路連線'));
-                } else {
-                    reject(error);
-                }
-                
-                throw error;
-            }
-        };
+async function safeApiRequest(url, options = {}) {
+    // 檢查API限制
+    if (!checkApiLimit()) {
+        const remainingTime = getRemainingTime();
+        const timeString = formatTime(remainingTime);
         
-        // 將請求添加到隊列
-        apiQueue.enqueue(requestFunction, priority);
-    });
+        console.warn('Globalping API限制已達上限');
+        showGlobalpingLimitWarning(timeString);
+        throw new Error(`Globalping API限制已達上限，請等待 ${timeString} 後再試`);
+    }
+    
+    incrementApiCount();
+    
+    try {
+        const response = await fetch(url, options);
+        
+        // 檢查響應狀態
+        if (!response.ok) {
+            if (response.status === 429) {
+                console.warn('Globalping API速率限制觸發');
+                const remainingTime = getRemainingTime();
+                const timeString = formatTime(remainingTime);
+                showGlobalpingLimitWarning(timeString);
+                throw new Error(`Globalping API速率限制，請等待 ${timeString} 後再試`);
+            } else if (response.status >= 500) {
+                throw new Error('伺服器錯誤，請稍後再試');
+            }
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('API請求失敗:', error);
+        
+        // 如果是網路錯誤，提供更友好的提示
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('網路連接失敗，請檢查網路連線');
+        }
+        
+        throw error;
+    }
 }
 
-// 顯示API限制警告
-function showApiLimitWarning() {
+// 顯示Globalping API限制警告
+function showGlobalpingLimitWarning(remainingTime) {
     // 避免重複顯示警告
-    if (document.getElementById('apiLimitWarning')) return;
+    if (document.getElementById('globalpingLimitWarning')) return;
     
     const warning = document.createElement('div');
-    warning.id = 'apiLimitWarning';
+    warning.id = 'globalpingLimitWarning';
     warning.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
         z-index: 9999;
-        max-width: 380px;
-        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-        border: 1px solid #ffeaa7;
+        max-width: 420px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
         border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+        padding: 20px 24px;
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3), 0 2px 8px rgba(0,0,0,0.15);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        animation: slideIn 0.3s ease-out;
+        animation: slideIn 0.4s ease-out;
     `;
     
     warning.innerHTML = `
-        <div style="display: flex; align-items: start; gap: 12px;">
-            <div style="flex-shrink: 0; width: 24px; height: 24px; background: #f39c12; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <svg width="14" height="14" fill="white" viewBox="0 0 16 16">
+        <div style="display: flex; align-items: start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="16" height="16" fill="white" viewBox="0 0 16 16">
                     <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
                 </svg>
             </div>
             <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 16px; color: #856404; margin-bottom: 4px;">API使用限制</div>
-                <div style="font-size: 14px; color: #856404; line-height: 1.4;">請求過於頻繁，請稍後再試。建議減少頁面重新整理的頻率。</div>
+                <div style="font-weight: 700; font-size: 18px; margin-bottom: 8px;">❗ Globalping API 限制已達</div>
+                <div style="font-size: 15px; line-height: 1.5; margin-bottom: 12px;">
+                    您已達到每小時 <strong>250 次測試</strong> 的使用限制。
+                </div>
+                <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <div style="font-size: 14px; margin-bottom: 4px; opacity: 0.9;">ℹ️ 預估剩餘時間：</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #ffeb3b;">${remainingTime}</div>
+                </div>
+                <div style="font-size: 13px; opacity: 0.85; line-height: 1.4;">
+                    • 要提高限制，請在 <a href="https://www.globalping.io" target="_blank" style="color: #ffeb3b; text-decoration: underline;">Globalping 官網</a> 註冊帳號<br>
+                    • 註冊用戶可獲得每小時 500 次測試
+                </div>
             </div>
             <button style="
-                background: none;
+                background: rgba(255,255,255,0.2);
                 border: none;
-                padding: 4px;
+                border-radius: 6px;
+                padding: 6px;
                 cursor: pointer;
-                opacity: 0.6;
-                transition: opacity 0.2s;
+                transition: background 0.2s;
                 flex-shrink: 0;
-            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" onclick="this.parentElement.parentElement.remove()">
-                <svg width="16" height="16" fill="#856404" viewBox="0 0 16 16">
+            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'" onclick="this.parentElement.parentElement.remove()">
+                <svg width="16" height="16" fill="white" viewBox="0 0 16 16">
                     <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
                 </svg>
             </button>
@@ -372,13 +272,13 @@ function showApiLimitWarning() {
     
     document.body.appendChild(warning);
     
-    // 5秒後自動移除
+    // 10秒後自動移除
     setTimeout(() => {
         if (warning.parentNode) {
             warning.style.animation = 'slideIn 0.3s ease-out reverse';
             setTimeout(() => warning.remove(), 300);
         }
-    }, 5000);
+    }, 10000);
 }
 
 // 檢查節點狀態緩存
@@ -1569,17 +1469,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 初始化統計面板
         initStatsPanel();
         
-        // 統一節點狀態檢查
-        // 不再分別調用桌面版和手機版的檢查，避免重複API請求
-        checkAllNodesStatus();
+        // 檢查主畫面節點狀態
+        checkMainNodeStatus();
         
-        // 初始化手機版UI（但不再重複檢查節點）
+        // 初始化手機版（在節點數據載入後）
         console.log('節點數據載入完成，準備初始化手機版');
         console.log('節點數量:', nodesData.nodes.length);
         console.log('螢幕寬度:', window.innerWidth);
         
-        // 初始化手機版UI，但不重複檢查節點狀態
-        initMobileVersionUI();
+        // 總是初始化手機版功能，讓CSS來控制顯示
+        initMobileVersion();
         
         // 獲取用戶IP
         await getUserIP();
