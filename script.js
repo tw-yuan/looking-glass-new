@@ -172,7 +172,6 @@ function showGlobalpingLimitWarning(remainingTime) {
                     您已達到每小時 <strong>250 次測試</strong> 的使用限制。
                 </div>
                 <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <div style="font-size: 14px; margin-bottom: 4px; opacity: 0.9;">ℹ️ 預估重置時間：</div>
                     <div style="font-size: 20px; font-weight: 700; color: #ffeb3b;">${remainingTime}</div>
                 </div>
                 <div style="font-size: 13px; opacity: 0.85; line-height: 1.4;">
