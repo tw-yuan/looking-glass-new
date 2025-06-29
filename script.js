@@ -842,7 +842,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
     const container = document.createElement('div');
     
     // 限制顯示數量以提升性能
-    const maxTargetDisplay = 15;
+    const maxTargetDisplay = 10; // 熱門目標最多顯示10名
     const maxLogDisplay = 25;
     
     // 分析 Target 使用情況
@@ -885,6 +885,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                         <table class="table table-sm mb-0">
                             <thead>
                                 <tr>
+                                    <th class="py-1 text-center small" style="width: 50px;">名次</th>
                                     <th class="py-1 text-center small">目標與類型</th>
                                     <th class="py-1 text-center small">IP 位址</th>
                                     <th class="py-1 text-center small">ASN</th>
@@ -892,8 +893,13 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${targetAnalysis.slice(0, maxTargetDisplay).map(target => `
+                                ${targetAnalysis.slice(0, maxTargetDisplay).map((target, index) => `
                                     <tr>
+                                        <td class="py-1 text-center">
+                                            <span class="badge ${index < 3 ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.7rem;">
+                                                ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                            </span>
+                                        </td>
                                         <td class="py-1 text-center">
                                             <div class="fw-bold small text-primary">${target.name}</div>
                                             <small class="text-muted">${target.mainTestType.toUpperCase()}</small>
@@ -909,7 +915,7 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                         </td>
                                     </tr>
                                 `).join('')}
-                                ${targetAnalysis.length === 0 ? '<tr><td colspan="4" class="text-center text-muted py-3"><small>尚無熱門目標記錄</small></td></tr>' : ''}
+                                ${targetAnalysis.length === 0 ? '<tr><td colspan="5" class="text-center text-muted py-3"><small>尚無熱門目標記錄</small></td></tr>' : ''}
                             </tbody>
                         </table>
                     </div>
@@ -3493,20 +3499,27 @@ async function generateMobilePopularTargets(logs) {
             return;
         }
         
-        container.innerHTML = targetAnalysis.slice(0, 15).map(target => `
+        container.innerHTML = targetAnalysis.slice(0, 10).map((target, index) => `
             <div class="mobile-node-status-item">
-                <div class="node-info">
-                    <div class="node-name">
-                        ${target.name}
-                        <span style="font-size: 0.8em; color: var(--text-muted);">
-                            (${target.mainTestType.toUpperCase()})
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                    <div style="flex-shrink: 0;">
+                        <span class="badge ${index < 3 ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.8rem; min-width: 2.5rem;">
+                            ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                         </span>
                     </div>
-                    <div class="node-location">
-                        ${formatTargetIPs(target.resolvedInfo)} • ${formatASNInfo(target.resolvedInfo)}
+                    <div class="node-info" style="flex: 1;">
+                        <div class="node-name">
+                            ${target.name}
+                            <span style="font-size: 0.8em; color: var(--text-muted);">
+                                (${target.mainTestType.toUpperCase()})
+                            </span>
+                        </div>
+                        <div class="node-location">
+                            ${formatTargetIPs(target.resolvedInfo)} • ${formatASNInfo(target.resolvedInfo)}
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                     <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
                     <small style="color: var(--text-muted); font-size: 0.7rem;">次</small>
                 </div>

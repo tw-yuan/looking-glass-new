@@ -1898,4 +1898,30 @@ a:hover {
     }
 }
 
+/* === 熱門目標名次徽章樣式 === */
+
+/* 前三名特殊樣式 */
+.badge.bg-warning.text-dark {
+    background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    font-weight: 600;
+}
+
+/* 名次徽章懸停效果 */
+.badge[style*="font-size: 0.7rem"]:hover,
+.badge[style*="font-size: 0.8rem"]:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+/* 手機版熱門目標項目樣式優化 */
+.mobile-node-status-item > div[style*="display: flex"] {
+    align-items: center;
+}
+
+/* 熱門目標表格名次欄位寬度 */
+th[style*="width: 50px"] {
+    white-space: nowrap;
+}
+
  
