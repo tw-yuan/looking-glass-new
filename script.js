@@ -145,12 +145,12 @@ function showGlobalpingLimitWarning(remainingTime) {
                     您已達到每小時 <strong>250 次測試</strong> 的使用限制。
                 </div>
                 <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <div style="font-size: 14px; margin-bottom: 4px; opacity: 0.9;">ℹ️ 預估剩餘時間：</div>
+                    <div style="font-size: 14px; margin-bottom: 4px; opacity: 0.9;">ℹ️ 預估重置時間：</div>
                     <div style="font-size: 20px; font-weight: 700; color: #ffeb3b;">${remainingTime}</div>
                 </div>
                 <div style="font-size: 13px; opacity: 0.85; line-height: 1.4;">
-                    • 要提高限制，請在 <a href="https://www.globalping.io" target="_blank" style="color: #ffeb3b; text-decoration: underline;">Globalping 官網</a> 註冊帳號<br>
-                    • 註冊用戶可獲得每小時 500 次測試
+                    • 系統會在每小時自動重置 API 使用次數<br>
+                    • 請稍後再試或暫停使用一段時間
                 </div>
             </div>
             <button style="
