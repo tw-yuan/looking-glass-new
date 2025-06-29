@@ -64,6 +64,11 @@ function checkApiLimit() {
 
 // 增加API請求計數並檢查限制
 function incrementApiCount() {
+    // 確保 lastApiReset 已初始化
+    if (lastApiReset === 0 || !lastApiReset) {
+        lastApiReset = Date.now();
+    }
+    
     apiRequestCount++;
     console.log(`Globalping API使用: ${apiRequestCount}/${GLOBALPING_HOURLY_LIMIT}`);
     
@@ -72,6 +77,7 @@ function incrementApiCount() {
         isApiLimitReached = true;
         const remainingTime = getRemainingTime();
         const timeString = formatTime(remainingTime);
+        console.log('達到API限制，剩餘時間:', timeString, '毫秒:', remainingTime);
         showGlobalpingLimitWarning(timeString);
     }
 }
