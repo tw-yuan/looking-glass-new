@@ -865,42 +865,100 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             </div>
         </div>
         
-        <!-- 熱門目標分析 -->
+        <!-- 合併的熱門目標分析和最近測試 -->
         <div class="card mb-2" style="margin-top: 1rem;">
-            <div class="card-header py-1">
-                <small class="mb-0 fw-bold">熱門目標分析</small>
+            <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                    <button id="showPopularTargets" class="btn btn-sm btn-primary active-log-tab" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        熱門目標
+                    </button>
+                    <button id="showRecentTests" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        最近測試
+                    </button>
+                </div>
+                <button class="btn btn-xs btn-outline-success" onclick="exportServerLogs(event)" title="匯出日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">匯出日誌</button>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr>
-                                <th class="py-1 text-center small">目標與類型</th>
-                                <th class="py-1 text-center small">IP 位址</th>
-                                <th class="py-1 text-center small">ASN</th>
-                                <th class="py-1 text-center small">測試次數</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${targetAnalysis.slice(0, maxTargetDisplay).map(target => `
+                <!-- 熱門目標分析內容 -->
+                <div id="popularTargetsContent" class="log-content-section">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
                                 <tr>
-                                    <td class="py-1 text-center">
-                                        <div class="fw-bold small text-primary">${target.name}</div>
-                                        <small class="text-muted">${target.mainTestType.toUpperCase()}</small>
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        <div class="small">${formatTargetIPs(target.resolvedInfo)}</div>
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        <div class="small">${formatASNInfo(target.resolvedInfo)}</div>
-                                    </td>
-                                    <td class="py-1 text-center">
-                                        <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
-                                    </td>
+                                    <th class="py-1 text-center small">目標與類型</th>
+                                    <th class="py-1 text-center small">IP 位址</th>
+                                    <th class="py-1 text-center small">ASN</th>
+                                    <th class="py-1 text-center small">測試次數</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${targetAnalysis.slice(0, maxTargetDisplay).map(target => `
+                                    <tr>
+                                        <td class="py-1 text-center">
+                                            <div class="fw-bold small text-primary">${target.name}</div>
+                                            <small class="text-muted">${target.mainTestType.toUpperCase()}</small>
+                                        </td>
+                                        <td class="py-1 text-center">
+                                            <div class="small">${formatTargetIPs(target.resolvedInfo)}</div>
+                                        </td>
+                                        <td class="py-1 text-center">
+                                            <div class="small">${formatASNInfo(target.resolvedInfo)}</div>
+                                        </td>
+                                        <td class="py-1 text-center">
+                                            <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                ${targetAnalysis.length === 0 ? '<tr><td colspan="4" class="text-center text-muted py-3"><small>尚無熱門目標記錄</small></td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- 最近測試內容 -->
+                <div id="recentTestsContent" class="log-content-section" style="display: none;">
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="py-1 text-center small">時間</th>
+                                    <th class="py-1 text-center small">類型</th>
+                                    <th class="py-1 text-center small">目標</th>
+                                    <th class="py-1 text-center small">節點</th>
+                                    <th class="py-1 text-center small">使用者IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').slice(0, maxLogDisplay).map(log => `
+                                    <tr>
+                                        <td class="py-1 text-center text-muted" style="font-size: 0.7rem;">
+                                            ${new Date(log.timestamp).toLocaleString('zh-TW', {
+                                                month: 'numeric', 
+                                                day: 'numeric', 
+                                                hour: '2-digit', 
+                                                minute: '2-digit'
+                                            })}
+                                        </td>
+                                        <td class="py-1 text-center">
+                                            <span class="badge bg-primary" style="font-size: 0.6rem;">${(log.testType || 'ping').toUpperCase()}</span>
+                                        </td>
+                                        <td class="py-1 text-center fw-bold" style="font-size: 0.7rem;">
+                                            <div class="text-primary">${log.target || '未知'}</div>
+                                            <small class="text-muted">${detectTargetType(log.target)}</small>
+                                        </td>
+                                        <td class="py-1 text-center" style="font-size: 0.7rem;">
+                                            <div class="fw-bold">${log.nodeName}</div>
+                                            <small class="text-muted">${log.nodeLocation}</small>
+                                        </td>
+                                        <td class="py-1 text-center text-muted" style="font-size: 0.7rem;">
+                                            ${formatIPDisplay(log.ip)}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').length === 0 ? 
+                                    '<tr><td colspan="5" class="text-center text-muted py-3"><small>尚無有效測試記錄</small></td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -943,68 +1001,61 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
             </div>
         </div>
         
-        <!-- 最近測試 -->
-        <div class="card" style="margin-top: 1rem;">
-            <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                <small class="mb-0 fw-bold">最近測試</small>
-                <div>
-                    <button class="btn btn-xs btn-outline-success" onclick="exportServerLogs(event)" title="匯出日誌" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">匯出日誌</button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div style="max-height: 180px; overflow-y: auto;">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">時間</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">類型</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">目標</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">節點</th>
-                                <th class="py-0 text-center" style="font-size: 0.7rem;">使用者IP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').slice(0, maxLogDisplay).map(log => `
-                                <tr>
-                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
-                                        ${new Date(log.timestamp).toLocaleString('zh-TW', {
-                                            month: 'numeric', 
-                                            day: 'numeric', 
-                                            hour: '2-digit', 
-                                            minute: '2-digit'
-                                        })}
-                                    </td>
-                                    <td class="py-0 text-center">
-                                        <span class="badge bg-primary" style="font-size: 0.6rem;">${(log.testType || 'ping').toUpperCase()}</span>
-                                    </td>
-                                    <td class="py-0 text-center fw-bold" style="font-size: 0.65rem;">
-                                        <div class="text-primary">${log.target || '未知'}</div>
-                                        <small class="text-muted">${detectTargetType(log.target)}</small>
-                                    </td>
-                                    <td class="py-0 text-center" style="font-size: 0.65rem;">
-                                        <div class="fw-bold">${log.nodeName}</div>
-                                        <small class="text-muted">${log.nodeLocation}</small>
-                                    </td>
-                                    <td class="py-0 text-center text-muted" style="font-size: 0.65rem;">
-                                        ${formatIPDisplay(log.ip)}
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    ${recentLogs.filter(log => log.action === 'test_started' && log.target && log.target !== 'null').length === 0 ? 
-                        '<div class="text-center text-muted p-3"><small>尚無有效測試記錄</small></div>' : ''}
-                </div>
-            </div>
-        </div>
     `;
     
     // 添加到 fragment 並更新 DOM
     fragment.appendChild(container);
     modalBody.innerHTML = '';
     modalBody.appendChild(fragment);
+    
+    // 設定切換功能
+    setupLogTabSwitching();
 }
 
+// 設定日誌標籤切換功能
+function setupLogTabSwitching() {
+    const popularBtn = document.getElementById('showPopularTargets');
+    const recentBtn = document.getElementById('showRecentTests');
+    const popularContent = document.getElementById('popularTargetsContent');
+    const recentContent = document.getElementById('recentTestsContent');
+    
+    if (!popularBtn || !recentBtn || !popularContent || !recentContent) {
+        console.warn('日誌標籤元素找不到');
+        return;
+    }
+    
+    // 移除舊的事件監聽器
+    const newPopularBtn = popularBtn.cloneNode(true);
+    const newRecentBtn = recentBtn.cloneNode(true);
+    popularBtn.parentNode.replaceChild(newPopularBtn, popularBtn);
+    recentBtn.parentNode.replaceChild(newRecentBtn, recentBtn);
+    
+    // 熱門目標按鈕事件
+    newPopularBtn.addEventListener('click', () => {
+        // 更新按鈕狀態
+        newPopularBtn.classList.remove('btn-outline-primary');
+        newPopularBtn.classList.add('btn-primary', 'active-log-tab');
+        newRecentBtn.classList.remove('btn-primary', 'active-log-tab');
+        newRecentBtn.classList.add('btn-outline-primary');
+        
+        // 顯示/隱藏內容
+        popularContent.style.display = 'block';
+        recentContent.style.display = 'none';
+    });
+    
+    // 最近測試按鈕事件
+    newRecentBtn.addEventListener('click', () => {
+        // 更新按鈕狀態
+        newRecentBtn.classList.remove('btn-outline-primary');
+        newRecentBtn.classList.add('btn-primary', 'active-log-tab');
+        newPopularBtn.classList.remove('btn-primary', 'active-log-tab');
+        newPopularBtn.classList.add('btn-outline-primary');
+        
+        // 顯示/隱藏內容
+        recentContent.style.display = 'block';
+        popularContent.style.display = 'none';
+    });
+}
 
 // 獲取動作對應的顏色
 function getActionColor(action) {
@@ -3374,31 +3425,142 @@ function renderMobileLogs(logs) {
             </div>
         </div>
         
-        <!-- 最近測試 -->
+        <!-- 合併的最近測試和熱門目標 -->
         <div class="mobile-stats-card">
-            <h6>最近測試</h6>
-            <div class="mobile-node-status-list">
-                ${logs.slice(0, 20).map(log => `
-                    <div class="mobile-node-status-item">
-                        <div class="node-info">
-                            <div class="node-name">
-                                ${log.target || 'N/A'} 
-                                <span style="font-size: 0.8em; color: var(--text-muted);">
-                                    (${log.testType ? log.testType.toUpperCase() : 'N/A'})
-                                </span>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex gap-2">
+                    <button id="mobileShowRecentTests" class="btn btn-sm btn-primary active-mobile-log-tab" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
+                        最近測試
+                    </button>
+                    <button id="mobileShowPopularTargets" class="btn btn-sm btn-outline-primary" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
+                        熱門目標
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 最近測試內容 -->
+            <div id="mobileRecentTestsContent" class="mobile-log-section">
+                <div class="mobile-node-status-list">
+                    ${logs.slice(0, 20).map(log => `
+                        <div class="mobile-node-status-item">
+                            <div class="node-info">
+                                <div class="node-name">
+                                    ${log.target || 'N/A'} 
+                                    <span style="font-size: 0.8em; color: var(--text-muted);">
+                                        (${log.testType ? log.testType.toUpperCase() : 'N/A'})
+                                    </span>
+                                </div>
+                                <div class="node-location">
+                                    ${log.nodeName || 'N/A'} • ${formatTime(log.timestamp)}
+                                </div>
                             </div>
-                            <div class="node-location">
-                                ${log.nodeName || 'N/A'} • ${formatTime(log.timestamp)}
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                ${formatIPDisplay(log.ip || 'N/A')}
                             </div>
                         </div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">
-                            ${log.ip || 'N/A'}
-                        </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                    ${logs.length === 0 ? '<div class="text-center text-muted py-3">尚無測試記錄</div>' : ''}
+                </div>
+            </div>
+            
+            <!-- 熱門目標內容 -->
+            <div id="mobilePopularTargetsContent" class="mobile-log-section" style="display: none;">
+                <div class="mobile-node-status-list" id="mobilePopularTargetsList">
+                    <!-- 這裡將由 JavaScript 動態生成熱門目標列表 -->
+                </div>
             </div>
         </div>
     `;
+    
+    // 生成熱門目標分析
+    generateMobilePopularTargets(logs);
+    
+    // 設定手機版切換功能
+    setupMobileLogTabSwitching();
+}
+
+// 生成手機版熱門目標列表
+async function generateMobilePopularTargets(logs) {
+    const container = document.getElementById('mobilePopularTargetsList');
+    if (!container) return;
+    
+    try {
+        // 分析目標使用情況
+        const targetAnalysis = await analyzeTargetUsage(logs);
+        
+        if (targetAnalysis.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-3">尚無熱門目標記錄</div>';
+            return;
+        }
+        
+        container.innerHTML = targetAnalysis.slice(0, 15).map(target => `
+            <div class="mobile-node-status-item">
+                <div class="node-info">
+                    <div class="node-name">
+                        ${target.name}
+                        <span style="font-size: 0.8em; color: var(--text-muted);">
+                            (${target.mainTestType.toUpperCase()})
+                        </span>
+                    </div>
+                    <div class="node-location">
+                        ${formatTargetIPs(target.resolvedInfo)} • ${formatASNInfo(target.resolvedInfo)}
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge bg-primary" style="font-size: 0.7rem;">${target.count}</span>
+                    <small style="color: var(--text-muted); font-size: 0.7rem;">次</small>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('生成熱門目標失敗:', error);
+        container.innerHTML = '<div class="text-center text-muted py-3">無法載入熱門目標</div>';
+    }
+}
+
+// 設定手機版日誌標籤切換功能
+function setupMobileLogTabSwitching() {
+    const recentBtn = document.getElementById('mobileShowRecentTests');
+    const popularBtn = document.getElementById('mobileShowPopularTargets');
+    const recentContent = document.getElementById('mobileRecentTestsContent');
+    const popularContent = document.getElementById('mobilePopularTargetsContent');
+    
+    if (!recentBtn || !popularBtn || !recentContent || !popularContent) {
+        console.warn('手機版日誌標籤元素找不到');
+        return;
+    }
+    
+    // 移除舊的事件監聽器
+    const newRecentBtn = recentBtn.cloneNode(true);
+    const newPopularBtn = popularBtn.cloneNode(true);
+    recentBtn.parentNode.replaceChild(newRecentBtn, recentBtn);
+    popularBtn.parentNode.replaceChild(newPopularBtn, popularBtn);
+    
+    // 最近測試按鈕事件
+    newRecentBtn.addEventListener('click', () => {
+        // 更新按鈕狀態
+        newRecentBtn.classList.remove('btn-outline-primary');
+        newRecentBtn.classList.add('btn-primary', 'active-mobile-log-tab');
+        newPopularBtn.classList.remove('btn-primary', 'active-mobile-log-tab');
+        newPopularBtn.classList.add('btn-outline-primary');
+        
+        // 顯示/隱藏內容
+        recentContent.style.display = 'block';
+        popularContent.style.display = 'none';
+    });
+    
+    // 熱門目標按鈕事件
+    newPopularBtn.addEventListener('click', () => {
+        // 更新按鈕狀態
+        newPopularBtn.classList.remove('btn-outline-primary');
+        newPopularBtn.classList.add('btn-primary', 'active-mobile-log-tab');
+        newRecentBtn.classList.remove('btn-primary', 'active-mobile-log-tab');
+        newRecentBtn.classList.add('btn-outline-primary');
+        
+        // 顯示/隱藏內容
+        popularContent.style.display = 'block';
+        recentContent.style.display = 'none';
+    });
 }
 
 // 分析日誌數據

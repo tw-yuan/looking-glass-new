@@ -18,6 +18,11 @@
     --footer-bg: #f8f9fa;
     --link-color: var(--primary-color);
     --pre-bg: #f8f9fa;
+    
+    /* 日誌標籤相關顏色 */
+    --log-tab-bg: var(--primary-color);
+    --log-tab-text: #ffffff;
+    --log-tab-hover-bg: var(--primary-dark);
 }
 
 [data-theme="dark"] {
@@ -1813,6 +1818,84 @@ a:hover {
 .modal-backdrop.show {
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
+}
+
+/* === 日誌標籤切換按鈕樣式 === */
+
+/* 桌面版日誌標籤 */
+.active-log-tab {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.active-log-tab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* 手機版日誌標籤 */
+.active-mobile-log-tab {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.active-mobile-log-tab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.3);
+}
+
+/* 日誌內容區域切換動畫 */
+.log-content-section {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.log-content-section[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.mobile-log-section {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mobile-log-section[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* 優化日誌標籤按鈕間距 */
+#showPopularTargets,
+#showRecentTests,
+#mobileShowRecentTests,
+#mobileShowPopularTargets {
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* 按鈕組整體樣式 */
+.card-header .d-flex .d-flex {
+    gap: 8px !important;
+}
+
+/* 手機版日誌按鈕組 */
+.mobile-stats-card .d-flex .d-flex {
+    gap: 8px !important;
+}
+
+/* 響應式調整 */
+@media (max-width: 576px) {
+    #showPopularTargets,
+    #showRecentTests {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    
+    #mobileShowRecentTests,
+    #mobileShowPopularTargets {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
 }
 
  
