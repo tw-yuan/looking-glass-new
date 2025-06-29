@@ -167,7 +167,6 @@
       "networkType": "Server Hosting",
       "asn": "32595",
       "continent": "northAmerica"
-      "tags": "u-simple-taipei:unitedstates-lowend"
     },
     {
       "name": "VeeTIME",
@@ -194,7 +193,6 @@
       "asn": 138997,
       "continent": "asia",
       "lastUpdated": "2025-06-24T03:38:09.641Z"
-      "tags": "u-tw-yuan:veetime"
     }
   ],
   "lastUpdate": "2025-06-24T03:38:09.641Z",
