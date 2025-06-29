@@ -27,9 +27,24 @@ function initApiTracking() {
 // 計算剩餘時間
 function getRemainingTime() {
     const now = Date.now();
+    
+    // 確保 lastApiReset 有效
+    if (!lastApiReset || lastApiReset === 0 || lastApiReset > now) {
+        console.warn('lastApiReset 無效，重置為當前時間');
+        lastApiReset = now;
+        return API_RESET_INTERVAL; // 返回完整的重置間隔
+    }
+    
     const timeSinceReset = now - lastApiReset;
     const remainingTime = API_RESET_INTERVAL - timeSinceReset;
-    return Math.max(0, remainingTime);
+    
+    // 如果計算出的剩餘時間是負數，表示應該重置了
+    if (remainingTime <= 0) {
+        console.log('時間已過期，應該重置API計數');
+        return 0;
+    }
+    
+    return remainingTime;
 }
 
 // 格式化時間顯示
@@ -64,9 +79,12 @@ function checkApiLimit() {
 
 // 增加API請求計數並檢查限制
 function incrementApiCount() {
-    // 確保 lastApiReset 已初始化
-    if (lastApiReset === 0 || !lastApiReset) {
-        lastApiReset = Date.now();
+    const now = Date.now();
+    
+    // 確保 lastApiReset 已初始化且合理
+    if (!lastApiReset || lastApiReset === 0 || lastApiReset > now) {
+        lastApiReset = now;
+        console.log('重置API追蹤時間:', new Date(lastApiReset).toLocaleString());
     }
     
     apiRequestCount++;
@@ -78,6 +96,9 @@ function incrementApiCount() {
         const remainingTime = getRemainingTime();
         const timeString = formatTime(remainingTime);
         console.log('達到API限制，剩餘時間:', timeString, '毫秒:', remainingTime);
+        console.log('當前時間:', new Date(now).toLocaleString());
+        console.log('重置時間:', new Date(lastApiReset).toLocaleString());
+        console.log('下次可用時間:', new Date(lastApiReset + API_RESET_INTERVAL).toLocaleString());
         showGlobalpingLimitWarning(timeString);
     }
 }
