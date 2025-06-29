@@ -27,9 +27,24 @@ function initApiTracking() {
 // 計算剩餘時間
 function getRemainingTime() {
     const now = Date.now();
+    
+    // 確保 lastApiReset 有效
+    if (!lastApiReset || lastApiReset === 0 || lastApiReset > now) {
+        console.warn('lastApiReset 無效，重置為當前時間');
+        lastApiReset = now;
+        return API_RESET_INTERVAL; // 返回完整的重置間隔
+    }
+    
     const timeSinceReset = now - lastApiReset;
     const remainingTime = API_RESET_INTERVAL - timeSinceReset;
-    return Math.max(0, remainingTime);
+    
+    // 如果計算出的剩餘時間是負數，表示應該重置了
+    if (remainingTime <= 0) {
+        console.log('時間已過期，應該重置API計數');
+        return 0;
+    }
+    
+    return remainingTime;
 }
 
 // 格式化時間顯示
@@ -64,6 +79,14 @@ function checkApiLimit() {
 
 // 增加API請求計數並檢查限制
 function incrementApiCount() {
+    const now = Date.now();
+    
+    // 確保 lastApiReset 已初始化且合理
+    if (!lastApiReset || lastApiReset === 0 || lastApiReset > now) {
+        lastApiReset = now;
+        console.log('重置API追蹤時間:', new Date(lastApiReset).toLocaleString());
+    }
+    
     apiRequestCount++;
     console.log(`Globalping API使用: ${apiRequestCount}/${GLOBALPING_HOURLY_LIMIT}`);
     
@@ -72,7 +95,11 @@ function incrementApiCount() {
         isApiLimitReached = true;
         const remainingTime = getRemainingTime();
         const timeString = formatTime(remainingTime);
-        showGlobalpingLimitWarning(timeString);
+        console.log('達到API限制，剩餘時間:', timeString, '毫秒:', remainingTime);
+        console.log('當前時間:', new Date(now).toLocaleString());
+        console.log('重置時間:', new Date(lastApiReset).toLocaleString());
+        console.log('下次可用時間:', new Date(lastApiReset + API_RESET_INTERVAL).toLocaleString());
+        showGlobalpingLimitWarning();
     }
 }
 
@@ -90,7 +117,7 @@ async function makeApiRequest(url, options = {}) {
                 console.warn('Globalping API速率限制觸發');
                 const remainingTime = getRemainingTime();
                 const timeString = formatTime(remainingTime);
-                showGlobalpingLimitWarning(timeString);
+                showGlobalpingLimitWarning();
                 throw new Error(`Globalping API速率限制，請等待 ${timeString} 後再試`);
             } else if (response.status >= 500) {
                 throw new Error('伺服器錯誤，請稍後再試');
@@ -111,7 +138,7 @@ async function makeApiRequest(url, options = {}) {
 }
 
 // 顯示Globalping API限制警告
-function showGlobalpingLimitWarning(remainingTime) {
+function showGlobalpingLimitWarning() {
     // 避免重複顯示警告
     if (document.getElementById('globalpingLimitWarning')) return;
     
@@ -144,13 +171,9 @@ function showGlobalpingLimitWarning(remainingTime) {
                 <div style="font-size: 15px; line-height: 1.5; margin-bottom: 12px;">
                     您已達到每小時 <strong>250 次測試</strong> 的使用限制。
                 </div>
-                <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <div style="font-size: 14px; margin-bottom: 4px; opacity: 0.9;">ℹ️ 預估剩餘時間：</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #ffeb3b;">${remainingTime}</div>
-                </div>
                 <div style="font-size: 13px; opacity: 0.85; line-height: 1.4;">
-                    • 要提高限制，請在 <a href="https://www.globalping.io" target="_blank" style="color: #ffeb3b; text-decoration: underline;">Globalping 官網</a> 註冊帳號<br>
-                    • 註冊用戶可獲得每小時 500 次測試
+                    • 系統會在每小時自動重置 API 使用次數<br>
+                    • 請稍後再試或暫停使用一段時間
                 </div>
             </div>
             <button style="
