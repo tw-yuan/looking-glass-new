@@ -1,0 +1,25 @@
+# Cloudflare Pages 忽略檔案
+# 這些檔案不會被部署
+
+# 開發和測試檔案
+*.md
+test-*.html
+verify-*.html
+worker.js
+*.log
+*.tmp
+
+# IDE 和工具設定
+.vscode/
+.claude/
+.idea/
+.git/
+node_modules/
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# 文檔檔案
+CLOUDFLARE_SETUP.md
+README.md

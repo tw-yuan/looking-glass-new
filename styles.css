@@ -18,6 +18,11 @@
     --footer-bg: #f8f9fa;
     --link-color: var(--primary-color);
     --pre-bg: #f8f9fa;
+    
+    /* 日誌標籤相關顏色 */
+    --log-tab-bg: var(--primary-color);
+    --log-tab-text: #ffffff;
+    --log-tab-hover-bg: var(--primary-dark);
 }
 
 [data-theme="dark"] {
@@ -225,62 +230,517 @@ a:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 手機版按鈕調整 */
+/* 電腦版專用內容 */
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+/* === 手機版專用設計 === */
 @media (max-width: 768px) {
-    /* 主題切換按鈕 - 最右邊 */
-    #themeToggle {
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        width: 36px;
-        height: 36px;
-        z-index: 1000;
+    /* 隱藏電腦版內容 */
+    .desktop-only {
+        display: none !important;
     }
     
-    /* 批量測試按鈕 - 手機版隱藏 */
-    #batchTestBtn {
-        display: none;
+    /* 顯示手機版內容 */
+    .mobile-only {
+        display: block !important;
     }
     
-    /* 調色盤 - 移到批量測試的位置 */
-    .color-picker {
-        position: fixed !important;
-        top: 15px !important;
-        right: 60px !important;  /* 15px + 36px + 9px = 60px */
-        left: auto !important;
-        bottom: auto !important;
-        transform: none !important;
-        z-index: 1000;
+    /* 手機版主體重新設計 */
+    body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
     }
     
-    .color-toggle-btn {
-        position: relative !important;
-        width: 36px !important;
-        height: 36px !important;
+    main.container {
+        padding: 0 !important;
+        max-width: 100% !important;
         margin: 0 !important;
     }
     
-    .color-options {
-        position: absolute;
-        top: 45px;
+    /* 手機版頂部導航欄 */
+    .mobile-header {
+        position: sticky;
+        top: 0;
+        left: 0;
         right: 0;
-        left: auto;
-        z-index: 1001;
+        background: var(--bg-color);
+        color: var(--text-color);
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid var(--card-border);
     }
     
-    /* 手機版主要內容區域調整 */
-    main.container {
-        padding-top: 4rem !important;
+    .mobile-header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+    
+    .mobile-header .header-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .mobile-header .btn {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        color: var(--text-color);
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-header .btn:hover {
+        background: var(--light-bg);
+        color: var(--text-color);
+        border-color: var(--primary-color);
+    }
+    
+    /* 手機版節點選擇區域 */
+    .mobile-node-selector {
+        background: var(--bg-color);
+        padding: 1rem;
+    }
+    
+    .node-selector-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+    
+    /* 手機版節點列表 - 垂直滾動設計 */
+    .mobile-nodes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-height: calc(50vh - 60px);
+        overflow-y: auto;
+        padding: 0;
+        margin: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .mobile-node-item {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 點擊時的瞬間反饋 */
+    .mobile-node-item:active {
+        transform: scale(0.98);
+    }
+    
+    /* 選中狀態（持續顯示） */
+    .mobile-node-item.selected {
+        background: var(--primary-color) !important;
+        color: white !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
+        position: relative;
+    }
+    
+    /* 選中狀態的視覺標識 */
+    .mobile-node-item.selected::before {
+        content: '✓';
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .mobile-node-item .node-info {
+        flex: 1;
+    }
+    
+    .mobile-node-item .node-name {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-color);
+    }
+    
+    .mobile-node-item.selected .node-name {
+        color: white !important;
+    }
+    
+    .mobile-node-item .node-location {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .mobile-node-item.selected .node-location {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .mobile-node-item .node-provider {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .mobile-node-item.selected .node-provider {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    .mobile-node-item .node-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .mobile-node-item .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    
+    .mobile-node-item .status-indicator.online {
+        background: #28a745;
+        box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+    }
+    
+    .mobile-node-item .status-indicator.offline {
+        background: #dc3545;
+        box-shadow: 0 0 6px rgba(220, 53, 69, 0.4);
+    }
+    
+    
+    /* 手機版測試區域 */
+    .mobile-test-area {
+        background: var(--light-bg);
+        padding: 1rem;
+        border-top: 1px solid var(--card-border);
+    }
+    
+    .mobile-test-form {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-test-form .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+    }
+    
+    .mobile-test-form .form-control,
+    .mobile-test-form .form-select {
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        padding: 0.75rem;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        background: var(--input-bg);
+        color: var(--text-color);
+    }
+    
+    .mobile-test-form .form-control:focus,
+    .mobile-test-form .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+    
+    .mobile-test-form .btn-primary {
+        width: 100%;
+        padding: 0.875rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        border: none;
+        background: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-test-form .btn-primary:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+    }
+    
+    /* 手機版測試結果 */
+    .mobile-test-results {
+        background: var(--card-bg);
+        border-radius: 12px;
+        margin-top: 1rem;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-test-results .result-header {
+        background: var(--primary-color);
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mobile-test-results .result-content {
+        padding: 1rem;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        font-size: 0.75rem;
+        line-height: 1.3;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--pre-bg);
+        color: var(--text-color);
+    }
+    
+    /* 手機版測試結果優化顯示 */
+    .mobile-test-results .result-content.formatted {
+        white-space: normal;
+        word-break: normal;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+    
+    .mobile-test-results .hop-line {
+        display: block;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .mobile-test-results .hop-number {
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-right: 0.5rem;
+    }
+    
+    .mobile-test-results .hop-ip {
+        color: var(--text-color);
+        font-weight: 500;
+    }
+    
+    .mobile-test-results .hop-time {
+        color: var(--text-muted);
+        font-size: 0.85em;
+        margin-left: 0.5rem;
+    }
+    
+    .mobile-test-results .ping-line {
+        display: block;
+        margin-bottom: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    
+    .mobile-test-results .ping-line:nth-child(odd) {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* 深色模式下的手機版測試結果樣式 */
+    [data-theme="dark"] .mobile-test-results .hop-line {
+        background: rgba(255, 255, 255, 0.05);
+        border-left-color: var(--primary-light);
+    }
+    
+    [data-theme="dark"] .mobile-test-results .hop-number {
+        color: var(--primary-light);
+    }
+    
+    [data-theme="dark"] .mobile-test-results .ping-line:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    /* 深色模式下的節點選中狀態 */
+    [data-theme="dark"] .mobile-node-item.selected {
+        background: var(--primary-light) !important;
+        border-color: var(--primary-light) !important;
+        box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3) !important;
+    }
+    
+    /* 隱藏原有的電腦版元素 */
+    .desktop-only,
+    footer {
+        display: none !important;
+    }
+    
+    /* 隱藏原有的頂部按鈕 */
+    .top-button,
+    .color-toggle-btn,
+    .color-picker,
+    #themeToggle,
+    #statsBtn,
+    #batchTestBtn {
+        display: none !important;
+    }
+    
+    /* 手機版模態框樣式 */
+    #mobileStatsModal .modal-content,
+    #mobileLogsModal .modal-content {
+        border-radius: 0;
+        height: 100vh;
+    }
+    
+    #mobileStatsModal .modal-header,
+    #mobileLogsModal .modal-header {
+        background: var(--bg-color);
+        color: var(--text-color);
+        border-bottom: 1px solid var(--card-border);
+        padding: 1rem;
+    }
+    
+    #mobileStatsModal .modal-header .btn-close,
+    #mobileLogsModal .modal-header .btn-close {
+        filter: none;
+    }
+    
+    /* 深色模式下的關閉按鈕 */
+    [data-theme="dark"] #mobileStatsModal .modal-header .btn-close,
+    [data-theme="dark"] #mobileLogsModal .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    
+    #mobileStatsModal .modal-body,
+    #mobileLogsModal .modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+        height: calc(100vh - 70px);
+    }
+    
+    /* 手機版統計卡片 */
+    .mobile-stats-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--card-border);
+    }
+    
+    .mobile-stats-card h6 {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-color);
+        font-size: 0.9rem;
+    }
+    
+    .mobile-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-stat-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: var(--light-bg);
+        border-radius: 8px;
+    }
+    
+    .mobile-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .mobile-stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    
+    /* 手機版節點狀態列表 */
+    .mobile-node-status-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .mobile-node-status-item {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mobile-node-status-item .node-info {
+        flex: 1;
+    }
+    
+    .mobile-node-status-item .node-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-color);
+    }
+    
+    .mobile-node-status-item .node-location {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .mobile-node-status-item .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .mobile-node-status-item .status-badge.online {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .mobile-node-status-item .status-badge.offline {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
     }
 }
 
-[data-theme="dark"] #themeToggle {
-    background-color: var(--light-bg);
-    border-color: var(--card-border);
-    color: var(--text-color);
-}
-
-[data-theme="dark"] #batchTestBtn {
+[data-theme="dark"] .top-button,
+[data-theme="dark"] .color-toggle-btn {
     background-color: var(--light-bg);
     border-color: var(--card-border);
     color: var(--text-color);
@@ -382,11 +842,45 @@ a:hover {
     --primary-light: #4dd0a7;
 }
 
+/* 統一的按鈕基礎樣式 */
+.top-button {
+    position: fixed;
+    top: 20px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.top-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 主題切換按鈕 */
+#themeToggle {
+    right: 20px;
+}
+
+/* 統計按鈕 */
+#statsBtn {
+    right: 70px;
+}
+
 /* 主題色選擇器樣式 */
 .color-picker {
     position: fixed;
     top: 20px;
-    right: 70px;
+    right: 120px;
     z-index: 1000;
 }
 
@@ -497,11 +991,88 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+}
+
+/* 統計面板深色主題支援 */
+.modal-content {
+    background-color: var(--modal-content-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--card-border) !important;
+}
+
+.modal-header {
+    background-color: var(--modal-content-bg) !important;
+    color: var(--text-color) !important;
+    border-bottom-color: var(--card-border) !important;
+}
+
+.modal-body {
+    background-color: var(--modal-content-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--card-border) !important;
+    color: var(--text-color) !important;
+}
+
+.card-header {
+    background-color: var(--light-bg) !important;
+    border-bottom-color: var(--card-border) !important;
+    color: var(--text-color) !important;
+}
+
+.card-body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.table {
+    color: var(--text-color) !important;
+    --bs-table-bg: var(--card-bg) !important;
+}
+
+.table th {
+    border-bottom-color: var(--card-border) !important;
+    color: var(--text-color) !important;
+}
+
+.table td {
+    border-top-color: var(--card-border) !important;
+    color: var(--text-color) !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--light-bg) !important;
+}
+
+.btn-close {
+    filter: var(--bs-btn-close-filter, invert(1) grayscale(100%) brightness(200%));
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* 統計面板置中顯示 */
+#statsModal .modal-dialog.modal-xl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 3.5rem);
+    margin: 1.75rem auto;
+    max-width: 90%;
+}
+
+@media (min-width: 1200px) {
+    #statsModal .modal-dialog.modal-xl {
+        max-width: 85%;
+    }
 }
 
 .node-card-status .bi-circle-fill {
-    font-size: 10px;
+    font-size: 8px;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
@@ -814,6 +1385,39 @@ a:hover {
     color: var(--text-color);
 }
 
+/* 統計面板進度條樣式 */
+.progress {
+    background-color: var(--light-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] .progress {
+    background-color: var(--input-bg);
+}
+
+[data-theme="dark"] .progress-bar {
+    background-color: var(--primary-light);
+}
+
+/* 統計卡片間距調整 */
+#regionStats .d-flex,
+#networkStats .d-flex {
+    margin-bottom: 0.75rem;
+}
+
+#regionStats .d-flex:last-child,
+#networkStats .d-flex:last-child {
+    margin-bottom: 0;
+}
+
+
 /* 手機版優化 */
 @media (max-width: 768px) {
     .batch-result-status {
@@ -841,6 +1445,597 @@ a:hover {
     
     .batch-results.view-cards {
         grid-template-columns: 1fr;
+    }
+}
+
+/* 日誌模態框樣式優化 */
+#logsModal {
+    z-index: 1060;
+}
+
+/* 使用情況分析模態框置中顯示（參考統計面板） */
+#logsModal.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+#logsModal .modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 45%;
+    min-width: 480px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 3.5rem);
+}
+
+#logsModal.modal.show .modal-dialog {
+    transform: none !important;
+    margin: 0;
+}
+
+#logsModal .modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: var(--modal-content-bg);
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: .3rem;
+    outline: 0;
+    max-height: calc(100vh - 3.5rem);
+}
+
+#logsModal .modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(85vh - 100px);
+}
+
+/* 修復關閉動畫 */
+#logsModal.fade {
+    transition: opacity .15s linear;
+}
+
+#logsModal.fade .modal-dialog {
+    transition: transform .3s ease-out;
+    transform: translate(0, -50px);
+}
+
+#logsModal.show .modal-dialog {
+    transform: none;
+}
+
+/* 優化性能：減少重繪 */
+#logsModal .table-responsive {
+    will-change: scroll-position;
+}
+
+#logsModal .card-body > div[style*="max-height"] {
+    will-change: scroll-position;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 日誌介面空間優化 */
+#logsModal .table {
+    margin-bottom: 0 !important;
+}
+
+#logsModal .table td,
+#logsModal .table th {
+    padding: 0.375rem 0.5rem !important;
+    line-height: 1.5 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* 為不同欄位設定合適寬度 - 4欄版本 */
+#logsModal .table th:nth-child(1),
+#logsModal .table td:nth-child(1) {
+    min-width: 140px;
+    max-width: 160px;
+}
+
+#logsModal .table th:nth-child(2),
+#logsModal .table td:nth-child(2) {
+    min-width: 120px;
+    max-width: 140px;
+}
+
+#logsModal .table th:nth-child(3),
+#logsModal .table td:nth-child(3) {
+    min-width: 100px;
+    max-width: 120px;
+}
+
+#logsModal .table th:nth-child(4),
+#logsModal .table td:nth-child(4) {
+    min-width: 80px;
+    max-width: 100px;
+}
+
+/* Tooltip 效果 */
+#logsModal [title] {
+    cursor: help;
+    position: relative;
+}
+
+#logsModal [title]:hover {
+    background-color: var(--light-bg);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+/* 確保文字不會被截斷時顯示省略號 */
+#logsModal .text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 統計面板進度條對齊優化 */
+#regionStats .progress,
+#networkStats .progress {
+    border-radius: 4px;
+    background-color: var(--light-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#regionStats .progress-bar,
+#networkStats .progress-bar {
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* 統計項目對齊 */
+#regionStats .d-flex,
+#networkStats .d-flex {
+    min-height: 24px;
+}
+
+/* 文字長度統一 */
+#regionStats .text-muted,
+#networkStats .text-muted {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+}
+
+#logsModal .card-header {
+    padding: 0.5rem 0.75rem !important;
+}
+
+#logsModal .badge {
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* 緊湊模式下的間距調整 */
+#logsModal .row {
+    margin: 0 !important;
+}
+
+#logsModal .row > * {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+}
+
+/* 防止內容太擠 */
+#logsModal .table-responsive {
+    font-size: 1rem !important;
+}
+
+#logsModal .card {
+    overflow: hidden;
+}
+
+/* 確保按鈕不會太小 */
+#logsModal .btn {
+    min-width: auto !important;
+    white-space: nowrap;
+}
+
+/* 日誌表格樣式優化 */
+#logsModal .table thead th {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600;
+    text-align: center;
+}
+
+#logsModal .table tbody td {
+    vertical-align: middle;
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* 手機版日誌優化 */
+@media (max-width: 768px) {
+    #logsModal .modal-dialog {
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
+        height: calc(100vh - 0.5rem);
+        max-height: calc(100vh - 0.5rem);
+    }
+    
+    #logsModal .modal-content {
+        height: 100%;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    #logsModal .modal-header {
+        padding: 0.75rem 1rem;
+        background: var(--primary-color);
+        color: white;
+        border-bottom: none;
+        flex-shrink: 0;
+    }
+    
+    #logsModal .modal-header .modal-title {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    #logsModal .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+        margin: 0;
+        padding: 0.5rem;
+    }
+    
+    #logsModal .modal-body {
+        padding: 0.75rem;
+        font-size: 1rem;
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    #logsModal .modal-footer {
+        padding: 0.5rem 1rem;
+        border-top: 1px solid var(--card-border);
+        flex-shrink: 0;
+    }
+    
+    /* 統計概覽手機版 */
+    #logsModal .row .col-3 {
+        margin-bottom: 0.5rem;
+        padding: 0 0.5rem;
+    }
+    
+    #logsModal .row .col-3 > div {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    #logsModal .row .col-3 h5 {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #logsModal .row .col-3 small {
+        font-size: 0.875rem;
+    }
+    
+    /* 卡片間距調整 */
+    #logsModal .card {
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+    }
+    
+    #logsModal .card-header {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+    
+    #logsModal .card-body {
+        padding: 0;
+    }
+    
+    /* 表格優化 */
+    #logsModal .table {
+        font-size: 0.875rem;
+        margin-bottom: 0;
+    }
+    
+    #logsModal .table th {
+        padding: 0.5rem 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    #logsModal .table td {
+        padding: 0.375rem 0.375rem;
+        vertical-align: middle;
+        line-height: 1.5;
+    }
+    
+    /* 節點表格特殊調整 */
+    #logsModal .table td .fw-bold {
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    
+    #logsModal .table td small {
+        font-size: 0.75rem;
+        display: block;
+        margin-top: 0.25rem;
+    }
+    
+    /* 徽章大小調整 */
+    #logsModal .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* 按鈕組優化 */
+    #logsModal .card-header .btn-sm {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+        margin-left: 0.5rem;
+    }
+    
+    /* 最近活動表格特殊處理 */
+    #logsModal .card:last-child .table td {
+        font-size: 0.875rem;
+    }
+    
+    /* 滾動區域優化 */
+    #logsModal .card-body > div[style*="max-height"] {
+        max-height: 150px !important;
+    }
+    
+    /* 手機版日誌模態框 */
+    #logsModal .modal-dialog {
+        max-width: 90% !important;
+        min-width: auto !important;
+        margin: 0.5rem auto !important;
+    }
+    
+    #logsModal .modal-body {
+        padding: 0.75rem !important;
+    }
+    
+    #logsModal .row .col-3 {
+        padding: 0.5rem !important;
+    }
+    
+    #logsModal .card {
+        margin-bottom: 0.5rem !important;
+    }
+}
+
+/* 模態框背景模糊效果 */
+.modal-backdrop.show {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+/* === 日誌標籤切換按鈕樣式 === */
+
+/* 桌面版日誌標籤 */
+.active-log-tab {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.active-log-tab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* 手機版日誌標籤 */
+.active-mobile-log-tab {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.active-mobile-log-tab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.3);
+}
+
+/* 日誌內容區域切換動畫 */
+.log-content-section {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.log-content-section[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.mobile-log-section {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mobile-log-section[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* 優化日誌標籤按鈕間距 */
+#showPopularTargets,
+#showRecentTests,
+#mobileShowRecentTests,
+#mobileShowPopularTargets {
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* 按鈕組整體樣式 */
+.card-header .d-flex .d-flex {
+    gap: 8px !important;
+}
+
+/* 手機版日誌按鈕組 */
+.mobile-stats-card .d-flex .d-flex {
+    gap: 8px !important;
+}
+
+/* 響應式調整 */
+@media (max-width: 576px) {
+    #showPopularTargets,
+    #showRecentTests {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    
+    #mobileShowRecentTests,
+    #mobileShowPopularTargets {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+}
+
+/* === 熱門目標名次徽章樣式 === */
+
+/* 名次徽章簡單樣式 */
+.badge[style*="font-size: 0.7rem"],
+.badge[style*="font-size: 0.8rem"] {
+    font-weight: 600;
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+/* 手機版熱門目標項目樣式優化 */
+.mobile-node-status-item > div[style*="display: flex"] {
+    align-items: center;
+}
+
+/* 熱門目標表格名次欄位寬度 */
+th[style*="width: 50px"] {
+    white-space: nowrap;
+}
+
+/* === 手機版詳細資訊模態框樣式 === */
+
+.mobile-info-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.mobile-info-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.mobile-info-section h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.mobile-contact-list,
+.mobile-link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mobile-contact-item,
+.mobile-link-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--light-bg);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.mobile-contact-item:hover,
+.mobile-link-item:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(13, 110, 253, 0.3);
+}
+
+.mobile-contact-item i,
+.mobile-link-item i {
+    font-size: 1.2rem;
+    width: 1.5rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mobile-contact-item span,
+.mobile-link-item span {
+    font-weight: 500;
+    flex: 1;
+}
+
+/* 手機版Footer優化 */
+@media (max-width: 768px) {
+    footer {
+        padding: 2rem 1rem !important;
+        margin-top: 2rem !important;
+    }
+    
+    footer .container {
+        padding: 0 !important;
+    }
+    
+    footer .row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    footer .col-md-6,
+    footer .col-md-3 {
+        width: 100%;
+        padding: 0;
+    }
+    
+    footer h2 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    footer p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    footer ul {
+        margin-bottom: 0;
+    }
+    
+    footer ul li {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    footer ul li a {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    footer hr {
+        margin: 1.5rem 0 !important;
+    }
+    
+    footer .text-center small {
+        font-size: 0.8rem;
+        line-height: 1.4;
     }
 }
 

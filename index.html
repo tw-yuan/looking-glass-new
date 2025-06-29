@@ -10,11 +10,11 @@
     <link rel="canonical" href="https://lg.yuan-tw.net">
     
     <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="/site.webmanifest"> -->
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZJEGGWYWC2"></script>
@@ -28,23 +28,17 @@
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Looking Glass - 網路監控工具">
-    <meta property="og:description" content="由一群 BGP Player 維護的開源網路監控專案，提供全球網路節點的連接測試服務。">
+    <meta property="og:description" content="開源網路監控工具，提供 Ping、Traceroute、MTR 等多種網路診斷功能。支援全球多個測試節點，即時檢測網路連接狀態。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://lg.yuan-tw.net">
     <meta property="og:site_name" content="Looking Glass">
     <meta property="og:locale" content="zh_TW">
-    <meta property="og:image" content="https://lg.yuan-tw.net/og-image.svg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Looking Glass - 網路監控工具">
-    <meta property="og:updated_time" content="2025-05-23T00:00:00+08:00">
     
-    <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image">
+    <!-- Twitter Card Meta Tags (簡化版) -->
+    <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Looking Glass - 網路監控工具">
-    <meta name="twitter:description" content="由一群 BGP Player 維護的開源網路監控專案，提供全球網路節點的連接測試服務。">
-    <meta name="twitter:image" content="https://lg.yuan-tw.net/og-image.svg">
-    <meta name="twitter:image:alt" content="Looking Glass - 網路監控工具">
+    <meta name="twitter:description" content="開源網路診斷工具 | Ping, Traceroute, MTR 測試 | 全球節點支援">
+    <meta name="twitter:site" content="@yuan_tw_net">
     
     <!-- Schema.org Markup -->
     <script type="application/ld+json">
@@ -111,22 +105,86 @@
             <div class="color-option" data-color="teal" title="青色主題"></div>
         </div>
     </div>
-    <button class="btn btn-outline-secondary btn-sm" id="themeToggle" aria-label="切換深色模式">
+    <button class="btn btn-outline-secondary btn-sm top-button" id="themeToggle" aria-label="切換深色模式">
         <i class="bi bi-moon-fill"></i>
     </button>
-    <button id="batchTestBtn" title="批量測試">
-        <i class="bi bi-speedometer2"></i>
+    <button class="top-button" id="statsBtn" title="節點統計">
+        <i class="bi bi-graph-up"></i>
     </button>
     
     <main class="container py-5">
-        <div class="text-center mb-4">
+        <!-- 電腦版標題區域 -->
+        <div class="text-center mb-4 desktop-only">
             <h1 class="mb-2">Looking Glass</h1>
             <p class="text-muted mb-0">由一群 BGP Player 維護的開源網路監控專案</p>
         </div>
         
-        <section class="row justify-content-center g-4" id="nodesContainer" aria-label="網路節點列表">
+        <!-- 電腦版節點容器 -->
+        <section class="row justify-content-center g-4 desktop-only" id="nodesContainer" aria-label="網路節點列表">
             <!-- 節點卡片將由 JavaScript 動態生成 -->
         </section>
+
+        <!-- 手機版專用界面 -->
+        <div class="mobile-only d-none">
+            <!-- 手機版頂部導航欄 -->
+            <div class="mobile-header">
+                <h1>Looking Glass</h1>
+                <div class="header-actions">
+                    <button class="btn" id="mobileInfoBtn" aria-label="詳細資訊">
+                        <i class="bi bi-info-circle"></i>
+                    </button>
+                    <button class="btn" id="mobileLogsBtn" aria-label="使用日誌">
+                        <i class="bi bi-journal-text"></i>
+                    </button>
+                    <button class="btn" id="mobileThemeToggle" aria-label="切換深色模式">
+                        <i class="bi bi-moon-fill"></i>
+                    </button>
+                    <button class="btn" id="mobileStatsBtn" aria-label="節點統計">
+                        <i class="bi bi-graph-up"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 手機版節點選擇區域 -->
+            <div class="mobile-node-selector">
+                <div class="node-selector-title">選擇測試節點</div>
+                <div class="mobile-nodes-list" id="mobileNodesList">
+                    <!-- 手機版節點列表將由 JavaScript 動態生成 -->
+                </div>
+            </div>
+
+            <!-- 手機版測試區域 -->
+            <div class="mobile-test-area">
+                <div class="mobile-test-form">
+                    <div class="mb-3">
+                        <label for="mobileTargetHost" class="form-label">目標主機</label>
+                        <input type="text" class="form-control" id="mobileTargetHost" placeholder="輸入 IP 或域名">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mobileTestType" class="form-label">測試類型</label>
+                        <select class="form-select" id="mobileTestType">
+                            <option value="ping">Ping</option>
+                            <option value="traceroute">Traceroute</option>
+                            <option value="mtr">MTR</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="mobileStartTest" disabled>請先選擇節點</button>
+                </div>
+
+                <!-- 手機版測試結果區域 -->
+                <div class="mobile-test-results d-none" id="mobileTestResults">
+                    <div class="result-header">
+                        <span id="mobileResultTitle">測試結果</span>
+                        <button class="btn btn-sm" id="mobileCopyResult" style="background: rgba(255,255,255,0.2); border: none; color: white;">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <div class="result-content" id="mobileResultContent">
+                        <!-- 測試結果將顯示在這裡 -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
 
         <!-- 模態框 -->
@@ -185,71 +243,286 @@
             </div>
         </div>
 
-        <!-- 批量測試模態框 -->
-        <div class="modal fade" id="batchTestModal" tabindex="-1" role="dialog" aria-labelledby="batchTestModalLabel" aria-hidden="true">
+        <!-- 統計面板模態框 -->
+        <div class="modal fade" id="statsModal" tabindex="-1" role="dialog" aria-labelledby="statsModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 class="modal-title h5" id="batchTestModalLabel">批量測試</h2>
+                        <h2 class="modal-title h5" id="statsModalLabel">節點統計面板</h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row h-100">
-                            <!-- 左側：測試設定 -->
-                            <div class="col-md-4 d-flex flex-column">
-                                <h6 class="mb-3">測試設定</h6>
-                                <div class="mb-3">
-                                    <label for="batchTarget" class="form-label">目標主機</label>
-                                    <input type="text" class="form-control" id="batchTarget" placeholder="輸入 IP 或域名">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="batchTestType" class="form-label">測試類型</label>
-                                    <select class="form-select" id="batchTestType">
-                                        <option value="ping">Ping</option>
-                                        <option value="traceroute">Traceroute</option>
-                                        <option value="mtr" selected>MTR</option>
-                                    </select>
-                                </div>
-                                
-                                <h6 class="mb-3">選擇節點</h6>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="selectAllNodes">
-                                        <label class="form-check-label fw-bold" for="selectAllNodes">
-                                            全選/取消全選
-                                        </label>
+                        <!-- 最後更新時間 -->
+                        <div class="text-end text-muted small mb-3">
+                            <span id="lastUpdateTime">尚未更新</span>
+                        </div>
+                        
+                        <!-- 統計概覽 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">總節點數</h6>
+                                        <h3 class="mb-0" id="totalNodesCount">-</h3>
                                     </div>
                                 </div>
-                                <div class="node-selection-list" id="nodeSelectionList" style="max-height: 300px; overflow-y: auto;">
-                                    <!-- 節點選擇列表將由 JavaScript 生成 -->
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">線上節點</h6>
+                                        <h3 class="mb-0" id="onlineNodesCount">-</h3>
+                                    </div>
                                 </div>
-                                
-                                <div class="mt-3">
-                                    <button class="btn btn-primary w-100" id="startBatchTest">
-                                        <i class="bi bi-play-fill me-1"></i>開始批量測試
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">下線節點</h6>
+                                        <h3 class="mb-0" id="offlineNodesCount">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">上線率</h6>
+                                        <h3 class="mb-0" id="onlinePercentage">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 地區統計 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">地區</h6>
+                                    </div>
+                                    <div class="card-body" id="regionStats" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-center text-muted">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">載入中...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">網絡類型</h6>
+                                    </div>
+                                    <div class="card-body" id="networkStats" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-center text-muted">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">載入中...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 節點分佈 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-geo-alt me-2"></i>節點分佈
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">亞洲</h6>
+                                                    <h4 class="mb-0 text-primary" id="asiaNodes">-</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">歐洲</h6>
+                                                    <h4 class="mb-0 text-success" id="europeNodes">-</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">北美洲</h6>
+                                                    <h4 class="mb-0 text-info" id="northAmericaNodes">-</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">南美洲</h6>
+                                                    <h4 class="mb-0 text-warning" id="southAmericaNodes">-</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">大洋洲</h6>
+                                                    <h4 class="mb-0 text-danger" id="oceaniaNodes">-</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4 col-md-2">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted small mb-1">非洲</h6>
+                                                    <h4 class="mb-0 text-secondary" id="africaNodes">-</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 節點詳細列表 -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>節點狀態
+                                </h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-info me-2" onclick="showUsageLogs()" title="查看使用日誌">
+                                        <i class="bi bi-journal-text"></i> 日誌
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" id="refreshStats">
+                                        <i class="bi bi-arrow-clockwise"></i> 刷新
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- 右側：測試結果 -->
-                            <div class="col-md-8 d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0">測試結果</h6>
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-outline-primary btn-sm" id="compareSelectedBtn" style="display: none;">
-                                            <i class="bi bi-layout-sidebar me-1"></i>比較選中
-                                        </button>
-                                        <div class="text-muted small align-self-center" id="batchProgress">選擇節點並開始測試</div>
-                                    </div>
-                                </div>
-                                
-                                <div id="batchResults" class="batch-results flex-grow-1 d-flex align-items-center justify-content-center">
-                                    <div class="text-center text-muted">
-                                        <i class="bi bi-speedometer2 fs-1 mb-3"></i>
-                                        <p>選擇要測試的節點並點擊「開始批量測試」</p>
-                                    </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>節點名稱</th>
+                                                <th>位置</th>
+                                                <th>提供者</th>
+                                                <th>狀態</th>
+                                                <th>ASN</th>
+                                                <th>網路類型</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="nodeDetailsList">
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">
+                                                    <div class="spinner-border spinner-border-sm" role="status">
+                                                        <span class="visually-hidden">載入中...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版統計模態框 -->
+        <div class="modal fade" id="mobileStatsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">節點統計</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileStatsContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">載入中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版日誌模態框 -->
+        <div class="modal fade" id="mobileLogsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">使用日誌</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileLogsContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">載入中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版詳細資訊模態框 -->
+        <div class="modal fade" id="mobileInfoModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">詳細資訊</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileInfoContent">
+                        <!-- 關於我們 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-people me-2"></i>關於我們</h6>
+                            <p class="text-muted mb-3">
+                                這是由 Zhuyuan、CH、Yuan 共同維護的開源專案，使用 Smokeping 以及 Globalping 監測網路品質。
+                            </p>
+                            <p class="text-muted">
+                                如想新增使用節點，請至Github提交 <a href="https://github.com/tw-yuan/looking-glass-new" class="text-decoration-none" target="_blank" rel="noopener">Pull Request</a>。
+                                <br>想了解網路品質？請至 <a href="https://smokeping.zhuyuan.tw" class="text-decoration-none" target="_blank" rel="noopener">Smokeping</a> 查看，新增監控對象請與我們聯繫。
+                            </p>
+                        </div>
+                        
+                        <!-- 聯絡我們 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-envelope me-2"></i>聯絡我們</h6>
+                            <div class="mobile-contact-list">
+                                <a href="mailto:me@yuan-tw.net" class="mobile-contact-item">
+                                    <i class="bi bi-envelope"></i>
+                                    <span>me@yuan-tw.net</span>
+                                </a>
+                                <a href="https://github.com/tw-yuan/looking-glass-new" class="mobile-contact-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-github"></i>
+                                    <span>GitHub</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 相關連結 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-link-45deg me-2"></i>相關連結</h6>
+                            <div class="mobile-link-list">
+                                <a href="https://smokeping.zhuyuan.tw" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-graph-up"></i>
+                                    <span>Smokeping</span>
+                                </a>
+                                <a href="https://tools.cre0809.com/myip/" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>IP 資訊查詢</span>
+                                </a>
+                                <a href="https://ncse.tw" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-globe"></i>
+                                    <span>NCSE Network</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 版權訊息 -->
+                        <div class="mobile-info-section text-center">
+                            <small class="text-muted">
+                                &copy; <span class="copyright-year">2024</span> Looking Glass @yuan-tw.net, @zhuyuan.tw, @c-h.tw<br>
+                                All rights reserved.
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -289,6 +562,9 @@
                         <li class="mb-2">
                             <a href="https://smokeping.zhuyuan.tw" class="text-decoration-none" target="_blank" rel="noopener">Smokeping</a>
                         </li>
+                        <li class="mb-2">
+                            <a href="https://tools.cre0809.com/myip/" class="text-decoration-none" target="_blank" rel="noopener">IP 資訊查詢</a>
+                        </li>
                         <li>
                             <a href="https://ncse.tw" class="text-decoration-none" target="_blank" rel="noopener">NCSE Network</a>
                         </li>
@@ -297,12 +573,13 @@
             </div>
             <hr class="my-4">
             <div class="text-center text-muted">
-                <small>&copy; <span class="copyright-year">2024</span> Looking Glass @yuan-tw.net, @zhuyuan.tw, @c-h.tw<br>All rights reserved.</small>
+                <small>&copy; <span class="copyright-year">2025</span> Looking Glass @yuan-tw.net, @zhuyuan.tw, @c-h.tw<br>All rights reserved.</small>
             </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 
