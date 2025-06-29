@@ -343,6 +343,11 @@ async function analyzeTargetUsage(logs) {
     
     logs.forEach(log => {
         if (log.action === 'test_started' && log.target && log.target !== 'null') {
+            // 過濾內網IP和localhost
+            if (isPrivateOrLocalhost(log.target)) {
+                return; // 跳過內網IP和localhost
+            }
+            
             const target = log.target.toLowerCase();
             if (!targetStats[target]) {
                 targetStats[target] = {
@@ -386,6 +391,45 @@ function detectTargetType(target) {
     if (!target || target === 'null') return '未知';
     if (isIPAddress(target)) return 'IP';
     return '域名';
+}
+
+// 檢查是否為內網IP或localhost
+function isPrivateOrLocalhost(target) {
+    if (!target) return false;
+    
+    // localhost 和相關變體
+    const localhostPatterns = [
+        /^localhost$/i,
+        /^127\.0\.0\.1$/,
+        /^::1$/,
+        /^0\.0\.0\.0$/
+    ];
+    
+    // 內網IP範圍
+    const privateIPPatterns = [
+        /^10\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,          // 10.0.0.0/8
+        /^172\.(1[6-9]|2\d|3[01])\.(\d{1,3})\.(\d{1,3})$/, // 172.16.0.0/12
+        /^192\.168\.(\d{1,3})\.(\d{1,3})$/,                // 192.168.0.0/16
+        /^169\.254\.(\d{1,3})\.(\d{1,3})$/,                // 169.254.0.0/16 (Link-local)
+        /^fc[0-9a-f]{2}:/i,                                   // IPv6 private
+        /^fe80:/i                                             // IPv6 link-local
+    ];
+    
+    // 檢查localhost
+    for (const pattern of localhostPatterns) {
+        if (pattern.test(target)) {
+            return true;
+        }
+    }
+    
+    // 檢查內網IP
+    for (const pattern of privateIPPatterns) {
+        if (pattern.test(target)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 // 處理 IP 顯示（支援 IPv4 和 IPv6）
@@ -896,8 +940,8 @@ async function updateLogsModalContent(stats, nodeUsageArray, recentLogs) {
                                 ${targetAnalysis.slice(0, maxTargetDisplay).map((target, index) => `
                                     <tr>
                                         <td class="py-1 text-center">
-                                            <span class="badge ${index < 3 ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.7rem;">
-                                                ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                            <span class="badge bg-secondary" style="font-size: 0.7rem;">
+                                                ${index + 1}
                                             </span>
                                         </td>
                                         <td class="py-1 text-center">
@@ -3503,8 +3547,8 @@ async function generateMobilePopularTargets(logs) {
             <div class="mobile-node-status-item">
                 <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
                     <div style="flex-shrink: 0;">
-                        <span class="badge ${index < 3 ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.8rem; min-width: 2.5rem;">
-                            ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                        <span class="badge bg-secondary" style="font-size: 0.8rem; min-width: 2.5rem;">
+                            ${index + 1}
                         </span>
                     </div>
                     <div class="node-info" style="flex: 1;">
