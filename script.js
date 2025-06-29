@@ -3016,6 +3016,12 @@ function setupMobileEventListeners() {
         mobileLogsBtn.addEventListener('click', showMobileLogsModal);
     }
     
+    // 詳細資訊按鈕
+    const mobileInfoBtn = document.getElementById('mobileInfoBtn');
+    if (mobileInfoBtn) {
+        mobileInfoBtn.addEventListener('click', showMobileInfoModal);
+    }
+    
     // 開始測試按鈕
     const mobileStartTest = document.getElementById('mobileStartTest');
     if (mobileStartTest) {
@@ -3380,6 +3386,20 @@ async function showMobileLogsModal() {
     await loadMobileLogs();
 }
 
+// 顯示手機版詳細資訊模態框
+function showMobileInfoModal() {
+    const modal = document.getElementById('mobileInfoModal');
+    const modalInstance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+    
+    modalInstance.show();
+    
+    // 更新版權年份
+    const copyrightYear = document.querySelector('#mobileInfoModal .copyright-year');
+    if (copyrightYear) {
+        copyrightYear.textContent = new Date().getFullYear();
+    }
+}
+
 // 載入手機版日誌數據
 async function loadMobileLogs() {
     const container = document.getElementById('mobileLogsContent');
@@ -3419,6 +3439,9 @@ async function loadMobileLogs() {
         // 如果伺服器沒有數據，使用本地數據
         if (logs.length === 0) {
             logs = usageLogs.slice(-50).reverse(); // 最近50條，倒序顯示
+            console.log('使用本地日誌數據:', logs.length, '條記錄');
+        } else {
+            console.log('使用伺服器日誌數據:', logs.length, '條記錄');
         }
         
         // 渲染手機版日誌UI

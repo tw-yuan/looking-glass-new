@@ -1918,4 +1918,125 @@ th[style*="width: 50px"] {
     white-space: nowrap;
 }
 
+/* === 手機版詳細資訊模態框樣式 === */
+
+.mobile-info-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.mobile-info-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.mobile-info-section h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.mobile-contact-list,
+.mobile-link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mobile-contact-item,
+.mobile-link-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--light-bg);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.mobile-contact-item:hover,
+.mobile-link-item:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(13, 110, 253, 0.3);
+}
+
+.mobile-contact-item i,
+.mobile-link-item i {
+    font-size: 1.2rem;
+    width: 1.5rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mobile-contact-item span,
+.mobile-link-item span {
+    font-weight: 500;
+    flex: 1;
+}
+
+/* 手機版Footer優化 */
+@media (max-width: 768px) {
+    footer {
+        padding: 2rem 1rem !important;
+        margin-top: 2rem !important;
+    }
+    
+    footer .container {
+        padding: 0 !important;
+    }
+    
+    footer .row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    footer .col-md-6,
+    footer .col-md-3 {
+        width: 100%;
+        padding: 0;
+    }
+    
+    footer h2 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    footer p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    footer ul {
+        margin-bottom: 0;
+    }
+    
+    footer ul li {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    footer ul li a {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    footer hr {
+        margin: 1.5rem 0 !important;
+    }
+    
+    footer .text-center small {
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+}
+
  

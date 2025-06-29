@@ -136,6 +136,9 @@
             <div class="mobile-header">
                 <h1>Looking Glass</h1>
                 <div class="header-actions">
+                    <button class="btn" id="mobileInfoBtn" aria-label="詳細資訊">
+                        <i class="bi bi-info-circle"></i>
+                    </button>
                     <button class="btn" id="mobileLogsBtn" aria-label="使用日誌">
                         <i class="bi bi-journal-text"></i>
                     </button>
@@ -459,6 +462,73 @@
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">載入中...</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機版詳細資訊模態框 -->
+        <div class="modal fade" id="mobileInfoModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">詳細資訊</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="mobileInfoContent">
+                        <!-- 關於我們 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-people me-2"></i>關於我們</h6>
+                            <p class="text-muted mb-3">
+                                這是由 Zhuyuan、CH、Yuan 共同維護的開源專案，使用 Smokeping 以及 Globalping 監測網路品質。
+                            </p>
+                            <p class="text-muted">
+                                如想新增使用節點，請至Github提交 <a href="https://github.com/tw-yuan/looking-glass-new" class="text-decoration-none" target="_blank" rel="noopener">Pull Request</a>。
+                                <br>想了解網路品質？請至 <a href="https://smokeping.zhuyuan.tw" class="text-decoration-none" target="_blank" rel="noopener">Smokeping</a> 查看，新增監控對象請與我們聯繫。
+                            </p>
+                        </div>
+                        
+                        <!-- 聯絡我們 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-envelope me-2"></i>聯絡我們</h6>
+                            <div class="mobile-contact-list">
+                                <a href="mailto:me@yuan-tw.net" class="mobile-contact-item">
+                                    <i class="bi bi-envelope"></i>
+                                    <span>me@yuan-tw.net</span>
+                                </a>
+                                <a href="https://github.com/tw-yuan/looking-glass-new" class="mobile-contact-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-github"></i>
+                                    <span>GitHub</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 相關連結 -->
+                        <div class="mobile-info-section">
+                            <h6><i class="bi bi-link-45deg me-2"></i>相關連結</h6>
+                            <div class="mobile-link-list">
+                                <a href="https://smokeping.zhuyuan.tw" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-graph-up"></i>
+                                    <span>Smokeping</span>
+                                </a>
+                                <a href="https://tools.cre0809.com/myip/" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>IP 資訊查詢</span>
+                                </a>
+                                <a href="https://ncse.tw" class="mobile-link-item" target="_blank" rel="noopener">
+                                    <i class="bi bi-globe"></i>
+                                    <span>NCSE Network</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 版權訊息 -->
+                        <div class="mobile-info-section text-center">
+                            <small class="text-muted">
+                                &copy; <span class="copyright-year">2024</span> Looking Glass @yuan-tw.net, @zhuyuan.tw, @c-h.tw<br>
+                                All rights reserved.
+                            </small>
                         </div>
                     </div>
                 </div>
