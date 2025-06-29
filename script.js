@@ -99,7 +99,7 @@ function incrementApiCount() {
         console.log('當前時間:', new Date(now).toLocaleString());
         console.log('重置時間:', new Date(lastApiReset).toLocaleString());
         console.log('下次可用時間:', new Date(lastApiReset + API_RESET_INTERVAL).toLocaleString());
-        showGlobalpingLimitWarning(timeString);
+        showGlobalpingLimitWarning();
     }
 }
 
@@ -117,7 +117,7 @@ async function makeApiRequest(url, options = {}) {
                 console.warn('Globalping API速率限制觸發');
                 const remainingTime = getRemainingTime();
                 const timeString = formatTime(remainingTime);
-                showGlobalpingLimitWarning(timeString);
+                showGlobalpingLimitWarning();
                 throw new Error(`Globalping API速率限制，請等待 ${timeString} 後再試`);
             } else if (response.status >= 500) {
                 throw new Error('伺服器錯誤，請稍後再試');
@@ -138,7 +138,7 @@ async function makeApiRequest(url, options = {}) {
 }
 
 // 顯示Globalping API限制警告
-function showGlobalpingLimitWarning(remainingTime) {
+function showGlobalpingLimitWarning() {
     // 避免重複顯示警告
     if (document.getElementById('globalpingLimitWarning')) return;
     
@@ -170,9 +170,6 @@ function showGlobalpingLimitWarning(remainingTime) {
                 <div style="font-weight: 700; font-size: 18px; margin-bottom: 8px;">❗ Globalping API 限制已達</div>
                 <div style="font-size: 15px; line-height: 1.5; margin-bottom: 12px;">
                     您已達到每小時 <strong>250 次測試</strong> 的使用限制。
-                </div>
-                <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <div style="font-size: 20px; font-weight: 700; color: #ffeb3b;">${remainingTime}</div>
                 </div>
                 <div style="font-size: 13px; opacity: 0.85; line-height: 1.4;">
                     • 系統會在每小時自動重置 API 使用次數<br>
